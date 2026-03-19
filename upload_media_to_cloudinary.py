@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.wsgi import get_wsgi_application
 
 # Setup Django
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "gforceapp.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "churchforce.settings")
 application = get_wsgi_application()
 
 # Set your local media directory

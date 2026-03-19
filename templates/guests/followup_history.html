@@ -1,58 +1,94 @@
-{% extends 'base.html' %}
-{% block content %}
-<div class="container">
-  <h2>Follow-up History for {{ guest.full_name }}</h2>
-  <a href="{% url 'export_followup_reports_pdf' guest.id %}" class="btn btn-outline-primary mb-3">Export PDF</a>
-  <ul class="list-group">
-    {% for report in reports %}
-      <li class="list-group-item d-flex justify-content-between align-items-start">
-        <div class="ms-2 me-auto">
-          <div><strong>{{ report.report_date }}</strong> — {{ report.outcome }}</div>
-          <small>{{ report.notes }}</small>
+{% extends 'base.html' %} {% load access_tags %} {% block title %}Follow-up
+History — {{ guest.full_name }}{% endblock %} {% block content %}
+<div class="page-wrapper">
+  <div class="page-header d-print-none">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <h3 class="page-title text-white">
+            Follow-up History —
+            <span class="text-warning">{{ guest.full_name }}</span>
+          </h3>
         </div>
-        <div>
-          <button class="btn btn-sm btn-warning edit-report" data-id="{{ report.id }}">Edit</button>
-          <button class="btn btn-sm btn-danger delete-report" data-id="{{ report.id }}">Delete</button>
+        <div class="col-auto ms-auto">
+          <a
+            href="{% url 'guests:followup_pdf' guest.id %}"
+            class="btn btn-outline-secondary btn-sm"
+            >Export PDF</a
+          >
+          <a
+            href="{% url 'guests:guest_list' %}"
+            class="btn btn-outline-secondary btn-sm ms-2"
+            >← Back</a
+          >
         </div>
-      </li>
-    {% empty %}
-      <li class="list-group-item">No reports found.</li>
-    {% endfor %}
-  </ul>
-</div>
+      </div>
+    </div>
+  </div>
 
-<!-- Edit Modal -->
-<div class="modal fade" id="editReportModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header"><h5>Edit Report</h5></div>
-      <div class="modal-body"></div>
+  <div class="page-body">
+    <div class="container-xl">
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table table-dark table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Note</th>
+                <th>Contact</th>
+                <th>Services</th>
+                {% if can_edit %}
+                <th></th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for report in reports %}
+              <tr>
+                <td><strong>{{ report.report_date }}</strong></td>
+                <td class="text-secondary">{{ report.note }}</td>
+                <td>
+                  {% if report.contact_answered %}
+                  <span class="badge bg-success-lt">Answered</span>
+                  {% elif report.contact_attempted %}
+                  <span class="badge bg-warning-lt">Attempted</span>
+                  {% else %}
+                  <span class="badge bg-secondary-lt">None</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if report.service_sunday %}<span class="badge bg-indigo-lt"
+                    >Sunday</span
+                  >{% endif %} {% if report.service_midweek %}<span
+                    class="badge bg-purple-lt"
+                    >Midweek</span
+                  >{% endif %} {% if report.service_others %}<span
+                    class="badge bg-pink-lt"
+                    >Others</span
+                  >{% endif %}
+                </td>
+                {% if can_edit %}
+                <td>
+                  <a
+                    href="{% url 'guests:followup_report_page' guest.id %}?edit_report_id={{ report.id }}"
+                    class="btn btn-sm btn-outline-warning"
+                    >Edit</a
+                  >
+                </td>
+                {% endif %}
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                  No follow-up reports yet.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </div>
-
-<script>
-document.querySelectorAll('.delete-report').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const id = btn.dataset.id;
-    if (confirm('Are you sure?')) {
-      fetch(`/followup/delete/${id}/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } })
-        .then(res => res.json())
-        .then(data => location.reload());
-    }
-  });
-});
-
-document.querySelectorAll('.edit-report').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const id = btn.dataset.id;
-    fetch(`/followup/edit/${id}/`)
-      .then(res => res.json())
-      .then(data => {
-        document.querySelector('#editReportModal .modal-body').innerHTML = data.form_html;
-        new bootstrap.Modal(document.getElementById('editReportModal')).show();
-      });
-  });
-});
-</script>
 {% endblock %}

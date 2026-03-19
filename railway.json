@@ -1,14 +1,17 @@
 {
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+    "buildCommand": "pip install -r requirements.txt && python manage.py collectstatic --noinput"
   },
   "deploy": {
-    "startCommand": "gunicorn gforceapp.asgi:application -k uvicorn.workers.UvicornWorker --workers 2 --bind 0.0.0.0:$PORT --log-level info --access-logfile '-' --timeout 120 --keep-alive 5",
-    "restartPolicyType": "ON_FAILURE"
+    "startCommand": "gunicorn churchforce.asgi:application -k uvicorn.workers.UvicornWorker --workers 2 --bind 0.0.0.0:$PORT --log-level info --access-logfile - --timeout 120 --keep-alive 5",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 5,
+    "healthcheckPath": "/health/",
+    "healthcheckTimeout": 10
   },
   "deployProcesses": {
-    "web": "gunicorn gforceapp.asgi:application -k uvicorn.workers.UvicornWorker --workers 2 --bind 0.0.0.0:$PORT --log-level info --access-logfile '-' --timeout 120 --keep-alive 5",
+    "web": "gunicorn churchforce.asgi:application -k uvicorn.workers.UvicornWorker --workers 2 --bind 0.0.0.0:$PORT --log-level info --access-logfile - --timeout 120 --keep-alive 5",
     "scheduler": "python manage.py start_scheduler"
   }
 }

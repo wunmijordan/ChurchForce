@@ -1,29 +1,44 @@
-{% load static %}
-{% load user_avatar_tags %}
-{% load guest_avatar_tags %}
-{% load widget_tweaks %}
-{% load access_tags %}
-<!DOCTYPE html>
+{% load static %} {% load user_avatar_tags %} {% load guest_avatar_tags %} {%
+load widget_tweaks %} {% load access_tags %}
+<!doctype html>
 <html lang="en" data-bs-theme="dark">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{% block title %}GForce{% endblock %}</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}ChurchForce{% endblock %}</title>
 
-  <!-- PWA manifest and theme color -->
-  <link rel="manifest" href="{% static 'manifest.json' %}">
-  <meta name="theme-color" content="#2e303e">
+    <!-- PWA manifest and theme color -->
+    <link rel="manifest" href="{% static 'manifest.json' %}" />
+    <meta name="theme-color" content="#2e303e" />
 
-  <!-- Apple support -->
-  <link rel="apple-touch-icon" href="{% static 'images/icons/icon-192x192.png' %}">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <!-- Apple support -->
+    <link
+      rel="apple-touch-icon"
+      href="{% static 'images/icons/icon-192x192.png' %}"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
-  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/icons/icon-192x192.png' %}">
-  <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/icons/icon-512x512.png' %}">
-  <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/icons/icon-512x512-maskable.png' %}">
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="{% static 'images/icons/icon-192x192.png' %}"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="{% static 'images/icons/icon-512x512.png' %}"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="{% static 'images/icons/icon-512x512-maskable.png' %}"
+    />
 
-  <!-- Force dark theme before CSS loads --
+    <!-- Force dark theme before CSS loads --
   <script>
     (function () {
       const defaults = { theme: "dark", "theme-base": "gray", "theme-font": "sans-serif", "theme-primary": "blue", "theme-radius": "1" };
@@ -34,140 +49,285 @@
     })();
   </script>-->
 
-  <!-- CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet" />
-  <!--<link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" rel="stylesheet" />-->
-  <link href="{% static 'vendor/tabler/tabler.min.css' %}" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-  <!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.19/index.global.min.css">
+    <!-- CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <!--<link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" rel="stylesheet" />-->
+    <link href="{% static 'vendor/tabler/tabler.min.css' %}" rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
+    />
+    <!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.19/index.global.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.19/index.global.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fullcalendar/interaction@6.1.19/index.global.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fullcalendar/bootstrap5@6.1.19/index.global.min.css">-->
-  <link href="{% static 'css/custom.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/custom.css' %}" rel="stylesheet" />
 
-  <script src="{% static 'js/tabler-theme-dark.js' %}"></script>
+    <script src="{% static 'js/tabler-theme-dark.js' %}"></script>
 
-  {% block extra_css %}{% endblock %}
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body
+    class="min-vh-100"
+    data-new-gr-c-s-check-loaded="14.1249.0"
+    data-gr-ext-installed=""
+  >
+    <div class="page">
+      <header class="navbar scrolled navbar-expand-md d-print-none">
+        <div class="container-fluid">
+          <!-- Mobile row: toggler (left), logo (center), icons (right) -->
+          <div
+            class="d-flex w-100 d-md-none justify-content-between align-items-center mb-2 position-relative"
+          >
+            <!-- Navbar toggler -->
+            <button
+              class="navbar-toggler position-absolute start-0"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#navbar-menu"
+              aria-controls="navbar-menu"
+              aria-expanded="false"
+              aria-label="Toggle navigation"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="icon icon-tabler icons-tabler-outline icon-tabler-menu-deep"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M4 6h16" />
+                <path d="M7 12h13" />
+                <path d="M10 18h10" />
+              </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="icon icon-tabler icons-tabler-outline icon-tabler-x d-none"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M18 6l-12 12" />
+                <path d="M6 6l12 12" />
+              </svg>
+            </button>
 
-</head>
-<body class="min-vh-100" data-new-gr-c-s-check-loaded="14.1249.0" data-gr-ext-installed="">
-
-  <div class="page">
-    <header class="navbar scrolled navbar-expand-md d-print-none">
-      <div class="container-fluid">
-        <!-- Mobile row: toggler (left), logo (center), icons (right) -->
-        <div class="d-flex w-100 d-md-none justify-content-between align-items-center mb-2 position-relative">
-
-          <!-- Navbar toggler -->
-          <button class="navbar-toggler position-absolute start-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu"
-                  aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
-            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-menu-deep">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 6h16" />
-              <path d="M7 12h13" /><path d="M10 18h10" />
-            </svg>
-            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-x d-none">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M18 6l-12 12" /><path d="M6 6l12 12" />
-            </svg>
-          </button>
-
-          <!-- Mobile logo (centered absolutely) -->
-          {% if request.user|is_project_wide_admin %}
-            <a href="{% url 'accounts:admin_dashboard' %}" aria-label="Gateway Nation" class="navbar-brand position-absolute top-50 start-50 translate-middle">
-              <img src="{% static 'images/Gateway Icon.png' %}" alt="Logo" width="80" height="80" class="me-2">
+            <!-- Mobile logo (centered absolutely) -->
+            {% if request|is_admin %}
+            <a
+              href="{% url 'accounts:admin_dashboard' %}"
+              aria-label="ChurchForce"
+              class="navbar-brand position-absolute top-50 start-50 translate-middle"
+            >
+              <img
+                src="{% static 'images/Gateway Icon.png' %}"
+                alt="Logo"
+                width="80"
+                height="80"
+                class="me-2"
+              />
             </a>
-          {% else %}
-            <a href="{% url 'dashboard' %}" aria-label="Gateway Nation" class="navbar-brand position-absolute top-50 start-50 translate-middle">
-              <img src="{% static 'images/Gateway Icon.png' %}" alt="Logo" width="80" height="80" class="me-2">
+            {% else %}
+            <a
+              href="{% url 'dashboard' %}"
+              aria-label="ChurchForce"
+              class="navbar-brand position-absolute top-50 start-50 translate-middle"
+            >
+              <img
+                src="{% static 'images/Gateway Icon.png' %}"
+                alt="Logo"
+                width="80"
+                height="80"
+                class="me-2"
+              />
             </a>
-          {% endif %}
+            {% endif %}
 
-          <div class="navbar-nav flex-row ms-auto">
-          
-            
+            <div class="navbar-nav flex-row ms-auto">
+              <div class="nav-item dropdown d-flex align-items-center ms-0">
+                <a
+                  href="#"
+                  class="nav-link px-0"
+                  data-bs-toggle="dropdown"
+                  aria-label="Show notifications"
+                >
+                  <!-- Tabler bell icon -->
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#ff5e01ff"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-1"
+                  >
+                    <path
+                      d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"
+                    ></path>
+                    <path d="M9 17v1a3 3 0 0 0 6 0v-1"></path>
+                  </svg>
+                  {% if unread_count > 0 %}
+                  <span class="badge bg-red text-red" id="notif-badge"
+                    >{{ unread_count }}</span
+                  >
+                  {% endif %}
+                </a>
 
-            <div class="nav-item dropdown d-flex align-items-center ms-0">
-              <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" aria-label="Show notifications">
-                <!-- Tabler bell icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff5e01ff"
-                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                  <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"></path>
-                  <path d="M9 17v1a3 3 0 0 0 6 0v-1"></path>
-                </svg>
-                {% if unread_count > 0 %}
-                  <span class="badge bg-red text-red" id="notif-badge">{{ unread_count }}</span>
-                {% endif %}
-              </a>
+                <div
+                  class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card notif-dropdown"
+                >
+                  <div class="card">
+                    <div class="card-header d-flex">
+                      <h3 class="card-title">Notifications</h3>
+                      <div
+                        class="btn-close ms-auto"
+                        data-bs-dismiss="dropdown"
+                      ></div>
+                    </div>
 
-              <div class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card notif-dropdown">
-                <div class="card">
-                  <div class="card-header d-flex">
-                    <h3 class="card-title">Notifications</h3>
-                    <div class="btn-close ms-auto" data-bs-dismiss="dropdown"></div>
-                  </div>
-
-                  <div class="list-group list-group-flush list-group-hoverable" id="notif-list">
-                    {% for notif in unread_notifications %}
-                    <div class="list-group-item notif-item" data-id="{{ notif.id }}">
-                      <div class="row align-items-center">
-                        <div class="col-auto">
-                          <span class="status-dot status-dot-animated {% if notif.is_urgent %}bg-red{% elif notif.is_success %}bg-green{% else %}bg-gray{% endif %} d-block"></span>
-                        </div>
-                        <div class="col">
-                          <a href="{{ notif.link }}" class="text-body d-block notif-link text-truncate">{{ notif.title }}</a>
-                          <div class="d-block text-secondary mt-n1 notif-description" data-full="{{ notif.description }}">
-                            {{ notif.description|truncatechars:150 }}
-                            {% if notif.description|length > 150 %}
+                    <div
+                      class="list-group list-group-flush list-group-hoverable"
+                      id="notif-list"
+                    >
+                      {% for notif in unread_notifications %}
+                      <div
+                        class="list-group-item notif-item"
+                        data-id="{{ notif.id }}"
+                      >
+                        <div class="row align-items-center">
+                          <div class="col-auto">
+                            <span
+                              class="status-dot status-dot-animated {% if notif.is_urgent %}bg-red{% elif notif.is_success %}bg-green{% else %}bg-gray{% endif %} d-block"
+                            ></span>
+                          </div>
+                          <div class="col">
+                            <a
+                              href="{{ notif.link }}"
+                              class="text-body d-block notif-link text-truncate"
+                              >{{ notif.title }}</a
+                            >
+                            <div
+                              class="d-block text-secondary mt-n1 notif-description"
+                              data-full="{{ notif.description }}"
+                            >
+                              {{ notif.description|truncatechars:150 }} {% if
+                              notif.description|length > 150 %}
                               <a href="#" class="show-more">...more</a>
-                            {% endif %}
+                              {% endif %}
+                            </div>
+                          </div>
+                          <div class="col-auto">
+                            <a
+                              href="#"
+                              class="list-group-item-actions notif-star"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="icon text-light icon-2"
+                              >
+                                <path
+                                  d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"
+                                ></path>
+                              </svg>
+                            </a>
                           </div>
                         </div>
-                        <div class="col-auto">
-                          <a href="#" class="list-group-item-actions notif-star">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                              class="icon text-light icon-2">
-                              <path
-                                d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"></path>
-                            </svg>
+                      </div>
+                      {% empty %}
+                      <div class="list-group-item">No new notifications</div>
+                      {% endfor %}
+                    </div>
+
+                    <div class="card-body">
+                      <div class="row">
+                        <div class="col">
+                          <a href="#" class="btn btn-2 w-100 mark-all-read-btn">
+                            Mark All Read
                           </a>
                         </div>
-                      </div>
-                    </div>
-                    {% empty %}
-                    <div class="list-group-item">No new notifications</div>
-                    {% endfor %}
-                  </div>
-
-                  <div class="card-body">
-                    <div class="row">
-                      <div class="col">
-                        <a href="#" class="btn btn-2 w-100 mark-all-read-btn"> Mark All Read </a>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div class="nav-item dropdown">
-              <a href="#" class="nav-link d-flex lh-1 p-0 px-0 ms-2 text-white" data-bs-toggle="dropdown" aria-label="Open user menu" aria-expanded="false">
-                {% if user.image %}
-                  <img src="{{ user.image.url }}" class="avatar avatar-sm" 
-                      style="width: 32px; height: 32px; border-radius: 0.5rem; object-fit: cover;">
-                {% else %}
-                  <span class="avatar avatar-sm bg-grey text-white d-inline-flex align-items-center justify-content-center"
-                        style="width: 32px; height: 32px; font-weight: bold; font-size: 16px; border-radius: 0.5rem;">
+              <div class="nav-item dropdown">
+                <a
+                  href="#"
+                  class="nav-link d-flex lh-1 p-0 px-0 ms-2 text-white"
+                  data-bs-toggle="dropdown"
+                  aria-label="Open user menu"
+                  aria-expanded="false"
+                >
+                  {% if user.image %}
+                  <img
+                    src="{{ user.image.url }}"
+                    class="avatar avatar-sm"
+                    style="
+                      width: 32px;
+                      height: 32px;
+                      border-radius: 0.5rem;
+                      object-fit: cover;
+                    "
+                  />
+                  {% else %}
+                  <span
+                    class="avatar avatar-sm bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                    style="
+                      width: 32px;
+                      height: 32px;
+                      font-weight: bold;
+                      font-size: 16px;
+                      border-radius: 0.5rem;
+                    "
+                  >
                     {{ user.initials }}
                   </span>
-                {% endif %}
+                  {% endif %}
 
-                <div class="ps-2 d-flex flex-column justify-content-center">
-                  <!--<div class="d-block d-xl-none">{{ user.get_full_name|default:user.full_name }}</div>--> <!-- Show on mobile -->
-                  <div class="d-none d-xl-block"><i><small>{{ user.title|default:"" }}</small></i><br> {{ user.full_name }}</div> <!-- Show on xl+ -->
+                  <div class="ps-2 d-flex flex-column justify-content-center">
+                    <!--<div class="d-block d-xl-none">{{ user.get_full_name|default:user.full_name }}</div>-->
+                    <!-- Show on mobile -->
+                    <div class="d-none d-xl-block">
+                      <i><small>{{ user.title|default:"" }}</small></i
+                      ><br />
+                      {{ user.full_name }}
+                    </div>
+                    <!-- Show on xl+ -->
 
-                  <!--
+                    <!--
                   <div class="d-block d-xl-none mt-1 fs-6 text-secondary">
                     {% if user.is_superuser %}
                       <span class="bg-warning-lt">Superuser</span>
@@ -181,145 +341,340 @@
                   </div>
                   -->
 
-                  <div class="d-none d-xl-block mt-1 fs-6 text-secondary">
-                    {% if user.is_superuser %}
-                      <span class="text-warning">Superuser</span>
-                    {% elif user|has_group:"Pastor" %}
-                      <span class="text-green">Pastor</span>
-                    {% elif user|has_group:"Minister" %}
-                      <span class="text-blue">Minister</span>
-                    {% elif user|has_group:"Admin" %}
-                      <span class="text-secondary">Admin</span>
-                    {% elif user|has_group:"GForce Member" %}
-                      <span class="text-pink">GForce Member</span>
-                    {% else %}
-                      <span class="text-red">Demo</span>
-                    {% endif %}
+                    <div class="d-none d-xl-block mt-1 fs-6 text-secondary">
+                      <span class="text-secondary">{{ user|role_label }}</span>
+                    </div>
                   </div>
+                </a>
+                <div
+                  class="dropdown-menu dropdown-menu-end dropdown-menu-arrow py-1"
+                >
+                  <a
+                    class="dropdown-item"
+                    href="#"
+                    data-bs-toggle="modal"
+                    data-bs-target="#notifSettingsModal"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-bell-cog"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path
+                        d="M12 17h-8a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6a2 2 0 1 1 4 0a7 7 0 0 1 4 6v.5"
+                      />
+                      <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                      <path d="M19.001 15.5v1.5" />
+                      <path d="M19.001 21v1.5" />
+                      <path d="M22.032 17.25l-1.299 .75" />
+                      <path d="M17.27 20l-1.3 .75" />
+                      <path d="M15.97 17.25l1.3 .75" />
+                      <path d="M20.733 20l1.3 .75" />
+                      <path d="M9 17v1a3 3 0 0 0 3 3" />
+                    </svg>
+                    Preferences
+                  </a>
+                  <a
+                    href="https://churchforce.io"
+                    class="dropdown-item"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-pointer"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path
+                        d="M7.904 17.563a1.2 1.2 0 0 0 2.228 .308l2.09 -3.093l4.907 4.907a1.067 1.067 0 0 0 1.509 0l1.047 -1.047a1.067 1.067 0 0 0 0 -1.509l-4.907 -4.907l3.113 -2.09a1.2 1.2 0 0 0 -.309 -2.228l-13.582 -3.904l3.904 13.563z"
+                      />
+                    </svg>
+                    ChurchForce
+                    <span class="badge badge-sm bg-green-lt ms-auto">Home</span>
+                  </a>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'tenants:member_settings' %}"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path
+                        d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"
+                      />
+                      <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+                    </svg>
+                    My Settings
+                  </a>
+                  {% if request|is_admin %}
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'tenants:church_settings' %}"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-building-church"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path
+                        d="M3 19v-11.568a1 1 0 0 1 .426 -.82l9 -6.21a1 1 0 0 1 1.148 0l9 6.21a1 1 0 0 1 .426 .82v11.568a1 1 0 0 1 -1 1h-5v-4a1 1 0 0 0 -1 -1h-6a1 1 0 0 0 -1 1v4h-5a1 1 0 0 1 -1 -1z"
+                      />
+                      <path d="M12 0v5" />
+                      <path d="M10 3h4" />
+                    </svg>
+                    Church Settings
+                  </a>
+                  {% endif %}
+                  <div class="dropdown-divider"></div>
+                  <a href="{% url 'login' %}" class="dropdown-item text-danger">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-logout"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path
+                        d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2"
+                      />
+                      <path d="M9 12h12l-3 -3" />
+                      <path d="M18 15l3 -3" />
+                    </svg>
+                    Logout
+                  </a>
                 </div>
-              </a>
-              <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow py-1">
-                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#notifSettingsModal">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-bell-cog">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17h-8a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6a2 2 0 1 1 4 0a7 7 0 0 1 4 6v.5" />
-                    <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19.001 15.5v1.5" />
-                    <path d="M19.001 21v1.5" /><path d="M22.032 17.25l-1.299 .75" /><path d="M17.27 20l-1.3 .75" />
-                    <path d="M15.97 17.25l1.3 .75" /><path d="M20.733 20l1.3 .75" /><path d="M9 17v1a3 3 0 0 0 3 3" />
-                  </svg>
-                  Preferences
-                </a>
-                <a href="https://gatewaynation.org" class="dropdown-item" target="_blank" rel="noreferrer">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-pointer">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M7.904 17.563a1.2 1.2 0 0 0 2.228 .308l2.09 -3.093l4.907 4.907a1.067 1.067 0 0 0 1.509 0l1.047 -1.047a1.067 1.067 0 0 0 0 -1.509l-4.907 -4.907l3.113 -2.09a1.2 1.2 0 0 0 -.309 -2.228l-13.582 -3.904l3.904 13.563z" />
-                  </svg>
-                  Gateway Nation
-                  <span class="badge badge-sm bg-green-lt ms-auto">Home</span>
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="{% url 'login' %}" class="dropdown-item text-danger">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-logout">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
-                    <path d="M9 12h12l-3 -3" /><path d="M18 15l3 -3" />
-                  </svg>
-                  Logout
-                </a>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Desktop logo (hidden on mobile) -->
-        {% if request.user|is_project_wide_admin %}
-          <a href="{% url 'accounts:admin_dashboard' %}" aria-label="Gateway Nation" class="navbar-brand d-none d-md-flex align-items-center">
-            <img src="{% static 'images/Gateway Icon.png' %}" alt="Logo" width="80" height="80" class="me-2">
+          <!-- Desktop logo (hidden on mobile) -->
+          {% if request|is_admin %}
+          <a
+            href="{% url 'accounts:admin_dashboard' %}"
+            aria-label="ChurchForce"
+            class="navbar-brand d-none d-md-flex align-items-center"
+          >
+            <img
+              src="{% static 'images/Gateway Icon.png' %}"
+              alt="Logo"
+              width="80"
+              height="80"
+              class="me-2"
+            />
           </a>
-        {% else %}
-          <a href="{% url 'dashboard' %}" aria-label="Gateway Nation" class="navbar-brand d-none d-md-flex align-items-center">
-            <img src="{% static 'images/Gateway Icon.png' %}" alt="Logo" width="80" height="80" class="me-2">
+          {% else %}
+          <a
+            href="{% url 'dashboard' %}"
+            aria-label="ChurchForce"
+            class="navbar-brand d-none d-md-flex align-items-center"
+          >
+            <img
+              src="{% static 'images/Gateway Icon.png' %}"
+              alt="Logo"
+              width="80"
+              height="80"
+              class="me-2"
+            />
           </a>
-        {% endif %}
+          {% endif %}
 
-        <!-- Desktop right icons (classic style, hidden on mobile since duplicated above) -->
-        <div class="navbar-nav flex-row order-md-last d-none d-md-flex">  
-          <div class="nav-item dropdown d-flex align-items-center">
-            <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" aria-label="Show notifications">
-              <!-- Tabler bell icon -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff5e01ff"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"></path>
-                <path d="M9 17v1a3 3 0 0 0 6 0v-1"></path>
-              </svg>
-              {% if unread_count > 0 %}
-                <span class="badge bg-red-lt text-red" id="notif-badge">{{ unread_count }}</span>
-              {% endif %}
-            </a>
+          <!-- Desktop right icons (classic style, hidden on mobile since duplicated above) -->
+          <div class="navbar-nav flex-row order-md-last d-none d-md-flex">
+            <div class="nav-item dropdown d-flex align-items-center">
+              <a
+                href="#"
+                class="nav-link px-0"
+                data-bs-toggle="dropdown"
+                aria-label="Show notifications"
+              >
+                <!-- Tabler bell icon -->
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#ff5e01ff"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="icon icon-1"
+                >
+                  <path
+                    d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"
+                  ></path>
+                  <path d="M9 17v1a3 3 0 0 0 6 0v-1"></path>
+                </svg>
+                {% if unread_count > 0 %}
+                <span class="badge bg-red-lt text-red" id="notif-badge"
+                  >{{ unread_count }}</span
+                >
+                {% endif %}
+              </a>
 
-            <div class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card notif-dropdown">
-              <div class="card">
-                <div class="card-header d-flex">
-                  <h3 class="card-title">Notifications</h3>
-                  <div class="btn-close ms-auto" data-bs-dismiss="dropdown"></div>
-                </div>
+              <div
+                class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card notif-dropdown"
+              >
+                <div class="card">
+                  <div class="card-header d-flex">
+                    <h3 class="card-title">Notifications</h3>
+                    <div
+                      class="btn-close ms-auto"
+                      data-bs-dismiss="dropdown"
+                    ></div>
+                  </div>
 
-                <div class="list-group list-group-flush list-group-hoverable" id="notif-list">
-                  {% for notif in unread_notifications %}
-                  <div class="list-group-item notif-item" data-id="{{ notif.id }}">
-                    <div class="row align-items-center">
-                      <div class="col-auto">
-                        <span class="status-dot status-dot-animated {% if notif.is_urgent %}bg-red{% elif notif.is_success %}bg-green{% else %}bg-gray{% endif %} d-block"></span>
-                      </div>
-                      <div class="col">
-                        <a href="{{ notif.link }}" class="text-body d-block notif-link text-truncate">{{ notif.title }}</a>
-                        <div class="d-block text-secondary mt-n1 notif-description" data-full="{{ notif.description }}">
-                          {{ notif.description|truncatechars:150 }}
-                          {% if notif.description|length > 150 %}
+                  <div
+                    class="list-group list-group-flush list-group-hoverable"
+                    id="notif-list"
+                  >
+                    {% for notif in unread_notifications %}
+                    <div
+                      class="list-group-item notif-item"
+                      data-id="{{ notif.id }}"
+                    >
+                      <div class="row align-items-center">
+                        <div class="col-auto">
+                          <span
+                            class="status-dot status-dot-animated {% if notif.is_urgent %}bg-red{% elif notif.is_success %}bg-green{% else %}bg-gray{% endif %} d-block"
+                          ></span>
+                        </div>
+                        <div class="col">
+                          <a
+                            href="{{ notif.link }}"
+                            class="text-body d-block notif-link text-truncate"
+                            >{{ notif.title }}</a
+                          >
+                          <div
+                            class="d-block text-secondary mt-n1 notif-description"
+                            data-full="{{ notif.description }}"
+                          >
+                            {{ notif.description|truncatechars:150 }} {% if
+                            notif.description|length > 150 %}
                             <a href="#" class="show-more">...more</a>
-                          {% endif %}
+                            {% endif %}
+                          </div>
+                        </div>
+                        <div class="col-auto">
+                          <a
+                            href="#"
+                            class="list-group-item-actions notif-star"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              class="icon text-light icon-2"
+                            >
+                              <path
+                                d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"
+                              ></path>
+                            </svg>
+                          </a>
                         </div>
                       </div>
-                      <div class="col-auto">
-                        <a href="#" class="list-group-item-actions notif-star">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="icon text-light icon-2">
-                            <path
-                              d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"></path>
-                          </svg>
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item">No new notifications</div>
+                    {% endfor %}
+                  </div>
+
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col">
+                        <a href="#" class="btn btn-2 w-100 mark-all-read-btn">
+                          Mark All Read
                         </a>
                       </div>
                     </div>
                   </div>
-                  {% empty %}
-                  <div class="list-group-item">No new notifications</div>
-                  {% endfor %}
-                </div>
-
-                <div class="card-body">
-                  <div class="row">
-                    <div class="col">
-                      <a href="#" class="btn btn-2 w-100 mark-all-read-btn"> Mark All Read </a>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div class="nav-item dropdown">
-            <a href="#" class="nav-link d-flex lh-1 p-0 px-2 ms-2 text-white" data-bs-toggle="dropdown" aria-label="Open user menu" aria-expanded="false">
-              {% if user.image %}
-                <img src="{{ user.image.url }}" class="avatar avatar-sm" 
-                    style="width: 32px; height: 32px; border-radius: 0.5rem; object-fit: cover;">
-              {% else %}
-                <span class="avatar avatar-sm bg-grey text-white d-inline-flex align-items-center justify-content-center"
-                      style="width: 32px; height: 32px; font-weight: bold; font-size: 16px; border-radius: 0.5rem;">
+            <div class="nav-item dropdown">
+              <a
+                href="#"
+                class="nav-link d-flex lh-1 p-0 px-2 ms-2 text-white"
+                data-bs-toggle="dropdown"
+                aria-label="Open user menu"
+                aria-expanded="false"
+              >
+                {% if user.image %}
+                <img
+                  src="{{ user.image.url }}"
+                  class="avatar avatar-sm"
+                  style="
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 0.5rem;
+                    object-fit: cover;
+                  "
+                />
+                {% else %}
+                <span
+                  class="avatar avatar-sm bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                  style="
+                    width: 32px;
+                    height: 32px;
+                    font-weight: bold;
+                    font-size: 16px;
+                    border-radius: 0.5rem;
+                  "
+                >
                   {{ user.initials }}
                 </span>
-              {% endif %}
+                {% endif %}
 
-              <!--<div class="ps-2 d-flex flex-column justify-content-center">
-                <div class="d-block d-xl-none">{{ user.get_full_name|default:user.full_name }}</div>--> <!-- Show on mobile --
+                <!--<div class="ps-2 d-flex flex-column justify-content-center">
+                <div class="d-block d-xl-none">{{ user.get_full_name|default:user.full_name }}</div>-->
+                <!-- Show on mobile --
                 <div class="d-none d-xl-block"><i><small>{{ user.title|default:"" }}</small></i><br> {{ user.full_name }}</div>  Show on xl+ -->
 
                 <!--
@@ -337,144 +692,335 @@
                 
 
                 <div class="d-none d-xl-block mt-1 fs-6 text-secondary">
-                  {% if user.is_superuser %}
-                    <span class="text-warning">Superuser</span>
-                  {% elif user|has_group:"Pastor" %}
-                    <span class="text-green">Pastor</span>
-                  {% elif user|has_group:"Minister" %}
-                    <span class="text-blue">Minister</span>
-                  {% elif user|has_group:"Admin" %}
-                    <span class="text-secondary">Admin</span>
-                  {% elif user|has_group:"GForce Member" %}
-                    <span class="text-pink">GForce Member</span>
-                  {% else %}
-                    <span class="text-red">Demo</span>
-                  {% endif %}
+                  <span class="text-secondary">{{ user|role_label }}</span>
                 </div>
               </div>-->
-            </a>
-            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow py-1">
-              <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#notifSettingsModal">
-                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-bell-cog">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17h-8a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6a2 2 0 1 1 4 0a7 7 0 0 1 4 6v.5" />
-                  <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19.001 15.5v1.5" />
-                  <path d="M19.001 21v1.5" /><path d="M22.032 17.25l-1.299 .75" /><path d="M17.27 20l-1.3 .75" />
-                  <path d="M15.97 17.25l1.3 .75" /><path d="M20.733 20l1.3 .75" /><path d="M9 17v1a3 3 0 0 0 3 3" />
-                </svg>
-                Preferences
               </a>
-              <a href="https://gatewaynation.org" class="dropdown-item" target="_blank" rel="noreferrer">
-                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-pointer">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                  <path d="M7.904 17.563a1.2 1.2 0 0 0 2.228 .308l2.09 -3.093l4.907 4.907a1.067 1.067 0 0 0 1.509 0l1.047 -1.047a1.067 1.067 0 0 0 0 -1.509l-4.907 -4.907l3.113 -2.09a1.2 1.2 0 0 0 -.309 -2.228l-13.582 -3.904l3.904 13.563z" />
-                </svg>
-                Gateway Nation
-                <span class="badge badge-sm bg-green-lt ms-auto">Home</span>
-              </a>
-              <div class="dropdown-divider"></div>
-              <a href="{% url 'login' %}" class="dropdown-item text-danger">
-                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-logout">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
-                  <path d="M9 12h12l-3 -3" /><path d="M18 15l3 -3" />
-                </svg>
-                Logout
-              </a>
+              <div
+                class="dropdown-menu dropdown-menu-end dropdown-menu-arrow py-1"
+              >
+                <a
+                  class="dropdown-item"
+                  href="#"
+                  data-bs-toggle="modal"
+                  data-bs-target="#notifSettingsModal"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-bell-cog"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path
+                      d="M12 17h-8a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6a2 2 0 1 1 4 0a7 7 0 0 1 4 6v.5"
+                    />
+                    <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                    <path d="M19.001 15.5v1.5" />
+                    <path d="M19.001 21v1.5" />
+                    <path d="M22.032 17.25l-1.299 .75" />
+                    <path d="M17.27 20l-1.3 .75" />
+                    <path d="M15.97 17.25l1.3 .75" />
+                    <path d="M20.733 20l1.3 .75" />
+                    <path d="M9 17v1a3 3 0 0 0 3 3" />
+                  </svg>
+                  Preferences
+                </a>
+                <a
+                  href="https://churchforce.io"
+                  class="dropdown-item"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-pointer"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path
+                      d="M7.904 17.563a1.2 1.2 0 0 0 2.228 .308l2.09 -3.093l4.907 4.907a1.067 1.067 0 0 0 1.509 0l1.047 -1.047a1.067 1.067 0 0 0 0 -1.509l-4.907 -4.907l3.113 -2.09a1.2 1.2 0 0 0 -.309 -2.228l-13.582 -3.904l3.904 13.563z"
+                    />
+                  </svg>
+                  ChurchForce
+                  <span class="badge badge-sm bg-green-lt ms-auto">Home</span>
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="{% url 'login' %}" class="dropdown-item text-danger">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-logout"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path
+                      d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2"
+                    />
+                    <path d="M9 12h12l-3 -3" />
+                    <path d="M18 15l3 -3" />
+                  </svg>
+                  Logout
+                </a>
+              </div>
             </div>
           </div>
-        </div>
 
-
-        <div class="navbar-collapse collapse" data-bs-auto-close="outside" id="navbar-menu" style="">
-          <!-- BEGIN NAVBAR MENU -->
-          <ul class="navbar-nav">
-            <li class="nav-item">
-              {% if request.user|is_project_wide_admin %}
-                <a class="nav-link text-white" href="{% url 'accounts:admin_dashboard' %}">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0066ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+          <div
+            class="navbar-collapse collapse"
+            data-bs-auto-close="outside"
+            id="navbar-menu"
+            style=""
+          >
+            <!-- BEGIN NAVBAR MENU -->
+            <ul class="navbar-nav">
+              <li class="nav-item">
+                {% if request|is_admin %}
+                <a
+                  class="nav-link text-white"
+                  href="{% url 'accounts:admin_dashboard' %}"
+                >
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"
+                    ><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#0066ffff"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-1"
+                    >
                       <path d="M5 12l-2 0l9 -9l9 9l-2 0"></path>
-                      <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"></path>
-                      <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"></path>
+                      <path
+                        d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"
+                      ></path>
+                      <path
+                        d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"
+                      ></path>
                     </svg>
                   </span>
                   <span class="nav-link-title"> Dashboard </span>
                 </a>
-              {% else %}
+                {% else %}
                 <a class="nav-link text-white" href="{% url 'dashboard' %}">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0066ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"
+                    ><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#0066ffff"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-1"
+                    >
                       <path d="M5 12l-2 0l9 -9l9 9l-2 0"></path>
-                      <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"></path>
-                      <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"></path>
+                      <path
+                        d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"
+                      ></path>
+                      <path
+                        d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"
+                      ></path>
                     </svg>
                   </span>
                   <span class="nav-link-title"> Dashboard </span>
                 </a>
-              {% endif %}
-            </li>
-            {% if request.user.is_superuser %}
+                {% endif %}
+              </li>
+              {% if request.user.is_superuser %}
               <li class="nav-item ms-1">
-                <a class="nav-link text-white" href="{% url 'accounts:manage_groups' %}">
+                <a
+                  class="nav-link text-white"
+                  href="{% url 'accounts:manage_groups' %}"
+                >
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-hierarchy">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-hierarchy"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                       <path d="M12 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-                      <path d="M5 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-                      <path d="M6.5 17.5l5.5 -4.5l5.5 4.5" /><path d="M12 7l0 6" />
+                      <path d="M5 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                      <path d="M19 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                      <path d="M6.5 17.5l5.5 -4.5l5.5 4.5" />
+                      <path d="M12 7l0 6" />
                     </svg>
                   </span>
                   <span class="nav-link-title"> Groups </span>
                 </a>
               </li>
-            {% endif %}
-            {% if request.user|is_project_admin or request.user|is_magnet_admin:"Minister-in-Charge,Team Admin" or request.user|is_team_admin:"Minister-in-Charge" %}
+              {% endif %} {% if request|is_admin or
+              permissions|can:"accounts.view_team" %}
               <li class="nav-item ms-1">
-                <a class="nav-link text-white" href="{% url 'accounts:user_list' %}">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#02bd12ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users-group">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1" />
-                      <path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M17 10h2a2 2 0 0 1 2 2v1" />
-                      <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M3 13v-1a2 2 0 0 1 2 -2h2" />
+                <a
+                  class="nav-link text-white"
+                  href="{% url 'accounts:user_list' %}"
+                >
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"
+                    ><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#02bd12ff"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-users-group"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                      <path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1" />
+                      <path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                      <path d="M17 10h2a2 2 0 0 1 2 2v1" />
+                      <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                      <path d="M3 13v-1a2 2 0 0 1 2 -2h2" />
                     </svg>
                   </span>
                   <span class="nav-link-title"> Team </span>
                 </a>
               </li>
-            {% endif %}
-            {% if not request.user.is_superuser and request.user|in_team:"Magnet" %}
+              {% endif %} {% if not request.user.is_superuser and
+              permissions|can:"guests.view" %}
               <li class="nav-item ms-1">
-                <a class="nav-link text-white" href="{% url 'guest_list' %}">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#ff5e01ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
+                <a
+                  class="nav-link text-white"
+                  href="{% url 'guests:guest_list' %}"
+                >
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"
+                    ><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#ff5e01ff"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-users"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+                      <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
                     </svg>
                   </span>
                   <span class="nav-link-title"> Guests </span>
                 </a>
               </li>
-            {% elif request.user.is_superuser %}
+              {% elif request.user.is_superuser %}
               <li class="nav-item ms-1 dropdown py-1">
-                <a class="nav-link dropdown text-white" href="#guest" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#ff5e01ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
+                <a
+                  class="nav-link dropdown text-white"
+                  href="#guest"
+                  data-bs-toggle="dropdown"
+                  data-bs-auto-close="outside"
+                  role="button"
+                  aria-expanded="false"
+                >
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"
+                    ><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#ff5e01ff"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-users"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+                      <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
                     </svg>
                   </span>
                   <span class="nav-link-title"> Guests </span>
                 </a>
                 <div class="dropdown-menu">
-                  <a class="dropdown-item" href="{% url 'guest_list' %}">
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
+                  <a class="dropdown-item" href="{% url 'guests:guest_list' %}">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-users"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+                      <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
                     </svg>
                     View Guests
                   </a>
-                  <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#bulkDeleteModal">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-cancel">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <a
+                    class="dropdown-item"
+                    href="#"
+                    data-bs-toggle="modal"
+                    data-bs-target="#bulkDeleteModal"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-cancel"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                       <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
                       <path d="M18.364 5.636l-12.728 12.728" />
                     </svg>
@@ -482,166 +1028,403 @@
                   </a>
                 </div>
               </li>
-            {% endif %}
-            {% if request.user.is_superuser %}
+              {% endif %} {% if request.user.is_superuser or
+              permissions|can:"messaging.send_bulk" %}
               <li class="nav-item ms-1 dropdown">
                 <!-- Bulk Message Trigger Button -->
-                <a class="nav-link text-white" href="#" data-bs-toggle="modal" data-bs-target="#bulkMessageModal">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#a2b987ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-message">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9h8" /><path d="M8 13h6" />
-                      <path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12z" />
+                <a
+                  class="nav-link text-white"
+                  href="#"
+                  data-bs-toggle="modal"
+                  data-bs-target="#bulkMessageModal"
+                >
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"
+                    ><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#a2b987ff"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-message"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M8 9h8" />
+                      <path d="M8 13h6" />
+                      <path
+                        d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12z"
+                      />
                     </svg>
                   </span>
                   <span class="nav-link-title"> Message </span>
                 </a>
               </li>
-            {% endif %}
-            {% if request.user|is_project_admin or request.user|in_team:"Magnet" %}
+              {% endif %} {% if request|is_admin or
+              permissions|can:"guests.export" or permissions|can:"guests.import"
+              %}
               <li class="nav-item ms-1 dropdown py-1">
-                <a class="nav-link dropdown text-white" href="#share" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/checkbox -->
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#00ffb3ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-share">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
-                      <path d="M18 6m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M18 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
-                      <path d="M8.7 10.7l6.6 -3.4" /><path d="M8.7 13.3l6.6 3.4" />
+                <a
+                  class="nav-link dropdown text-white"
+                  href="#share"
+                  data-bs-toggle="dropdown"
+                  data-bs-auto-close="outside"
+                  role="button"
+                  aria-expanded="false"
+                >
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"
+                    ><!-- Download SVG icon from http://tabler.io/icons/icon/checkbox -->
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#00ffb3ff"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-share"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M6 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                      <path d="M18 6m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                      <path d="M18 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                      <path d="M8.7 10.7l6.6 -3.4" />
+                      <path d="M8.7 13.3l6.6 3.4" />
                     </svg>
                   </span>
                   <span class="nav-link-title"> Share </span>
                 </a>
                 <div class="dropdown-menu">
-                  <a class="dropdown-item" href="{% url 'export_guests_excel' %}">
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#37b307ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-file-excel">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                      <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" />
-                      <path d="M10 12l4 5" /><path d="M10 17l4 -5" />
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'guests:export_guests_excel' %}"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#37b307ff"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-file-excel"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                      <path
+                        d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2"
+                      />
+                      <path d="M10 12l4 5" />
+                      <path d="M10 17l4 -5" />
                     </svg>
                     Excel
                   </a>
-                  <a class="dropdown-item"
-                    href="mailto:?subject=Guest%20Entries&body=Download%20the%20guest%20list%20here:%20{{ request.build_absolute_uri|cut:request.get_full_path }}{% url 'export_guests_excel' %}">
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#EA4335"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-gmail">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                      <path d="M16 20h3a1 1 0 0 0 1 -1v-14a1 1 0 0 0 -1 -1h-3v16z" />
-                      <path d="M5 20h3v-16h-3a1 1 0 0 0 -1 1v14a1 1 0 0 0 1 1z" />
-                      <path d="M16 4l-4 4l-4 -4" /><path d="M4 6.5l8 7.5l8 -7.5" />
+                  <a
+                    class="dropdown-item"
+                    href="mailto:?subject=Guest%20Entries&body=Download%20the%20guest%20list%20here:%20{{ request.build_absolute_uri|cut:request.get_full_path }}{% url 'guests:export_guests_excel' %}"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#EA4335"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-brand-gmail"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path
+                        d="M16 20h3a1 1 0 0 0 1 -1v-14a1 1 0 0 0 -1 -1h-3v16z"
+                      />
+                      <path
+                        d="M5 20h3v-16h-3a1 1 0 0 0 -1 1v14a1 1 0 0 0 1 1z"
+                      />
+                      <path d="M16 4l-4 4l-4 -4" />
+                      <path d="M4 6.5l8 7.5l8 -7.5" />
                     </svg>
                     Mail
                   </a>
-                  <a class="dropdown-item"
+                  <a
+                    class="dropdown-item"
                     target="_blank"
-                    href="https://wa.me/?text=Download%20guest%20entries%20Excel%20here:%20{{ request.build_absolute_uri|cut:request.get_full_path }}{% url 'export_guests_excel' %}">
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#03f74cff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-whatsapp">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" />
-                      <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" />
+                    href="https://wa.me/?text=Download%20guest%20entries%20Excel%20here:%20{{ request.build_absolute_uri|cut:request.get_full_path }}{% url 'guests:export_guests_excel' %}"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#03f74cff"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-brand-whatsapp"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" />
+                      <path
+                        d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1"
+                      />
                     </svg>
                     WhatsApp
                   </a>
                   {% if request.user.is_superuser %}
-                    <form action="{% url 'import_guests_csv' %}" method="post" enctype="multipart/form-data" class="dropdown-item p-0 m-0">
-                      {% csrf_token %}
-                      <label for="csvUpload" class="d-flex align-items-center px-3 py-2 cursor-pointer mb-0" style="width:100%;">
-                        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#806885ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-file-import">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                          <path d="M5 13v-8a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-5.5m-9.5 -2h7m-3 -3l3 3l-3 3" />
-                        </svg>
-                        Import CSV
-                      </label>
-                      <input type="file" id="csvUpload" name="csv_file" accept=".csv" class="d-none" onchange="this.form.submit()">
-                    </form>
+                  <form
+                    action="{% url 'guests:import_guests_csv' %}"
+                    method="post"
+                    enctype="multipart/form-data"
+                    class="dropdown-item p-0 m-0"
+                  >
+                    {% csrf_token %}
+                    <label
+                      for="csvUpload"
+                      class="d-flex align-items-center px-3 py-2 cursor-pointer mb-0"
+                      style="width: 100%"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#806885ff"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="icon icon-tabler icons-tabler-outline icon-tabler-file-import"
+                      >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                        <path
+                          d="M5 13v-8a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-5.5m-9.5 -2h7m-3 -3l3 3l-3 3"
+                        />
+                      </svg>
+                      Import CSV
+                    </label>
+                    <input
+                      type="file"
+                      id="csvUpload"
+                      name="csv_file"
+                      accept=".csv"
+                      class="d-none"
+                      onchange="this.form.submit()"
+                    />
+                  </form>
                   {% endif %}
                 </div>
               </li>
-            {% endif %}
-            
-            {% if show_filters %}
-            <li class="nav-item dropdown ms-1 py-1">
-              <a class="nav-link dropdown text-white" href="#navbar-filter" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/package -->
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#ff0055ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-filters">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M12 8m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" />
-                    <path d="M8 11a5 5 0 1 0 3.998 1.997" /><path d="M12.002 19.003a5 5 0 1 0 3.998 -8.003" />
-                  </svg>
-                </span>
-                <span class="nav-link-title"> Filters </span>
-              </a>
-              
-              <ul class="dropdown-menu">  
-                <li class="dropend dropdown">
-                  <a class="dropdown-item dropdown" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                    Channel of Visit
-                  </a>
-                  <ul class="dropdown-menu">
-                    {% for channel in channels %}
-                      <li><a href="?channel={{ channel|urlencode }}" class="dropdown-item">{{ channel }}</a></li>
-                    {% endfor %}
-                  </ul>
-                </li>
-                <li class="dropend dropdown">
-                  <a class="dropdown-item dropdown" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                    Guest Status
-                  </a>
-                  <ul class="dropdown-menu">
-                    {% for status in statuses %}
-                      <li><a href="?status={{ status|urlencode }}" class="dropdown-item">{{ status }}</a></li>
-                    {% endfor %}
-                  </ul>
-                </li>
-                <li class="dropend dropdown">
-                  <a class="dropdown-item dropdown" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                    Purpose of Visit
-                  </a>
-                  <ul class="dropdown-menu">
-                    {% for purpose in purposes %}
-                      <li><a href="?purpose={{ purpose|urlencode }}" class="dropdown-item">{{ purpose }}</a></li>
-                    {% endfor %}
-                  </ul>
-                </li>
-                <li class="dropend dropdown">
-                  <a class="dropdown-item dropdown" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                    Service Attended
-                  </a>
-                  <ul class="dropdown-menu">
-                    {% for service in services %}
-                      <li><a href="?service={{ service|urlencode }}" class="dropdown-item">{{ service }}</a></li>
-                    {% endfor %}
-                  </ul>
-                </li>  
-              </ul>
-            </li>
-            {% endif %}
-            {% if request.user|is_project_admin or request.user|is_team_admin:"Minister-in-Charge" %}
+              {% endif %} {% if show_filters %}
+              <li class="nav-item dropdown ms-1 py-1">
+                <a
+                  class="nav-link dropdown text-white"
+                  href="#navbar-filter"
+                  data-bs-toggle="dropdown"
+                  data-bs-auto-close="outside"
+                  role="button"
+                  aria-expanded="false"
+                >
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"
+                    ><!-- Download SVG icon from http://tabler.io/icons/icon/package -->
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#ff0055ff"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-filters"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 8m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" />
+                      <path d="M8 11a5 5 0 1 0 3.998 1.997" />
+                      <path d="M12.002 19.003a5 5 0 1 0 3.998 -8.003" />
+                    </svg>
+                  </span>
+                  <span class="nav-link-title"> Filters </span>
+                </a>
+
+                <ul class="dropdown-menu">
+                  <li class="dropend dropdown">
+                    <a
+                      class="dropdown-item dropdown"
+                      href="#"
+                      data-bs-toggle="dropdown"
+                      data-bs-auto-close="outside"
+                      role="button"
+                      aria-expanded="false"
+                    >
+                      Channel of Visit
+                    </a>
+                    <ul class="dropdown-menu">
+                      {% for channel in channels %}
+                      <li>
+                        <a
+                          href="?channel={{ channel|urlencode }}"
+                          class="dropdown-item"
+                          >{{ channel }}</a
+                        >
+                      </li>
+                      {% endfor %}
+                    </ul>
+                  </li>
+                  <li class="dropend dropdown">
+                    <a
+                      class="dropdown-item dropdown"
+                      href="#"
+                      data-bs-toggle="dropdown"
+                      data-bs-auto-close="outside"
+                      role="button"
+                      aria-expanded="false"
+                    >
+                      Guest Status
+                    </a>
+                    <ul class="dropdown-menu">
+                      {% for status in statuses %}
+                      <li>
+                        <a
+                          href="?status={{ status|urlencode }}"
+                          class="dropdown-item"
+                          >{{ status }}</a
+                        >
+                      </li>
+                      {% endfor %}
+                    </ul>
+                  </li>
+                  <li class="dropend dropdown">
+                    <a
+                      class="dropdown-item dropdown"
+                      href="#"
+                      data-bs-toggle="dropdown"
+                      data-bs-auto-close="outside"
+                      role="button"
+                      aria-expanded="false"
+                    >
+                      Purpose of Visit
+                    </a>
+                    <ul class="dropdown-menu">
+                      {% for purpose in purposes %}
+                      <li>
+                        <a
+                          href="?purpose={{ purpose|urlencode }}"
+                          class="dropdown-item"
+                          >{{ purpose }}</a
+                        >
+                      </li>
+                      {% endfor %}
+                    </ul>
+                  </li>
+                  <li class="dropend dropdown">
+                    <a
+                      class="dropdown-item dropdown"
+                      href="#"
+                      data-bs-toggle="dropdown"
+                      data-bs-auto-close="outside"
+                      role="button"
+                      aria-expanded="false"
+                    >
+                      Service Attended
+                    </a>
+                    <ul class="dropdown-menu">
+                      {% for service in services %}
+                      <li>
+                        <a
+                          href="?service={{ service|urlencode }}"
+                          class="dropdown-item"
+                          >{{ service }}</a
+                        >
+                      </li>
+                      {% endfor %}
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              {% endif %} {% if request|is_admin or
+              permissions|can:"events.manage_all" %}
               <li class="nav-item ms-1">
-                <a class="nav-link text-white" href="{% url 'workforce:manage_events' %}">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-calendar-cog">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 21h-6a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v5" />
-                      <path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" />
+                <a
+                  class="nav-link text-white"
+                  href="{% url 'workforce:manage_events' %}"
+                >
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"
+                    ><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#f59f00"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-calendar-cog"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path
+                        d="M12 21h-6a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v5"
+                      />
+                      <path d="M16 3v4" />
+                      <path d="M8 3v4" />
+                      <path d="M4 11h16" />
                       <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-                      <path d="M19.001 15.5v1.5" /><path d="M19.001 21v1.5" />
-                      <path d="M22.032 17.25l-1.299 .75" /><path d="M17.27 20l-1.3 .75" />
-                      <path d="M15.97 17.25l1.3 .75" /><path d="M20.733 20l1.3 .75" />
+                      <path d="M19.001 15.5v1.5" />
+                      <path d="M19.001 21v1.5" />
+                      <path d="M22.032 17.25l-1.299 .75" />
+                      <path d="M17.27 20l-1.3 .75" />
+                      <path d="M15.97 17.25l1.3 .75" />
+                      <path d="M20.733 20l1.3 .75" />
                     </svg>
                   </span>
                   <span class="nav-link-title"> Programmes </span>
                 </a>
               </li>
-            {% endif %}
-            <li class="nav-item ms-1">
-              <a href="{% url 'workforce:chat_room' %}" class="nav-link text-white" aria-label="ChatRoom">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#f703d7ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-armchair">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M5 11a2 2 0 0 1 2 2v2h10v-2a2 2 0 1 1 4 0v4a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-4a2 2 0 0 1 2 -2z" />
-                    <path d="M5 11v-5a3 3 0 0 1 3 -3h8a3 3 0 0 1 3 3v5" />
-                    <path d="M6 19v2" /><path d="M18 19v2" />
-                  </svg>
-                </span>
-                <span class="nav-link-title"> ChatRoom </span>
-              </a>
-            </li>
-            <!--{% if request.user|in_team:"Embassage" %}
+              {% endif %}
+              <li class="nav-item ms-1">
+                <a
+                  href="{% url 'workforce:chat_room' %}"
+                  class="nav-link text-white"
+                  aria-label="ChatRoom"
+                >
+                  <span class="nav-link-icon d-md-none d-lg-inline-block">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#f703d7ff"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-armchair"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path
+                        d="M5 11a2 2 0 0 1 2 2v2h10v-2a2 2 0 1 1 4 0v4a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-4a2 2 0 0 1 2 -2z"
+                      />
+                      <path d="M5 11v-5a3 3 0 0 1 3 -3h8a3 3 0 0 1 3 3v5" />
+                      <path d="M6 19v2" />
+                      <path d="M18 19v2" />
+                    </svg>
+                  </span>
+                  <span class="nav-link-title"> ChatRoom </span>
+                </a>
+              </li>
+              <!--{% comment %}Music hub — wire to unit membership instead{% endcomment %}
               <li class="nav-item">
                 <a href="{% url 'workforce:music_hub' %}" class="nav-link text-white" aria-label="Embassage Music Hub">
                   <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -655,682 +1438,1009 @@
                 </a>
               </li>
             {% endif %}-->
-          </ul>
-          <!-- END NAVBAR MENU -->
+            </ul>
+            <!-- END NAVBAR MENU -->
+          </div>
         </div>
-      </div>
-    </header>
-  </div>
+      </header>
+    </div>
 
+    <!-- Page Content -->
+    <main>{% block content %}{% endblock %}</main>
 
-  <!-- Page Content -->
-  <main>
-    {% block content %}{% endblock %}
-  </main>
-
-
-  <!-- Follow-Up Report Modal -->
-  <div class="modal fade" id="followupModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title"> Weekly Follow-Up Report</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-4" id="followupModalContent">
-          <!-- AJAX content will go here -->
-          <div class="text-center py-5 text-muted">
-            <div class="spinner-border" role="status"></div>
-            <div class="mt-2">Loading form...</div>
+    <!-- Follow-Up Report Modal -->
+    <div class="modal fade" id="followupModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Weekly Follow-Up Report</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body p-4" id="followupModalContent">
+            <!-- AJAX content will go here -->
+            <div class="text-center py-5 text-muted">
+              <div class="spinner-border" role="status"></div>
+              <div class="mt-2">Loading form...</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-
-  <!-- Success Toast -->
-  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer">
-    <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-      <div class="d-flex">
-        <div class="toast-body">
-          ✅ Report submitted successfully!
-        </div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- Guest Delete Confirmation Modal -->
-  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title" id="confirmDeleteModalLabel">
-            <svg  xmlns="http://www.w3.org/2000/svg"  width="36"  height="48"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-hand-stop">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5" /><path d="M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5" />
-              <path d="M14 5.5a1.5 1.5 0 0 1 3 0v6.5" /><path d="M17 7.5a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47" />
-            </svg>
-            Are You Sure...</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          You want to permanently delete 
-          <span class="text-red fs-2"><strong>{{ guest.title }} {{ guest.full_name }}'s</strong></span> record?
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-gray" data-bs-dismiss="modal">No, Cancel</button>
-
-          <!-- Submit actual delete via form -->
-          <form method="post" style="display: inline;">
-            {% csrf_token %}
-            <button type="submit" name="delete_guest" class="btn btn-danger">Yes, I'm Sure!</button>
-          </form>
+    <!-- Success Toast -->
+    <div
+      class="toast-container position-fixed bottom-0 end-0 p-3"
+      id="toastContainer"
+    >
+      <div
+        id="successToast"
+        class="toast align-items-center text-white bg-success border-0"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+      >
+        <div class="d-flex">
+          <div class="toast-body">✅ Report submitted successfully!</div>
+          <button
+            type="button"
+            class="btn-close btn-close-white me-2 m-auto"
+            data-bs-dismiss="toast"
+            aria-label="Close"
+          ></button>
         </div>
       </div>
     </div>
-  </div>
 
-
-  <!-- User Delete Confirmation Modal -->
-  <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title" id="deleteUserModalLabel">
-            <svg  xmlns="http://www.w3.org/2000/svg"  width="36"  height="48"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-hand-stop">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5" />
-              <path d="M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5" /><path d="M14 5.5a1.5 1.5 0 0 1 3 0v6.5" />
-              <path d="M17 7.5a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47" />
-            </svg>
-            Are You Sure...</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          You want to permanently delete 
-          <span class="text-red fs-2"><strong>{{ user_obj.full_name }}'s</strong></span> record?
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-gray" data-bs-dismiss="modal">No, Cancel</button>
-          <form method="post" style="display:inline;">
-            {% csrf_token %}
-            <button type="submit" name="delete_user" class="btn btn-danger">Yes, I'm Sure!</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- Import CSV Modal -->
-  <div class="modal fade" id="importCSVModal" tabindex="-1" aria-labelledby="importCSVModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content rounded">
-        <form method="post" enctype="multipart/form-data" action="{% url 'import_guests_csv' %}">
-          {% csrf_token %}
-          <div class="modal-header">
-            <h5 class="modal-title" id="importCSVModalLabel">Import Guests via CSV</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <!-- Guest Delete Confirmation Modal -->
+    <div
+      class="modal fade"
+      id="confirmDeleteModal"
+      tabindex="-1"
+      aria-labelledby="confirmDeleteModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="confirmDeleteModalLabel">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="36"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="icon icon-tabler icons-tabler-outline icon-tabler-hand-stop"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5" />
+                <path d="M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5" />
+                <path d="M14 5.5a1.5 1.5 0 0 1 3 0v6.5" />
+                <path
+                  d="M17 7.5a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"
+                />
+              </svg>
+              Are You Sure...
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
           </div>
           <div class="modal-body">
-            <div class="mb-3">
-              <label for="csvFileInput" class="form-label">Select a CSV File</label>
-              <input type="file" name="csv_file" id="csvFileInput" class="form-control" accept=".csv" required>
-              <small class="text-muted">Must follow the correct column format. <a href="{% static 'guests/sample_template.csv' %}" download>Download template</a></small>
-            </div>
+            You want to permanently delete
+            <span class="text-red fs-2"
+              ><strong>{{ guest.title }} {{ guest.full_name }}'s</strong></span
+            >
+            record?
           </div>
           <div class="modal-footer">
-            <button type="submit" class="btn btn-success">Import</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-gray" data-bs-dismiss="modal">
+              No, Cancel
+            </button>
+
+            <!-- Submit actual delete via form -->
+            <form method="post" style="display: inline">
+              {% csrf_token %}
+              <button type="submit" name="delete_guest" class="btn btn-danger">
+                Yes, I'm Sure!
+              </button>
+            </form>
           </div>
-        </form>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Bulk Message Modal -->
-  <div class="modal fade" id="bulkMessageModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content">
-
-        <div class="modal-header">
-          <h5 class="modal-title">Send Bulk Message</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <!-- User Delete Confirmation Modal -->
+    <div
+      class="modal fade"
+      id="deleteUserModal"
+      tabindex="-1"
+      aria-labelledby="deleteUserModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="deleteUserModalLabel">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="36"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="icon icon-tabler icons-tabler-outline icon-tabler-hand-stop"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5" />
+                <path d="M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5" />
+                <path d="M14 5.5a1.5 1.5 0 0 1 3 0v6.5" />
+                <path
+                  d="M17 7.5a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"
+                />
+              </svg>
+              Are You Sure...
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            You want to permanently delete
+            <span class="text-red fs-2"
+              ><strong>{{ user_obj.full_name }}'s</strong></span
+            >
+            record?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-gray" data-bs-dismiss="modal">
+              No, Cancel
+            </button>
+            <form method="post" style="display: inline">
+              {% csrf_token %}
+              <button type="submit" name="delete_user" class="btn btn-danger">
+                Yes, I'm Sure!
+              </button>
+            </form>
+          </div>
         </div>
+      </div>
+    </div>
 
-        <div class="modal-body">
-          <form method="post" action="{% url 'send_bulk_message' %}">
+    <!-- Import CSV Modal -->
+    <div
+      class="modal fade"
+      id="importCSVModal"
+      tabindex="-1"
+      aria-labelledby="importCSVModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content rounded">
+          <form
+            method="post"
+            enctype="multipart/form-data"
+            action="{% url 'guests:import_guests_csv' %}"
+          >
             {% csrf_token %}
-
-            <!-- Subject -->
-            <div class="mb-3">
-              <label class="form-label">Subject</label>
-              {{ bulk_message_form.subject }}
+            <div class="modal-header">
+              <h5 class="modal-title" id="importCSVModalLabel">
+                Import Guests via CSV
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
             </div>
-
-            <!-- Guest Status Dropdown -->
-            <div class="mb-3">
-              <label class="form-label">Select Guest Status</label>
-              {{ bulk_message_form.guest_status }}
-              <small class="form-text text-muted">
-                Select the guest status to target this message.
-              </small>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="csvFileInput" class="form-label"
+                  >Select a CSV File</label
+                >
+                <input
+                  type="file"
+                  name="csv_file"
+                  id="csvFileInput"
+                  class="form-control"
+                  accept=".csv"
+                  required
+                />
+                <small class="text-muted"
+                  >Must follow the correct column format.
+                  <a href="{% static 'guests/sample_template.csv' %}" download
+                    >Download template</a
+                  ></small
+                >
+              </div>
             </div>
-
-            <!-- Message Body -->
-            <div class="mb-3">
-              <label class="form-label">Message Body</label>
-              {{ bulk_message_form.body }}
-            </div>
-
-            <div class="text-end">
-              <button type="submit" class="btn btn-primary">Send Message</button>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-success">Import</button>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancel
+              </button>
             </div>
           </form>
         </div>
-
       </div>
     </div>
-  </div>
 
-  
-
-  <!-- Bulk Delete Modal -->
-  <div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-labelledby="bulkDeleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-      <div class="modal-content">
-        <form id="bulkDeleteForm">
-          {% csrf_token %}
+    <!-- Bulk Message Modal -->
+    <div
+      class="modal fade"
+      id="bulkMessageModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="bulkDeleteModalLabel">Bulk Delete Guests</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h5 class="modal-title">Send Bulk Message</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
           </div>
 
-          <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
-            <p>Select the guests you want to delete:</p>
-            <div class="table-responsive">
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th><input type="checkbox" id="selectAllGuests"> Select All</th>
-                    <th>Custom ID</th>
-                    <th>Full Name</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for guest in superuser_guests %}
-                  <tr>
-                    <td><input type="checkbox" class="guest-checkbox" name="guest_ids" value="{{ guest.id }}"></td>
-                    <td>{{ guest.custom_id }}</td>
-                    <td>{{ guest.full_name }}</td>
-                    <td>{{ guest.status }}</td>
-                  </tr>
-                  {% empty %}
-                  <tr><td colspan="4">No guests found.</td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-danger">Delete Guest(s)</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- JS for Select All Delete functionality -->
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      // Select all checkboxes
-      const selectAll = document.getElementById("selectAllGuests");
-      const guestCheckboxes = document.querySelectorAll(".guest-checkbox");
-
-      if(selectAll) {
-        selectAll.addEventListener("change", function() {
-          guestCheckboxes.forEach(cb => cb.checked = selectAll.checked);
-        });
-      }
-
-      // AJAX form submission
-      const form = document.getElementById("bulkDeleteForm");
-      if(form) {
-        form.addEventListener("submit", function(e) {
-          e.preventDefault();
-          const selectedIds = Array.from(document.querySelectorAll(".guest-checkbox:checked")).map(cb => cb.value);
-
-          if(selectedIds.length === 0){
-            alert("No guests selected.");
-            return;
-          }
-
-          const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-          fetch("{% url 'bulk_delete_guests' %}", {
-            method: "POST",
-            headers: {
-              "X-CSRFToken": csrfToken,
-              "X-Requested-With": "XMLHttpRequest"
-            },
-            body: new URLSearchParams(selectedIds.map(id => ["guest_ids[]", id]))
-          })
-          .then(res => res.json())
-          .then(data => {
-            if(data.success){
-              // Close modal
-              const modalEl = document.getElementById("bulkDeleteModal");
-              const modal = bootstrap.Modal.getInstance(modalEl);
-              modal.hide();
-
-              // Reload page after deletion
-              window.location.reload();
-            } else {
-              alert(data.message || "Failed to delete guests.");
-            }
-          })
-          .catch(err => console.error(err));
-        });
-      }
-    });
-  </script>
-
-
-  
-
-  
-
-  <footer class="footer text-light py-3 mt-auto border-top shadow-sm">
-    <div class="container">
-      <div class="row align-items-center text-center text-md-start">
-        
-        <!-- Left: Logo -->
-        <div class="col-12 col-md-4 mb-2 mb-md-0 d-flex justify-content-center justify-content-md-start align-items-center gap-2">
-          <img src="{% static 'images/Gateway Icon.png' %}" alt="Church Logo" style="height: 30px;">
-          <span class="fw-semibold"></span>
-        </div>
-
-        <!-- Center: Copyright -->
-        <div class="col-12 col-md-4 mb-2 mb-md-0 text-center small text-muted">
-          &copy; {{ now|date:"Y" }} 2025 GATEWAY NATION. All rights reserved.
-        </div>
-
-        <!-- Right: Developer Credit -->
-        <div class="col-12 col-md-4 text-center text-md-end small">
-          Built with ❤️ by 
-          <a href="https://www.linkedin.com/in/wunmijordan/" target="_blank" class="text-light text-decoration-underline">
-            Wùnmí™ Jordan
-          </a>
-        </div>
-
-      </div>
-    </div>
-  </footer>
-
-
-  <!-- Android PWA Install Modal -->
-  <div id="installModal" class="pwa-modal d-none">
-    <div class="pwa-modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">
-          <span class="fst-italic me-1">Install</span> <strong style="color: #ff5e01ff;"> GForceApp</strong>
-        </h5>
-        <button class="btn-animate-icon btn-animate-icon-rotate closeModal">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-x">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <path d="M18 6l-12 12" /><path d="M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <img src="/static/images/icons/icon-192x192.png"
-              style="width:60px; height:60px; border-radius:10px;">
-          <div class="text-secondary">
-            Get the full experience on your device.
-          </div>
-          <button id="installBtn" class="btn btn-gray btn-animate-icon btn-animate-icon-move-down" 
-                  style="border: none; box-shadow: 0 4px 8px #000000ee;
-                          width: 150px; border-radius: 12px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#806885ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-download">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
-              <path d="M7 11l5 5l5 -5" /><path d="M12 4l0 12" />
-            </svg>
-            Install
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- iOS Install Modal -->
-  <div id="iosInstallModal" class="pwa-modal d-none">
-    <div class="pwa-modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">
-          <span class="fst-italic">Install</span> <strong style="color: #ff5e01ff;"> GForceApp</strong>
-        </h5>
-        <button id="closeIosModal" class="btn-animate-icon btn-animate-icon-rotate closeModal">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-x">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <path d="M18 6l-12 12" /><path d="M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <img src="/static/images/icons/icon-192x192.png"
-              style="width:60px; height:60px; border-radius:10px;">
-          <div style="flex:1; line-height:1.35;">
-            <span class="text-muted mb-2">Get the full experience on your device.</span><br>
-            Tap 
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#806885ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-share-2">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9h-1a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-8a2 2 0 0 0 -2 -2h-1" />
-              <path d="M12 14v-11" /><path d="M9 6l3 -3l3 3" />
-            </svg><br>
-            then, <strong>"Add to Home Screen"</strong>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <style>
-  /* Modal overlay */
-  .pwa-modal {
-    position: fixed;
-    top:0; left:0;
-    width:100%; height:100%;
-    background: rgba(0,0,0,0.4);
-    box-shadow: 0 6px 18px #000000ee;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    z-index:9999;
-    opacity:0;
-    visibility:hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-  }
-
-  /* Show modal */
-  .pwa-modal.show {
-    opacity:1;
-    visibility:visible;
-  }
-
-  /* Modal content */
-  .pwa-modal-content {
-    background:#111827;
-    color:white;
-    border-radius:18px;
-    padding:18px 24px;
-    box-shadow:0 6px 18px #000000ee;
-    width:90%;
-    max-width:380px;
-    position:relative;
-    backdrop-filter:blur(6px);
-    transform: translateY(-20px);
-    transition: transform 0.3s ease;
-  }
-
-  /* Animate modal content on show */
-  .pwa-modal.show .pwa-modal-content {
-    transform: translateY(0);
-  }
-
-  /* Center modal header title */
-  .pwa-modal .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative; /* needed for absolute close button */
-    padding-right: 45px; /* space so title stays centered */
-  }
-
-  /* Position close button to far right */
-  .pwa-modal .modal-header .closeModal {
-    position: absolute;
-    background:none;
-    border:none;
-    color: #ff0101ff;
-    font-size:20px;
-    cursor:pointer;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-  </style>
-
-  <script>
-  let deferredPrompt;
-  const installModal = document.getElementById('installModal');
-  const installBtn = document.getElementById('installBtn');
-  const iosModal = document.getElementById('iosInstallModal');
-  const closeBtns = document.querySelectorAll('.closeModal');
-
-  // SHOW modal
-  function showModal(modal) {
-    modal.classList.remove('d-none');   // FIX
-    requestAnimationFrame(() => {
-      modal.classList.add('show');
-    });
-  }
-
-  // HIDE modal
-  function hideModal(modal) {
-    modal.classList.remove('show');
-    setTimeout(() => {
-      modal.classList.add('d-none');    // hide after fade-out
-    }, 300);
-  }
-
-  // ANDROID PWA
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();         // block native banner
-    deferredPrompt = e;         // store event
-    showModal(installModal);    // show custom modal
-  });
-
-  // User clicks install
-  installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    hideModal(installModal);
-
-    deferredPrompt.prompt();                          // <-- REQUIRED USER ACTION
-    const choice = await deferredPrompt.userChoice;
-    console.log('User choice:', choice.outcome);
-
-    deferredPrompt = null;
-  });
-
-  // Close buttons
-  closeBtns.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const modal = e.target.closest('.pwa-modal');
-      hideModal(modal);
-      if (modal === iosModal) {
-        localStorage.setItem('iosInstallDismissed', 'true');
-      }
-    });
-  });
-
-  // iOS Install
-  document.addEventListener("DOMContentLoaded", () => {
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    const isStandalone = window.navigator.standalone === true;
-
-    if (isIOS && !isStandalone && !localStorage.getItem('iosInstallDismissed')) {
-      setTimeout(() => showModal(iosModal), 800);
-    }
-  });
-  </script>
-
-
-  <!-- Notification Settings Modal -->
-  <div class="modal fade" id="notifSettingsModal" tabindex="-1" aria-labelledby="notifSettingsLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content rounded-3 shadow">
-        <div class="modal-header">
-          <h5 class="modal-title" id="notifSettingsLabel">Notification Settings</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-
-        <form id="settingsForm" method="post">
           <div class="modal-body">
-            {% csrf_token %}
+            <form method="post" action="{% url 'messaging:send_bulk' %}">
+              {% csrf_token %}
 
-            <!-- Notification Sound Selector -->
-            <div class="mb-3">
-              <label class="form-label">Notification Sound</label>
-              <div class="list-group">
-                {% for value,label in sound_choices %}
-                <label class="list-group-item d-flex align-items-center">
-                  <input type="radio"
-                        name="notification_sound"
-                        value="{{ value }}"
-                        {% if settings and settings.notification_sound == value %}checked{% endif %}
-                        class="me-2">
-                  <span class="flex-grow-1">{{ label }}</span>
-                  <button type="button"
-                          class="btn btn-outline-secondary btn-sm preview-btn"
-                          data-sound="{{ value }}">
-                    ▶
-                  </button>
-                </label>
-                {% endfor %}
+              <!-- Subject -->
+              <div class="mb-3">
+                <label class="form-label">Subject</label>
+                {{ bulk_message_form.subject }}
+              </div>
+
+              <!-- Guest Status Dropdown -->
+              <div class="mb-3">
+                <label class="form-label">Select Guest Status</label>
+                {{ bulk_message_form.guest_status }}
+                <small class="form-text text-muted">
+                  Select the guest status to target this message.
+                </small>
+              </div>
+
+              <!-- Message Body -->
+              <div class="mb-3">
+                <label class="form-label">Message Body</label>
+                {{ bulk_message_form.body }}
+              </div>
+
+              <div class="text-end">
+                <button type="submit" class="btn btn-primary">
+                  Send Message
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk Delete Modal -->
+    <div
+      class="modal fade"
+      id="bulkDeleteModal"
+      tabindex="-1"
+      aria-labelledby="bulkDeleteModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <form id="bulkDeleteForm">
+            {% csrf_token %}
+            <div class="modal-header">
+              <h5 class="modal-title" id="bulkDeleteModalLabel">
+                Bulk Delete Guests
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+
+            <div class="modal-body" style="max-height: 60vh; overflow-y: auto">
+              <p>Select the guests you want to delete:</p>
+              <div class="table-responsive">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>
+                        <input type="checkbox" id="selectAllGuests" /> Select
+                        All
+                      </th>
+                      <th>Custom ID</th>
+                      <th>Full Name</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for guest in superuser_guests %}
+                    <tr>
+                      <td>
+                        <input
+                          type="checkbox"
+                          class="guest-checkbox"
+                          name="guest_ids"
+                          value="{{ guest.id }}"
+                        />
+                      </td>
+                      <td>{{ guest.custom_id }}</td>
+                      <td>{{ guest.full_name }}</td>
+                      <td>{{ guest.status }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="4">No guests found.</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            <!-- Vibration Toggle -->
-            <div class="form-check mb-3">
-              <input type="checkbox"
-                    name="vibration_enabled"
-                    id="vibration_enabled"
-                    {% if settings and settings.vibration_enabled %}checked{% endif %}
-                    class="form-check-input">
-              <label for="vibration_enabled" class="form-check-label">Enable Vibration</label>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-danger">
+                Delete Guest(s)
+              </button>
             </div>
-          </div>
-
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-primary">Save</button>
-          </div>
-        </form>
-
-        <!-- Hidden audio elements -->
-        <audio id="notifSound" preload="auto"></audio>
-        <audio id="previewSound" preload="auto"></audio>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- JS: Map sound keys → static URLs & URLs -->
-  <script>
-    window.APP_CONFIG = {
-      urls: {
-        topServicesData: "{% url 'top_services_data' %}",
-        channelBreakdown: "{% url 'channel_breakdown' %}",
-        updateSettings: "{% url 'notifications:update_user_settings' %}",
-        markAllRead: "{% url 'notifications:mark_all_read' %}"
-      },
-      csrfToken: "{{ csrf_token }}",
-      user: {
-        id: {{ request.user.id|default:'null' }},
-        isAuthenticated: {{ request.user.is_authenticated|yesno:'true,false' }},
-      },
-      sound: {
-        userSound: "{{ settings.notification_sound|default:'chime1' }}",
-        vibrationEnabled: {{ settings.vibration_enabled|yesno:'true,false' }},
-        soundMap: {
-          {% for value,label in sound_choices %}
-          "{{ value }}": "{% static 'sounds/' %}{{ value }}.mp3"{% if not forloop.last %},{% endif %}
-          {% endfor %}
+    <!-- JS for Select All Delete functionality -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Select all checkboxes
+        const selectAll = document.getElementById("selectAllGuests");
+        const guestCheckboxes = document.querySelectorAll(".guest-checkbox");
+
+        if (selectAll) {
+          selectAll.addEventListener("change", function () {
+            guestCheckboxes.forEach((cb) => (cb.checked = selectAll.checked));
+          });
         }
+
+        // AJAX form submission
+        const form = document.getElementById("bulkDeleteForm");
+        if (form) {
+          form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            const selectedIds = Array.from(
+              document.querySelectorAll(".guest-checkbox:checked"),
+            ).map((cb) => cb.value);
+
+            if (selectedIds.length === 0) {
+              alert("No guests selected.");
+              return;
+            }
+
+            const csrfToken = document.querySelector(
+              "[name=csrfmiddlewaretoken]",
+            ).value;
+
+            fetch("{% url 'guests:bulk_delete_guests' %}", {
+              method: "POST",
+              headers: {
+                "X-CSRFToken": csrfToken,
+                "X-Requested-With": "XMLHttpRequest",
+              },
+              body: new URLSearchParams(
+                selectedIds.map((id) => ["guest_ids[]", id]),
+              ),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                if (data.success) {
+                  // Close modal
+                  const modalEl = document.getElementById("bulkDeleteModal");
+                  const modal = bootstrap.Modal.getInstance(modalEl);
+                  modal.hide();
+
+                  // Reload page after deletion
+                  window.location.reload();
+                } else {
+                  alert(data.message || "Failed to delete guests.");
+                }
+              })
+              .catch((err) => console.error(err));
+          });
+        }
+      });
+    </script>
+
+    {# ── Footer
+    ──────────────────────────────────────────────────────────────────
+    White-label aware: uses church.logo / church.name / church.primary_color
+    when a church is active, falls back to ChurchForce brand otherwise.
+    church.logo → Cloudinary ImageField (org_logos/) church.name → text name
+    church.primary_color → hex string, default #206bc4 #}
+    <footer class="footer text-light py-3 mt-auto border-top shadow-sm">
+      <div class="container">
+        <div class="row align-items-center text-center text-md-start g-2">
+          {# Left: church logo + name (white-label) or ChurchForce default #}
+          <div
+            class="col-12 col-md-4 d-flex justify-content-center justify-content-md-start align-items-center gap-2"
+          >
+            {% if church and church.logo %}
+            <img
+              src="{{ church.logo.url }}"
+              alt="{{ church.name }} logo"
+              style="height: 30px; object-fit: contain"
+            />
+            <span class="fw-semibold small">{{ church.name }}</span>
+            {% else %}
+            <img
+              src="{% static 'images/churchforce-icon.png' %}"
+              alt="ChurchForce"
+              style="height: 30px; object-fit: contain"
+              onerror="this.src='{% static 'images/Gateway Icon.png' %}'"
+            />
+            <span
+              class="fw-semibold small"
+              style="color:{% if church and church.primary_color %}{{ church.primary_color }}{% else %}#ff5e01{% endif %};"
+            >
+              ChurchForce
+            </span>
+            {% endif %}
+          </div>
+
+          {# Centre: scoped copyright #}
+          <div class="col-12 col-md-4 text-center small text-muted">
+            &copy; {% now "Y" %} {% if church %}{{ church.name }}{% else
+            %}ChurchForce{% endif %}. All rights reserved.
+          </div>
+
+          {# Right: platform credit + developer credit #}
+          <div class="col-12 col-md-4 text-center text-md-end small text-muted">
+            {% if church %} {# White-label: show "Powered by ChurchForce" only
+            if church hasn't hidden it #} {% if not church.hide_platform_credit
+            %} Powered by
+            <a
+              href="https://churchforce.io"
+              target="_blank"
+              rel="noopener"
+              class="text-secondary text-decoration-none"
+              >ChurchForce</a
+            >
+            &middot; {% endif %} {% else %}
+            <a
+              href="https://churchforce.io"
+              target="_blank"
+              rel="noopener"
+              class="text-secondary text-decoration-none"
+              >churchforce.io</a
+            >
+            &middot; {% endif %} Built with ❤️ by
+            <a
+              href="https://www.linkedin.com/in/wunmijordan/"
+              target="_blank"
+              rel="noopener"
+              class="text-light text-decoration-underline"
+              >Wùnmí™ Jordan</a
+            >
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Android PWA Install Modal -->
+    <div id="installModal" class="pwa-modal d-none">
+      <div class="pwa-modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <span class="fst-italic me-1">Install</span>
+            <strong style="color: #ff5e01ff"> ChurchForceApp</strong>
+          </h5>
+          <button class="btn-animate-icon btn-animate-icon-rotate closeModal">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-x"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M18 6l-12 12" />
+              <path d="M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div style="display: flex; align-items: center; gap: 12px">
+            <img
+              src="/static/images/icons/icon-192x192.png"
+              style="width: 60px; height: 60px; border-radius: 10px"
+            />
+            <div class="text-secondary">
+              Get the full experience on your device.
+            </div>
+            <button
+              id="installBtn"
+              class="btn btn-gray btn-animate-icon btn-animate-icon-move-down"
+              style="
+                border: none;
+                box-shadow: 0 4px 8px #000000ee;
+                width: 150px;
+                border-radius: 12px;
+              "
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#806885ff"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="icon icon-tabler icons-tabler-outline icon-tabler-download"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
+                <path d="M7 11l5 5l5 -5" />
+                <path d="M12 4l0 12" />
+              </svg>
+              Install
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- iOS Install Modal -->
+    <div id="iosInstallModal" class="pwa-modal d-none">
+      <div class="pwa-modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <span class="fst-italic">Install</span>
+            <strong style="color: #ff5e01ff"> ChurchForceApp</strong>
+          </h5>
+          <button
+            id="closeIosModal"
+            class="btn-animate-icon btn-animate-icon-rotate closeModal"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-x"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M18 6l-12 12" />
+              <path d="M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div style="display: flex; align-items: center; gap: 12px">
+            <img
+              src="/static/images/icons/icon-192x192.png"
+              style="width: 60px; height: 60px; border-radius: 10px"
+            />
+            <div style="flex: 1; line-height: 1.35">
+              <span class="text-muted mb-2"
+                >Get the full experience on your device.</span
+              ><br />
+              Tap
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#806885ff"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="icon icon-tabler icons-tabler-outline icon-tabler-share-2"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path
+                  d="M8 9h-1a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-8a2 2 0 0 0 -2 -2h-1"
+                />
+                <path d="M12 14v-11" />
+                <path d="M9 6l3 -3l3 3" /></svg
+              ><br />
+              then, <strong>"Add to Home Screen"</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      /* Modal overlay */
+      .pwa-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.4);
+        box-shadow: 0 6px 18px #000000ee;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 0.3s ease,
+          visibility 0.3s ease;
       }
-    };
-  </script>
 
+      /* Show modal */
+      .pwa-modal.show {
+        opacity: 1;
+        visibility: visible;
+      }
 
-  <!-- ========================= -->
-  <!-- JS LIBRARIES -->
-  <!-- ========================= -->
-  <script src="https://unpkg.com/htmx.org@1.9.3"></script>
+      /* Modal content */
+      .pwa-modal-content {
+        background: #111827;
+        color: white;
+        border-radius: 18px;
+        padding: 18px 24px;
+        box-shadow: 0 6px 18px #000000ee;
+        width: 90%;
+        max-width: 380px;
+        position: relative;
+        backdrop-filter: blur(6px);
+        transform: translateY(-20px);
+        transition: transform 0.3s ease;
+      }
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
-  <!-- FullCalendar (global builds) -->
-  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js'></script>
-  <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/bootstrap5@6.1.19/index.global.min.js"></script>
+      /* Animate modal content on show */
+      .pwa-modal.show .pwa-modal-content {
+        transform: translateY(0);
+      }
 
-  
-  <!--<script src="{% static 'vendor/tabler/tabler-theme.min.js' %}"></script>-->
-  <!--<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler-theme.min.js"></script>-->
+      /* Center modal header title */
+      .pwa-modal .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative; /* needed for absolute close button */
+        padding-right: 45px; /* space so title stays centered */
+      }
 
-  <!--<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler-theme.min.js" integrity="sha384-pku3birjgGovaJ9ngF7SaxKkF/eYUvBjiMJ+jTtWbNesIj2Rud2K63+4JD7EF4gk">
+      /* Position close button to far right */
+      .pwa-modal .modal-header .closeModal {
+        position: absolute;
+        background: none;
+        border: none;
+        color: #ff0101ff;
+        font-size: 20px;
+        cursor: pointer;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+    </style>
+
+    <script>
+      let deferredPrompt;
+      const installModal = document.getElementById("installModal");
+      const installBtn = document.getElementById("installBtn");
+      const iosModal = document.getElementById("iosInstallModal");
+      const closeBtns = document.querySelectorAll(".closeModal");
+
+      // SHOW modal
+      function showModal(modal) {
+        modal.classList.remove("d-none"); // FIX
+        requestAnimationFrame(() => {
+          modal.classList.add("show");
+        });
+      }
+
+      // HIDE modal
+      function hideModal(modal) {
+        modal.classList.remove("show");
+        setTimeout(() => {
+          modal.classList.add("d-none"); // hide after fade-out
+        }, 300);
+      }
+
+      // ANDROID PWA
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault(); // block native banner
+        deferredPrompt = e; // store event
+        showModal(installModal); // show custom modal
+      });
+
+      // User clicks install
+      installBtn.addEventListener("click", async () => {
+        if (!deferredPrompt) return;
+        hideModal(installModal);
+
+        deferredPrompt.prompt(); // <-- REQUIRED USER ACTION
+        const choice = await deferredPrompt.userChoice;
+        console.log("User choice:", choice.outcome);
+
+        deferredPrompt = null;
+      });
+
+      // Close buttons
+      closeBtns.forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const modal = e.target.closest(".pwa-modal");
+          hideModal(modal);
+          if (modal === iosModal) {
+            localStorage.setItem("iosInstallDismissed", "true");
+          }
+        });
+      });
+
+      // iOS Install
+      document.addEventListener("DOMContentLoaded", () => {
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        const isStandalone = window.navigator.standalone === true;
+
+        if (
+          isIOS &&
+          !isStandalone &&
+          !localStorage.getItem("iosInstallDismissed")
+        ) {
+          setTimeout(() => showModal(iosModal), 800);
+        }
+      });
+    </script>
+
+    <!-- Notification Settings Modal -->
+    <div
+      class="modal fade"
+      id="notifSettingsModal"
+      tabindex="-1"
+      aria-labelledby="notifSettingsLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-3 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title" id="notifSettingsLabel">
+              Notification Settings
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+
+          <form id="settingsForm" method="post">
+            <div class="modal-body">
+              {% csrf_token %}
+
+              <!-- Notification Sound Selector -->
+              <div class="mb-3">
+                <label class="form-label">Notification Sound</label>
+                <div class="list-group">
+                  {% for value,label in sound_choices %}
+                  <label class="list-group-item d-flex align-items-center">
+                    <input
+                      type="radio"
+                      name="notification_sound"
+                      value="{{ value }}"
+                      {%
+                      if
+                      notification_settings
+                      and
+                      notification_settings.notification_sound=""
+                      ="value"
+                      %}checked{%
+                      endif
+                      %}
+                      class="me-2"
+                    />
+                    <span class="flex-grow-1">{{ label }}</span>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary btn-sm preview-btn"
+                      data-sound="{{ value }}"
+                    >
+                      ▶
+                    </button>
+                  </label>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <!-- Vibration Toggle -->
+              <div class="form-check mb-3">
+                <input
+                  type="checkbox"
+                  name="vibration_enabled"
+                  id="vibration_enabled"
+                  {%
+                  if
+                  notification_settings
+                  and
+                  notification_settings.vibration_enabled
+                  %}checked{%
+                  endif
+                  %}
+                  class="form-check-input"
+                />
+                <label for="vibration_enabled" class="form-check-label"
+                  >Enable Vibration</label
+                >
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+
+          <!-- Hidden audio elements -->
+          <audio id="notifSound" preload="auto"></audio>
+          <audio id="previewSound" preload="auto"></audio>
+        </div>
+      </div>
+    </div>
+
+    <!-- APP_CONFIG: all Django vars have JS-safe defaults so no SyntaxError when
+       context processors don't fire (e.g. pre-auth pages, error views) -->
+    <script>
+      (function () {
+        /* Build soundMap from server — empty object if context processor didn't run */
+        var _soundMap = {};
+        {% if sound_choices %}{% for value, label in sound_choices %}_soundMap["{{ value }}"] = "{% static 'sounds/' %}{{ value }}.mp3";
+        {% endfor %}{% endif %}
+
+        window.APP_CONFIG = {
+          urls: {
+            topServicesData: "{% url 'guests:top_services_data' %}",
+            channelBreakdown: "{% url 'guests:channel_breakdown' %}",
+            updateSettings: "{% url 'notifications:update_user_settings' %}",
+            markAllRead: "{% url 'notifications:mark_all_read' %}"
+          },
+          csrfToken: "{{ csrf_token }}",
+          user: {
+            id: {{ request.user.id|default:'null' }},
+            isAuthenticated: {{ request.user.is_authenticated|yesno:'true,false' }},
+          },
+          sound: {
+            /* notification_settings|default:'chime1' guards against missing context */
+            userSound: "{{ notification_settings.notification_sound|default:'chime1' }}",
+            /* Boolean default: render False explicitly so JS gets false not empty string */
+            vibrationEnabled: {% if notification_settings and notification_settings.vibration_enabled %}true{% else %}false{% endif %},
+            soundMap: _soundMap
+          }
+        };
+      })();
+    </script>
+
+    <!-- ========================= -->
+    <!-- JS LIBRARIES -->
+    <!-- ========================= -->
+    <script src="https://unpkg.com/htmx.org@1.9.3"></script>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+      crossorigin="anonymous"
+    ></script>
+    <!-- FullCalendar (global builds) -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/bootstrap5@6.1.19/index.global.min.js"></script>
+
+    <!--<script src="{% static 'vendor/tabler/tabler-theme.min.js' %}"></script>-->
+    <!--<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler-theme.min.js"></script>-->
+
+    <!--<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler-theme.min.js" integrity="sha384-pku3birjgGovaJ9ngF7SaxKkF/eYUvBjiMJ+jTtWbNesIj2Rud2K63+4JD7EF4gk">
     integrity="sha384-SoDJmj40r6f9Rfxi6Fq+bNS8ofhlZMyxHk9dq9Y8e1M17PZGkBRN/XUpx8swn0i5" crossorigin="anonymous"
   </script>-->
 
-  <!-- ========================= -->
-  <!-- Theme toggle logic -->
-  <!-- ========================= -->
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const navbar = document.querySelector(".navbar");
-      window.addEventListener("scroll", function () {
-        if (window.scrollY > 50) {
-          navbar.classList.add("scrolled");
-        } else {
-          navbar.classList.remove("scrolled");
-        }
+    <!-- ========================= -->
+    <!-- Theme toggle logic -->
+    <!-- ========================= -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const navbar = document.querySelector(".navbar");
+        window.addEventListener("scroll", function () {
+          if (window.scrollY > 50) {
+            navbar.classList.add("scrolled");
+          } else {
+            navbar.classList.remove("scrolled");
+          }
+        });
       });
-    });
-  </script>
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const toggler = document.querySelector(".navbar-toggler");
-      const iconHamburger = toggler.querySelector(".icon-tabler-menu-deep");
-      const iconClose = toggler.querySelector(".icon-tabler-x");
-      const navMenu = document.getElementById("navbar-menu");
+    </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const toggler = document.querySelector(".navbar-toggler");
+        const iconHamburger = toggler.querySelector(".icon-tabler-menu-deep");
+        const iconClose = toggler.querySelector(".icon-tabler-x");
+        const navMenu = document.getElementById("navbar-menu");
 
-      navMenu.addEventListener("shown.bs.collapse", () => {
-        iconHamburger.classList.add("hidden");
-        setTimeout(() => {
-          iconHamburger.classList.add("d-none");
-          iconClose.classList.remove("d-none");
-          requestAnimationFrame(() => iconClose.classList.remove("hidden"));
-        }, 300);
+        navMenu.addEventListener("shown.bs.collapse", () => {
+          iconHamburger.classList.add("hidden");
+          setTimeout(() => {
+            iconHamburger.classList.add("d-none");
+            iconClose.classList.remove("d-none");
+            requestAnimationFrame(() => iconClose.classList.remove("hidden"));
+          }, 300);
+        });
+
+        navMenu.addEventListener("hidden.bs.collapse", () => {
+          iconClose.classList.add("hidden");
+          setTimeout(() => {
+            iconClose.classList.add("d-none");
+            iconHamburger.classList.remove("d-none");
+            requestAnimationFrame(() =>
+              iconHamburger.classList.remove("hidden"),
+            );
+          }, 300);
+        });
       });
+    </script>
 
-      navMenu.addEventListener("hidden.bs.collapse", () => {
-        iconClose.classList.add("hidden");
-        setTimeout(() => {
-          iconClose.classList.add("d-none");
-          iconHamburger.classList.remove("d-none");
-          requestAnimationFrame(() => iconHamburger.classList.remove("hidden"));
-        }, 300);
-      });
-    });
-  </script>
+    <!-- ========================= -->
+    <!-- CUSTOM SCRIPTS -->
+    <!-- ========================= -->
+    <!--<script src="{% static 'js/chat_room.js' %}"></script>-->
 
-  <!-- ========================= -->
-  <!-- CUSTOM SCRIPTS -->
-  <!-- ========================= -->
-  <!--<script src="{% static 'js/chat_room.js' %}"></script>-->
+    <!-- VAPID key in meta tag — read by JS, avoids render-time issues with script blocks -->
+    <meta
+      name="vapid-public-key"
+      content="{{ VAPID_PUBLIC_KEY|default:''|escapejs }}"
+    />
+    <script>
+      window.VAPID_PUBLIC_KEY =
+        document.querySelector('meta[name="vapid-public-key"]')?.content || "";
+    </script>
 
-  <!-- Inject VAPID public key into global JS scope -->
-  <script>
-    window.VAPID_PUBLIC_KEY = "{{ VAPID_PUBLIC_KEY|escapejs }}";
-    console.log("Injected VAPID key:", window.VAPID_PUBLIC_KEY, "Length:", window.VAPID_PUBLIC_KEY.length);
-  </script>
+    <script src="{% static 'js/custom.js' %}"></script>
 
-  <script src="{% static 'js/custom.js' %}"></script>
-  
-  
-  {% block extra_js %}{% endblock %}
-
-</body>
+    {% block extra_js %}{% endblock %}
+  </body>
 </html>

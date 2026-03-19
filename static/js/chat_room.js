@@ -31,9 +31,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let chatSocket = null;
 
-  function connectSocket() {
+  function connectSocket(roomId) {
     const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-    chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/`);
+    const qs = roomId ? `?room_id=${encodeURIComponent(roomId)}` : "";
+    chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/${qs}`);
+    window.activeChatSocket = chatSocket;  // expose for private chat modal
 
     chatSocket.onopen = () => {
       console.log("✅ Connected to WebSocket");
@@ -41,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     chatSocket.onclose = (e) => {
       console.log("❌ Socket closed. Reconnecting in 3s...", e.reason);
-      setTimeout(connectSocket, 3000); // 🔄 auto-reconnect
+      setTimeout(() => connectSocket(roomId), 3000); // reconnect to same room
     };
 
     chatSocket.onerror = (err) => {
@@ -150,7 +152,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   }
   // Call this once when the page loads
-  connectSocket();
+  // Safely connect — CURRENT_ROOM_ID is injected by chat_room.html
+  const _initRoomId = (typeof CURRENT_ROOM_ID !== "undefined" && CURRENT_ROOM_ID) ? CURRENT_ROOM_ID : null;
+  connectSocket(_initRoomId);
 
   function getUserColor(userId) {
     const colors = ["bg-blue-lt text-white","bg-green-lt text-white","bg-orange-lt text-white","bg-purple-lt text-white","bg-pink-lt text-white","bg-cyan-lt text-white","bg-yellow-lt text-white","bg-red-lt text-white","bg-indigo-lt text-white","bg-teal-lt text-white","bg-lime-lt text-white","bg-amber-lt text-white","bg-fuchsia-lt text-white","bg-emerald-lt text-white","bg-violet-lt text-white","bg-rose-lt text-white","bg-sky-lt text-white","bg-orange-200 text-white","bg-purple-200 text-white","bg-pink-200 text-white"];
@@ -1840,7 +1844,7 @@ function autoResizeTextarea(el) {
 
 
 
-<!-- Textarea -->
+  // Textarea -->
                     <textarea class="form-control border-0 flex-grow-1" id="chatInput" 
                               placeholder="Type Message" rows="1"
                               style="resize: none; overflow: hidden; background: transparent;"></textarea>
@@ -1865,585 +1869,171 @@ function autoResizeTextarea(el) {
   // Resize on input
   chatInput.addEventListener("input", () => autoResizeTextarea(chatInput));
 
+  // ── Edit / Delete / Forward handlers ────────────────────────────────────────
+  // These send to the consumers.py handle_edit, handle_delete, handle_forward
 
+  // Edit: show an inline input pre-filled with the message text
+  document.getElementById('editBtn')?.addEventListener('click', () => {
+    if (selectedBubbles.size !== 1) return; // edit requires exactly one selection
+    const messageId = Array.from(selectedBubbles)[0];
+    const bubble    = document.getElementById(`chat-bubble-${messageId}`);
+    const textEl    = bubble?.querySelector('.message-text');
+    if (!textEl) return;
 
+    const original = textEl.textContent.trim();
 
+    // Replace text with inline input
+    textEl.innerHTML = `
+      <div class="d-flex gap-2 align-items-center edit-inline" style="width:100%;">
+        <input type="text" class="form-control form-control-sm border-0 bg-transparent text-white flex-grow-1"
+               id="editInput-${messageId}" value="${original.replace(/"/g, '&quot;')}">
+        <button class="btn btn-sm btn-success py-0 px-2" id="confirmEdit-${messageId}">Save</button>
+        <button class="btn btn-sm btn-secondary py-0 px-2" id="cancelEdit-${messageId}">Cancel</button>
+      </div>`;
 
+    const input = document.getElementById(`editInput-${messageId}`);
+    input?.focus();
 
-if (data.action === "pin_update" || data.action === "pin") {
-        (data.pins || []).forEach(p => {
-          const id = p.id || p.message_id || p;
-          if (p.pinned) {
-            // if full message present, add to preview stack
-            if (p.message) {
-              addPinnedMessage(p);
-            } else {
-              // just toggle flag on bubble if present
-              const node = document.getElementById(`chat-bubble-${id}`);
-              if (node && !node.querySelector('.pin-flag')) {
-                const flags = node.querySelector('.chat-bubble-flags');
-                const pin = document.createElement('span');
-                pin.classList.add('pin-flag');
-                pin.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pin-angle-fill" viewBox="0 0 16 16">
-                  <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a6 6 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707s.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a6 6 0 0 1 1.013.16l3.134-3.133a3 3 0 0 1-.04-.461c0 .43-.108 1.022-.589 1.503a.5.5 0 0 1-.354.146"/>
-                </svg>`;
-                flags.appendChild(pin);
-              }
-            }
-          } else {
-            removePinnedMessage(id);
-            const node = document.getElementById(`chat-bubble-${id}`);
-            const el = node?.querySelector('.pin-flag');
-            if (el) el.remove();
-          }
-        });
+    document.getElementById(`confirmEdit-${messageId}`)?.addEventListener('click', () => {
+      const newText = input.value.trim();
+      if (!newText || newText === original) {
+        textEl.textContent = original;
         return;
       }
-
-
-
-
-
-<div class="page-wrapper">
-  <!-- BEGIN PAGE HEADER -->
-  <div class="page-header d-print-none" aria-label="Page header">
-    <div class="container-xl">
-      <div class="row g-2 align-items-center">
-        <div class="col">
-          <!-- Dynamic Page Title -->
-          <kbd class="bg-indigo-lt"><h2 class="page-title">{{ page_title }}</h2></kbd>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- END PAGE HEADER -->
-
-  <div class="page-body">
-    <div class="container-xl flex-fill d-flex flex-column">
-      <div class="card flex-fill">
-        <div class="row g-0 flex-fill chat-layout">
-          <!-- LEFT COLUMN -->
-          <div class="col-12 col-lg-5 col-xl-3 border-end d-flex flex-column chat-users">
-            <div class="card-header mb-2 chat-top-header justify-content-center align-items-center border-0">
-              <!-- Back button (mobile only) -->
-              <button id="chatBackBtn" class="btn btn-link p-0 me-2 d-lg-none" style="color:white;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" 
-                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="icon icon-tabler icon-tabler-arrow-left">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                  <path d="M5 12h14" />
-                  <path d="M5 12l6 6" />
-                  <path d="M5 12l6 -6" />
-                </svg>
-              </button>
-              <!-- Avatar -->
-              <span class="avatar avatar-lg bg-purple-lt d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-armchair">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                  <path d="M5 11a2 2 0 0 1 2 2v2h10v-2a2 2 0 1 1 4 0v4a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-4a2 2 0 0 1 2 -2z" />
-                  <path d="M5 11v-5a3 3 0 0 1 3 -3h8a3 3 0 0 1 3 3v5" />
-                  <path d="M6 19v2" /><path d="M18 19v2" />
-                </svg>
-              </span>
-
-              <!-- Text -->
-              <kbd class="ms-2 bg-warning-lt"><h5>A People <em>Helped</em> By God!</h5></kbd>
-            </div>
-            <div class="card-body p-0 mt-0 mb-3 scrollable flex-fill" style="height: 500px; overflow-y: auto;">
-              <div class="row g-2 flex-nowrap">
-                {% for user in users %}
-                  <div class="col-12 user-card">
-                    <div class="card shadow-sm ms-2 me-2 border-0 {{ user.color }}">
-                      <div class="card-body py-2 px-3 d-flex align-items-center">
-                        <!-- Avatar -->
-                        <div class="me-3">
-                          <a href="tel:{{ user.phone_number }}">
-                            {% if user.image %}
-                              <span class="avatar rounded"
-                                    style="background-image:url('{{ user.image }}');
-                                          width:40px; height:40px;
-                                          background-size:cover;
-                                          background-position:center;">
-                              </span>
-                            {% else %}
-                              <span class="avatar d-flex align-items-center justify-content-center rounded text-white fw-bold"
-                                    style="width:40px; height:40px; font-size:0.9rem;">
-                                {{ user.initials }}
-                              </span>
-                            {% endif %}
-                          </a>
-                        </div>
-                        <!-- Name + Last Message -->
-                        <div class="flex-grow-1">
-                          <div class="fw-bold text-truncate" style="color: var(--tblr-{{ user.color }});">
-                            {{ user.title|default:"" }} {{ user.full_name }}
-                          </div>
-                          <div id="last-message-{{ user.id }}"
-                                class="text-secondary fst-italic text-truncate" 
-                                style="font-size:0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            {{ user.last_message|default:"No messages yet"|truncatechars:30 }}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-
-          <!-- RIGHT COLUMN -->
-          <div class="col-12 col-lg-7 col-xl-9 d-flex flex-column">
-            <div class="card-header justify-content-center border-0">
-              <div class="input-icon">
-                <span class="input-icon-addon">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user-search">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h1.5" />
-                    <path d="M18 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M20.2 20.2l1.8 1.8" />
-                  </svg>
-                </span>
-                <input type="text" id="chatSearch" class="form-control" 
-                      placeholder="Search Chat" aria-label="Search">
-              </div>
-            </div>
-            <div class="card-body mt-0 p-0 d-flex flex-column flex-fill">
-              <!-- Chat Container -->
-              <div class="chat-bubbles text-start ps-3 pe-2" id="chatMessagesContainer" style="overflow-y:auto; height:500px; position:relative; overflow-x:hidden;">
-                <!-- Messages will be dynamically loaded here -->
-              </div>
-              <!-- Options Panel -->
-              <div id="chatOptionsPanel" class="options-panel hidden" aria-hidden="true">
-                <button id="replyBtn" title="Reply">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ff5e01ff" class="bi bi-reply-all-fill" viewBox="0 0 16 16">
-                    <path d="M8.021 11.9 3.453 8.62a.72.72 0 0 1 0-1.238L8.021 4.1a.716.716 0 0 1 1.079.619V6c1.5 0 6 0 7 8-2.5-4.5-7-4-7-4v1.281c0 .56-.606.898-1.079.62z"/>
-                    <path d="M5.232 4.293a.5.5 0 0 1-.106.7L1.114 7.945l-.042.028a.147.147 0 0 0 0 .252l.042.028 4.012 2.954a.5.5 0 1 1-.593.805L.539 9.073a1.147 1.147 0 0 1 0-1.946l3.994-2.94a.5.5 0 0 1 .699.106"/>
-                  </svg>
-                </button>
-                <!--<button id="editBtn" title="Edit">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pen" viewBox="0 0 16 16">
-                    <path d="m13.498.795.149-.149a1.207 1.207 0 1 1 1.707 1.708l-.149.148a1.5 1.5 0 0 1-.059 2.059L4.854 14.854a.5.5 0 0 1-.233.131l-4 1a.5.5 0 0 1-.606-.606l1-4a.5.5 0 0 1 .131-.232l9.642-9.642a.5.5 0 0 0-.642.056L6.854 4.854a.5.5 0 1 1-.708-.708L9.44.854A1.5 1.5 0 0 1 11.5.796a1.5 1.5 0 0 1 1.998-.001m-.644.766a.5.5 0 0 0-.707 0L1.95 11.756l-.764 3.057 3.057-.764L14.44 3.854a.5.5 0 0 0 0-.708z"/>
-                  </svg>
-                </button>-->
-                <button id="copyBtn" title="Copy">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="#02bd12ff"  class="icon icon-tabler icons-tabler-filled icon-tabler-copy-check">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M18.333 6a3.667 3.667 0 0 1 3.667 3.667v8.666a3.667 3.667 0 0 1 -3.667 3.667h-8.666a3.667 3.667 0 0 1 -3.667 -3.667v-8.666a3.667 3.667 0 0 1 3.667 -3.667zm-3.333 -4c1.094 0 1.828 .533 2.374 1.514a1 1 0 1 1 -1.748 .972c-.221 -.398 -.342 -.486 -.626 -.486h-10c-.548 0 -1 .452 -1 1v9.998c0 .32 .154 .618 .407 .805l.1 .065a1 1 0 1 1 -.99 1.738a3 3 0 0 1 -1.517 -2.606v-10c0 -1.652 1.348 -3 3 -3zm1.293 9.293l-3.293 3.292l-1.293 -1.292a1 1 0 0 0 -1.414 1.414l2 2a1 1 0 0 0 1.414 0l4 -4a1 1 0 0 0 -1.414 -1.414" />
-                  </svg>
-                </button>
-                <button id="pinBtn" title="Pin">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#f703d7ff" class="bi bi-pin-angle-fill" viewBox="0 0 16 16">
-                    <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a6 6 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707s.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a6 6 0 0 1 1.013.16l3.134-3.133a3 3 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146"/>
-                  </svg>
-                </button>
-                <!--
-                <button id="deleteBtn" title="Delete">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-trash">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" />
-                    <path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
-                    <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
-                  </svg>
-                </button>
-                -->
-              </div>
-              <!-- Sticky Date Header -->
-              <div id="stickyDateHeader"></div>
-
-              <!--<div id="scrollToBottomBtn" class="scroll-to-bottom" title="Scroll to bottom">⬇️</div>-->
-              <!-- Floating scroll-to-bottom -->
-              <div id="scrollToBottomBtn" class="scroll-to-bottom hidden" title="Scroll to bottom">
-                <svg  xmlns="http://www.w3.org/2000/svg"  width="48"  height="48"  viewBox="0 0 24 24"  fill="currentColor"  class="icon icon-tabler icons-tabler-filled icon-tabler-square-rounded-arrow-down">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                  <path d="M12 2c-.218 0 -.432 .002 -.642 .005l-.616 .017l-.299 .013l-.579 .034l-.553 .046c-4.785 .464 -6.732 2.411 -7.196 7.196l-.046 .553l-.034 .579c-.005 .098 -.01 .198 -.013 .299l-.017 .616l-.004 .318l-.001 .324c0 .218 .002 .432 .005 .642l.017 .616l.013 .299l.034 .579l.046 .553c.464 4.785 2.411 6.732 7.196 7.196l.553 .046l.579 .034c.098 .005 .198 .01 .299 .013l.616 .017l.642 .005l.642 -.005l.616 -.017l.299 -.013l.579 -.034l.553 -.046c4.785 -.464 6.732 -2.411 7.196 -7.196l.046 -.553l.034 -.579c.005 -.098 .01 -.198 .013 -.299l.017 -.616l.005 -.642l-.005 -.642l-.017 -.616l-.013 -.299l-.034 -.579l-.046 -.553c-.464 -4.785 -2.411 -6.732 -7.196 -7.196l-.553 -.046l-.579 -.034a28.058 28.058 0 0 0 -.299 -.013l-.616 -.017l-.318 -.004l-.324 -.001zm0 5a1 1 0 0 1 .993 .883l.007 .117v5.585l2.293 -2.292a1 1 0 0 1 1.32 -.083l.094 .083a1 1 0 0 1 .083 1.32l-.083 .094l-4 4a1.008 1.008 0 0 1 -.112 .097l-.11 .071l-.114 .054l-.105 .035l-.149 .03l-.117 .006l-.075 -.003l-.126 -.017l-.111 -.03l-.111 -.044l-.098 -.052l-.092 -.064l-.094 -.083l-4 -4a1 1 0 0 1 1.32 -1.497l.094 .083l2.293 2.292v-5.585a1 1 0 0 1 1 -1z" fill="currentColor" stroke-width="0" />
-                </svg>
-              </div>
-            </div>
-
-            {% if not request.user|has_group:"Demo" or request.user.is_superuser %} 
-              <!-- Message Input --> 
-              <div class="card-footer border-0 position-relative"> 
-                
-                <div class="input-group input-group-flat rounded-2 border-0 d-flex flex-column p-2"
-                    style="box-shadow: 0 4px 8px #000000d2; border-radius: 24px; background: #111827;">
-
-                  <!-- Reply Preview (inline above textarea) -->
-                  <div id="replyPreview" 
-                      class="d-none d-flex reply-preview text-white p-2 mb-1 rounded-2 justify-content-between align-items-center"
-                      style="border-left: 4px solid #018f14ff; background-color: #25292634; font-style: normal; box-shadow: 0 4px 8px #0000004d;">
-                    <span id="replyPreviewText"></span>
-                    <span id="cancelReply" class="avatar text-red p-0 border-0 d-flex align-items-center justify-content-center"
-                          style="flex:0 0 auto; cursor:pointer;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
-                      </svg>
-                    </span>
-                  </div>
-
-                  <!-- Guest Preview (injected dynamically) -->
-                  <div id="guestPreviewContainer"></div>
-
-                  <!-- Input Row (always at bottom of stack) -->
-                  <div class="d-flex align-items-end justify-content-center w-100">
-                    <!-- Attachment Button -->
-                    <a href="#" class="link-secondary dropdown p-2 text-purple d-flex align-items-center justify-content-center" 
-                      id="openUserGuestPopup" style="flex: 0 0 auto;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                          class="icon icon-tabler icons-tabler-outline icon-tabler-user-up"> 
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /> 
-                        <path d="M6 21v-2a4 4 0 0 1 4 -4h4" />
-                        <path d="M19 22v-6" />
-                        <path d="M22 19l-3 -3l-3 3" /> 
-                      </svg> 
-                    </a>
-
-                    <!-- Textarea -->
-                    <textarea class="form-control border-0 flex-grow-1" id="chatInput" 
-                              placeholder="Type Message" rows="1"
-                              style="resize: none; overflow: hidden; background: transparent;"></textarea>
-
-                    <!-- Send Button -->
-                    <a href="#" id="sendButton" class="link-secondary p-2 text-green d-flex align-items-center justify-content-center"
-                      style="flex: 0 0 auto;"> 
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                          class="icon icon-tabler icons-tabler-outline icon-tabler-send"> 
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M10 14l11 -11" />
-                        <path d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5" /> 
-                      </svg> 
-                    </a>
-                  </div>
-                </div>
-                <!-- Mention dropdown -->
-                <div id="mentionDropdown" class="mention-dropdown d-none"></div> 
-              </div> 
-            {% endif %}
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-
-
-document.addEventListener("DOMContentLoaded", () => {
-  const chatContainer = document.getElementById("chatMessagesContainer");
-  const chatForm = document.getElementById("chatReplyForm");
-  const chatInput = document.getElementById("chatInput");
-  const fileAttachment = document.getElementById("fileAttachment");
-  const guestSelect = document.getElementById("guestSelect");
-  const searchInput = document.getElementById("chatSearchInput");
-  const typingIndicator = document.getElementById("typingIndicator");
-
-  let replyToId = null;
-  let selectedGuest = null;
-  let userColors = {};
-  let usersMap = {};
-  let typingTimeout = null;
-  const currentUserId = window.chatUserId;
-
-  // ======== WebSocket Setup ========
-  const chatSocket = new WebSocket(window.wsUrl);
-  chatSocket.onopen = () => console.log("Connected to chat WebSocket");
-  chatSocket.onclose = () => console.log("Disconnected from chat WebSocket");
-  chatSocket.onmessage = (e) => {
-    const data = JSON.parse(e.data);
-    switch(data.type) {
-      case "chat_init":
-        initUsers(data.users);
-        initMessages(data.messages);
-        break;
-      case "chat_message":
-        appendMessage(data.message, true);
-        break;
-      case "chat_seen":
-        updateSeen(data.message_id, data.user_id);
-        break;
-      case "typing":
-        showTyping(data.user_id);
-        break;
-      default: console.log("Unknown type:", data.type);
-    }
-  };
-
-  // ======== INIT ========
-  function initUsers(users) {
-    users.forEach(u => {
-      userColors[u.id] = u.color || "bg-gray-lt text-dark";
-      usersMap[u.id] = u;
-    });
-  }
-
-  function initMessages(messages) {
-    messages.forEach(msg => appendMessage(msg));
-    scrollToBottom();
-  }
-
-  // ======== APPEND MESSAGE ========
-  function appendMessage(msg, scroll=false) {
-    if (!chatContainer) return;
-    const msgDate = new Date(msg.created_at).toDateString();
-
-    // --- Date separator ---
-    const lastDateSeparator = chatContainer.querySelector(".date-separator:last-of-type");
-    const lastDate = lastDateSeparator?.dataset?.date;
-    if (msgDate !== lastDate) {
-      const dateSeparator = document.createElement("div");
-      dateSeparator.className = "date-separator sticky-top text-center py-1";
-      dateSeparator.dataset.date = msgDate;
-
-      const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(today.getDate() - 1);
-
-      let label;
-      if (msgDate === today.toDateString()) label = "Today";
-      else if (msgDate === yesterday.toDateString()) label = "Yesterday";
-      else label = new Date(msgDate).toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
-
-      dateSeparator.innerHTML = `<span class="badge bg-light shadow-sm">${label}</span>`;
-      chatContainer.appendChild(dateSeparator);
-    }
-
-    const isCurrentUser = msg.sender.id === currentUserId;
-    const wrapper = document.createElement("div");
-    wrapper.className = "message-wrapper d-flex mb-2";
-    wrapper.style.justifyContent = isCurrentUser ? "flex-end" : "flex-start";
-    wrapper.dataset.id = msg.id;
-    wrapper.dataset.senderId = msg.sender.id;
-    wrapper.dataset.msgDate = msgDate;
-
-    const bubble = document.createElement("div");
-    bubble.className = `chat-bubble p-2 rounded`;
-    bubble.style.backgroundColor = isCurrentUser ? "#DCF8C6" : "#FFF"; // WhatsApp style colors
-    bubble.style.maxWidth = "75%";
-
-    const senderName = (!isCurrentUser || msg.parent_message) ? (isCurrentUser ? "You" : msg.sender.full_name) : "";
-    bubble.innerHTML = `
-      ${senderName ? `<strong>${senderName}:</strong>` : ""}
-      <div class="message-text">${msg.message.replace(/\n/g,"<br>")}</div>
-      ${msg.parent_message ? `<div class="reply-preview small text-muted mt-1 p-1 border-start border-2">
-        Reply to ${msg.parent_message.sender.id===currentUserId ? "You":msg.parent_message.sender.full_name}: ${msg.parent_message.message.slice(0,30)}
-      </div>`:""}
-      ${msg.guest_card ? `<div class="guest-card mt-1 p-1 border rounded bg-light">
-        Guest: ${msg.guest_card.name} (${msg.guest_card.custom_id})
-      </div>`:""}
-    `;
-
-    // Seen indicator
-    const seenDiv = document.createElement("div");
-    seenDiv.className = "seen-indicator mt-1";
-    seenDiv.dataset.seenBy = JSON.stringify(msg.seen_by||[]);
-    updateSeenIndicator(seenDiv, msg.seen_by||[], msg.sender.id);
-
-    bubble.appendChild(seenDiv);
-    wrapper.appendChild(bubble);
-    chatContainer.appendChild(wrapper);
-
-    if(scroll) scrollToBottom();
-  }
-
-  // ======== SEEN ========
-  function updateSeenIndicator(seenDiv, seenBy, senderId) {
-    if(!seenDiv) return;
-    const otherUsers = seenBy.filter(uid=>uid!==senderId);
-    if(!otherUsers.length){seenDiv.innerHTML=""; return;}
-    const avatars = otherUsers.map(uid=>{
-      const u=usersMap[uid];
-      if(!u) return "";
-      const initials=u.full_name?u.full_name.split(" ").map(n=>n[0].toUpperCase()).slice(0,2).join(""):"?";
-      return `<span class="avatar avatar-xs rounded ${userColors[uid]||'bg-gray-lt text-dark'} me-1" title="${u.full_name}" style="width:24px;height:24px;font-size:12px;line-height:24px;text-align:center">${initials}</span>`;
-    }).join("");
-    seenDiv.innerHTML=`<small class="text-muted">Seen by:</small> ${avatars}`;
-  }
-
-  function markSeen(messageId){ chatSocket.send(JSON.stringify({type:"mark_seen", message_id:messageId})); }
-  function updateSeen(messageId,userId){
-    const wrapper=chatContainer.querySelector(`[data-id="${messageId}"]`);
-    if(!wrapper) return;
-    const seenDiv=wrapper.querySelector(".seen-indicator");
-    let seenBy=JSON.parse(seenDiv.dataset.seenBy||"[]");
-    if(!seenBy.includes(userId)){
-      seenBy.push(userId);
-      seenDiv.dataset.seenBy=JSON.stringify(seenBy);
-      updateSeenIndicator(seenDiv,seenBy,parseInt(wrapper.dataset.senderId)||userId);
-    }
-  }
-
-  // ======== SEND MESSAGE ========
-  if(chatForm){
-    chatForm.onsubmit=e=>{
-      e.preventDefault();
-      if(!chatInput.value.trim()&&!replyToId&&!fileAttachment.files[0]&&!selectedGuest) return;
       chatSocket.send(JSON.stringify({
-        type:"chat_message",
-        message:chatInput.value.trim(),
-        parent_id:replyToId,
-        guest_id:selectedGuest
+        action:     'edit',
+        message_id: messageId,
+        new_text:   newText,
+        sender_id:  CURRENT_USER_ID,
       }));
-      chatInput.value=""; replyToId=null; selectedGuest=null;
-      if(guestSelect) guestSelect.value="";
-    };
-  }
-
-  // ======== REPLY CLICK ========
-  chatContainer.addEventListener("click", e=>{
-    const replyBtn=e.target.closest(".reply-btn");
-    if(!replyBtn) return;
-    replyToId=replyBtn.dataset.messageId;
-    chatInput.focus();
-  });
-
-  // ======== SEARCH ========
-  if(searchInput){
-    searchInput.addEventListener("input", ()=>{
-      const q=searchInput.value.toLowerCase();
-      chatContainer.querySelectorAll(".message-wrapper").forEach(msg=>{
-        msg.style.display=msg.textContent.toLowerCase().includes(q)?"":"none";
-      });
+      textEl.textContent = newText; // optimistic update
     });
-  }
 
-  // ======== SCROLL & SEEN ========
-  function scrollToBottom(){ chatContainer.scrollTop=chatContainer.scrollHeight; }
-  chatContainer.addEventListener("scroll",()=>{
-    chatContainer.querySelectorAll(".message-wrapper").forEach(msg=>{
-      const r=msg.getBoundingClientRect();
-      if(r.top<window.innerHeight&&r.bottom>0) markSeen(msg.dataset.id);
+    document.getElementById(`cancelEdit-${messageId}`)?.addEventListener('click', () => {
+      textEl.textContent = original;
     });
+
+    clearSelections();
   });
 
-  // ======== TYPING ========
-  chatInput.addEventListener("input",()=>{
-    chatSocket.send(JSON.stringify({type:"typing"}));
-    clearTimeout(typingTimeout);
-    typingTimeout=setTimeout(()=>{ if(typingIndicator) typingIndicator.innerText=""; },2000);
-  });
+  // Delete
+  document.getElementById('deleteBtn')?.addEventListener('click', () => {
+    if (!selectedBubbles.size) return;
+    const ids = Array.from(selectedBubbles);
+    if (!confirm(`Delete ${ids.length} message(s)?`)) return;
 
-  function showTyping(userId){
-    const u=usersMap[userId];
-    if(!u||!typingIndicator) return;
-    typingIndicator.innerText=`${u.full_name} is typing...`;
-    clearTimeout(typingTimeout);
-    typingTimeout=setTimeout(()=>{ typingIndicator.innerText=""; },2000);
-  }
-
-  // ======== INITIAL LOAD ========
-  if(window.initialUsers) initUsers(window.initialUsers);
-  if(window.initialMessages) initMessages(window.initialMessages);
-});
-
-
-
-
-
-
-
-
-
-
-
-
-const msgDateObj = new Date(data.created_at);
-    const msgDay = new Date(msgDateObj.getFullYear(), msgDateObj.getMonth(), msgDateObj.getDate());
-
-    if (!lastMessageDate || msgDay.getTime() !== lastMessageDate.getTime()) {
-      lastMessageDate = msgDay;
-      const separator = document.createElement("div");
-      separator.classList.add("chat-date-separator", "mb-2");
-      Object.assign(separator.style, {
-        display: "inline-block",
-        padding: "2px 12px",
-        borderRadius: "20px",
-        fontWeight: "500",
-        fontSize: "0.8rem",
-        color: "#f59f00",
-        backgroundColor: "#343531",
-        boxShadow: "0 4px 8px rgba(0,0,0,0.4)",
-        textAlign: "center",
-        margin: "0 auto"
-      });
-      separator.textContent = getDateText(msgDay);
-      chatContainer.appendChild(separator);
-    }
-
-
-// Sticky header setup
-  //const stickyDateHeader = document.getElementById("stickyDateHeader");
-  Object.assign(stickyDateHeader.style, {
-    position: "absolute",
-    top: "0px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    display: "inline-flex",
-    padding: "4px 12px",
-    borderRadius: "20px",
-    fontWeight: "600",
-    fontSize: "0.9rem",
-    color: "#f59f00", // text-yellow-800
-    backgroundColor: "#343531", // bg-yellow-lt
-    boxShadow: "0 4px 8px rgba(0,0,0,0.4)",
-    textAlign: "center",
-    justifyContent: "center",
-    margin: "0 auto",
-    transition: "opacity 0.3s ease, transform 0.3s ease",
-    zIndex: 50,
-    pointerEvents: "none",
-    opacity: "0"
-  });
-
-  // Date text formatter
-  function getDateText(date) {
-    const now = new Date();
-    const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-
-    if (msgDay.getTime() === today.getTime()) return "Today";
-    if (msgDay.getTime() === yesterday.getTime()) return "Yesterday";
-
-    const diffTime = today.getTime() - msgDay.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 7) {
-      return msgDay.toLocaleDateString(undefined, { weekday: "long" }); // "Monday"
-    }
-
-    return msgDay.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-  }
-
-  // Update sticky header
-  function updateStickyHeader() {
-    const children = Array.from(chatContainer.querySelectorAll(".chat-item"));
-    let headerText = "";
-    const containerRect = chatContainer.getBoundingClientRect();
-
-    for (let i = 0; i < children.length; i++) {
-      const item = children[i];
-      const dateEl = item.querySelector(".chat-bubble-date");
-      if (!dateEl) continue;
-
-      const date = new Date(dateEl.getAttribute("data-full-date"));
-      const rect = item.getBoundingClientRect();
-
-      if (rect.top <= containerRect.top + 10) {
-        headerText = getDateText(date);
+    ids.forEach(messageId => {
+      chatSocket.send(JSON.stringify({
+        action:     'delete',
+        message_id: messageId,
+        sender_id:  CURRENT_USER_ID,
+      }));
+      // Optimistic: grey out / strike through until server confirms
+      const bubble = document.getElementById(`chat-bubble-${messageId}`);
+      const textEl = bubble?.querySelector('.message-text');
+      if (textEl) {
+        textEl.innerHTML = '<em class="text-muted small">Message deleted</em>';
+        bubble.classList.add('deleted-msg');
       }
+    });
+
+    clearSelections();
+  });
+
+  // Forward: prompt for target room, then send
+  document.getElementById('forwardBtn')?.addEventListener('click', () => {
+    if (!selectedBubbles.size) return;
+    const ids = Array.from(selectedBubbles);
+
+    // Build a small modal-style prompt using the rooms list from APP_CONFIG
+    // Fallback: use a simple prompt() if no rooms defined
+    const roomOptions = (window.CHAT_ROOMS || [])
+      .map(r => `<option value="${r.id}">${r.name}</option>`)
+      .join('');
+
+    if (!roomOptions) {
+      const targetRoomId = prompt('Enter target room ID to forward to:');
+      if (!targetRoomId) return;
+      _sendForward(ids, parseInt(targetRoomId, 10));
+      return;
     }
 
-    if (headerText) {
-      stickyDateHeader.textContent = headerText;
-      stickyDateHeader.style.opacity = "1";
-      stickyDateHeader.style.transform = "translate(-50%, 0)";
+    // Inline forward picker
+    let picker = document.getElementById('forwardRoomPicker');
+    if (!picker) {
+      picker = document.createElement('div');
+      picker.id = 'forwardRoomPicker';
+      picker.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#1f2937;border-radius:12px;padding:20px;box-shadow:0 8px 24px #000a;min-width:280px;';
+      picker.innerHTML = `
+        <h6 class="text-white mb-3">Forward to…</h6>
+        <select id="forwardRoomSelect" class="form-select bg-dark text-white border-secondary mb-3">
+          ${roomOptions}
+        </select>
+        <div class="d-flex gap-2">
+          <button id="confirmForward" class="btn btn-success flex-fill">Forward</button>
+          <button id="cancelForward" class="btn btn-secondary flex-fill">Cancel</button>
+        </div>`;
+      document.body.appendChild(picker);
     } else {
-      stickyDateHeader.style.opacity = "0";
+      picker.style.display = '';
     }
+
+    document.getElementById('confirmForward')?.addEventListener('click', () => {
+      const targetRoomId = parseInt(document.getElementById('forwardRoomSelect').value, 10);
+      _sendForward(ids, targetRoomId);
+      picker.style.display = 'none';
+    }, { once: true });
+
+    document.getElementById('cancelForward')?.addEventListener('click', () => {
+      picker.style.display = 'none';
+    }, { once: true });
+
+    clearSelections();
+  });
+
+  function _sendForward(messageIds, targetRoomId) {
+    messageIds.forEach(messageId => {
+      chatSocket.send(JSON.stringify({
+        action:         'forward',
+        message_id:     messageId,
+        sender_id:      CURRENT_USER_ID,
+        target_room_id: targetRoomId,
+      }));
+    });
   }
-  chatContainer.addEventListener("scroll", updateStickyHeader);
+
+    // Handle incoming edit/delete/forward confirmations from server
+    // (these are handled inside chatSocket.onmessage — patched here)
+    const _origOnMessage = chatSocket.onmessage;
+    chatSocket.onmessage = function(e) {
+      const data = JSON.parse(e.data);
+  
+      if (data.type === 'message_edited') {
+        const bubble = document.getElementById(`chat-bubble-${data.message_id}`);
+        const textEl = bubble?.querySelector('.message-text');
+        if (textEl) {
+          textEl.innerHTML = data.new_text + ' <em class="text-muted small" style="font-size:.7rem;">(edited)</em>';
+        }
+        return;
+      }
+  
+      if (data.type === 'message_deleted') {
+        const bubble = document.getElementById(`chat-bubble-${data.message_id}`);
+        const textEl = bubble?.querySelector('.message-text');
+        if (textEl) {
+          textEl.innerHTML = '<em class="text-muted small">Message deleted</em>';
+          bubble?.classList.add('deleted-msg');
+        }
+        return;
+      }
+  
+      if (data.type === 'message_forwarded') {
+        // Show a toast or just console — the message appears in the target room
+        console.log(`Message ${data.message_id} forwarded to room ${data.target_room_id}`);
+        return;
+      }
+  
+      // Pass all other messages to original handler
+      if (_origOnMessage) _origOnMessage.call(this, e);
+    };
+  });

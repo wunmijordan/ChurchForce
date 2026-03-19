@@ -1,0 +1,402 @@
+{% load static %} {% load user_avatar_tags %} {% load access_tags %}
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}ChurchForce Chat{% endblock %}</title>
+
+    <link rel="manifest" href="{% static 'manifest.json' %}" />
+    <meta name="theme-color" content="#2e303e" />
+    <link
+      rel="apple-touch-icon"
+      href="{% static 'images/icons/icon-192x192.png' %}"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="{% static 'images/icons/icon-192x192.png' %}"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="{% static 'images/icons/icon-512x512.png' %}"
+    />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <link href="{% static 'vendor/tabler/tabler.min.css' %}" rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
+    />
+    <link href="{% static 'css/custom.css' %}" rel="stylesheet" />
+    <script src="{% static 'js/tabler-theme-dark.js' %}"></script>
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body class="min-vh-100">
+    <main>{% block content %}{% endblock %}</main>
+
+    <!-- ── Android PWA install modal ── -->
+    <div id="installModal" class="pwa-modal d-none">
+      <div class="pwa-modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <span class="fst-italic me-1">Install</span>
+            <strong style="color: #ff5e01">ChurchForce</strong>
+          </h5>
+          <button
+            class="btn-animate-icon btn-animate-icon-rotate closeModal border-0 bg-transparent"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M18 6l-12 12" />
+              <path d="M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div style="display: flex; align-items: center; gap: 12px">
+            <img
+              src="{% static 'images/icons/icon-192x192.png' %}"
+              style="width: 60px; height: 60px; border-radius: 10px"
+            />
+            <div class="text-secondary">
+              Get the full experience on your device.
+            </div>
+            <button
+              id="installBtn"
+              class="btn btn-gray btn-animate-icon btn-animate-icon-move-down"
+              style="
+                border: none;
+                box-shadow: 0 4px 8px #000e;
+                width: 150px;
+                border-radius: 12px;
+              "
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#806885ff"
+                stroke-width="2"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                <path d="M7 11l5 5l5-5" />
+                <path d="M12 4l0 12" />
+              </svg>
+              Install
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── iOS install modal ── -->
+    <div id="iosInstallModal" class="pwa-modal d-none">
+      <div class="pwa-modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <span class="fst-italic">Install</span>
+            <strong style="color: #ff5e01">ChurchForce</strong>
+          </h5>
+          <button
+            id="closeIosModal"
+            class="btn-animate-icon btn-animate-icon-rotate closeModal border-0 bg-transparent"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M18 6l-12 12" />
+              <path d="M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div style="display: flex; align-items: center; gap: 12px">
+            <img
+              src="{% static 'images/icons/icon-192x192.png' %}"
+              style="width: 60px; height: 60px; border-radius: 10px"
+            />
+            <div style="flex: 1; line-height: 1.35">
+              <span class="text-muted mb-2"
+                >Get the full experience on your device.</span
+              ><br />
+              Tap
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#806885"
+                stroke-width="2"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path
+                  d="M8 9h-1a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1"
+                />
+                <path d="M12 14v-11" />
+                <path d="M9 6l3-3l3 3" />
+              </svg>
+              then <strong>"Add to Home Screen"</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .pwa-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 0.3s,
+          visibility 0.3s;
+      }
+      .pwa-modal.show {
+        opacity: 1;
+        visibility: visible;
+      }
+      .pwa-modal-content {
+        background: #111827;
+        color: #fff;
+        border-radius: 18px;
+        padding: 18px 24px;
+        box-shadow: 0 6px 18px #000e;
+        width: 90%;
+        max-width: 380px;
+        position: relative;
+        backdrop-filter: blur(6px);
+        transform: translateY(-20px);
+        transition: transform 0.3s;
+      }
+      .pwa-modal.show .pwa-modal-content {
+        transform: translateY(0);
+      }
+      .pwa-modal .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        padding-right: 45px;
+      }
+      .pwa-modal .modal-header .closeModal {
+        position: absolute;
+        background: none;
+        border: none;
+        color: #f00;
+        font-size: 20px;
+        cursor: pointer;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+    </style>
+
+    <script>
+      let deferredPrompt;
+      const installModal = document.getElementById("installModal");
+      const installBtn = document.getElementById("installBtn");
+      const iosModal = document.getElementById("iosInstallModal");
+
+      function showModal(m) {
+        m.classList.remove("d-none");
+        requestAnimationFrame(() => m.classList.add("show"));
+      }
+      function hideModal(m) {
+        m.classList.remove("show");
+        setTimeout(() => m.classList.add("d-none"), 300);
+      }
+
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        showModal(installModal);
+      });
+      installBtn.addEventListener("click", async () => {
+        if (!deferredPrompt) return;
+        hideModal(installModal);
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+      });
+      document.querySelectorAll(".closeModal").forEach((btn) =>
+        btn.addEventListener("click", (e) => {
+          const m = e.target.closest(".pwa-modal");
+          hideModal(m);
+          if (m === iosModal)
+            localStorage.setItem("iosInstallDismissed", "true");
+        }),
+      );
+      document.addEventListener("DOMContentLoaded", () => {
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        if (
+          isIOS &&
+          !window.navigator.standalone &&
+          !localStorage.getItem("iosInstallDismissed")
+        )
+          setTimeout(() => showModal(iosModal), 800);
+      });
+    </script>
+
+    <!-- ── Notification settings modal ── -->
+    <div
+      class="modal fade"
+      id="notifSettingsModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-3 shadow">
+          <div class="modal-header">
+            <h5 class="modal-title">Notification Settings</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <form id="settingsForm" method="post">
+            <div class="modal-body">
+              {% csrf_token %}
+              <div class="mb-3">
+                <label class="form-label">Notification Sound</label>
+                <div class="list-group">
+                  {% for value, label in sound_choices %}
+                  <label class="list-group-item d-flex align-items-center">
+                    <input
+                      type="radio"
+                      name="notification_sound"
+                      value="{{ value }}"
+                      {%
+                      if
+                      notification_settings
+                      and
+                      notification_settings.notification_sound=""
+                      ="value"
+                      %}checked{%
+                      endif
+                      %}
+                      class="me-2"
+                    />
+                    <span class="flex-grow-1">{{ label }}</span>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary btn-sm preview-btn"
+                      data-sound="{{ value }}"
+                    >
+                      ▶
+                    </button>
+                  </label>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="form-check mb-3">
+                <input
+                  type="checkbox"
+                  name="vibration_enabled"
+                  id="vibration_enabled"
+                  {%
+                  if
+                  notification_settings
+                  and
+                  notification_settings.vibration_enabled
+                  %}checked{%
+                  endif
+                  %}
+                  class="form-check-input"
+                />
+                <label for="vibration_enabled" class="form-check-label"
+                  >Enable Vibration</label
+                >
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+          <audio id="notifSound" preload="auto"></audio>
+          <audio id="previewSound" preload="auto"></audio>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Global JS config — no role flags, only capability booleans ── -->
+    <script>
+      window.APP_CONFIG = {
+        urls: {
+          topServicesData:  "{% url 'guests:top_services_data' %}",
+          channelBreakdown: "{% url 'guests:channel_breakdown' %}",
+          updateSettings:   "{% url 'notifications:update_user_settings' %}",
+          markAllRead:      "{% url 'notifications:mark_all_read' %}",
+          guestList:        "{% url 'guests:guest_list' %}",
+          dashboard:        "{% url 'dashboard' %}",
+        },
+        csrfToken: "{{ csrf_token }}",
+        user: {
+          id:              {{ request.user.id|default:'null' }},
+          isAuthenticated: {{ request.user.is_authenticated|yesno:'true,false' }},
+          isAdmin:         {{ request|is_admin|yesno:'true,false' }},
+          canViewGuests:   {% if permissions|can:"guests.view" %}true{% else %}false{% endif %},
+          canManageGuests: {% if permissions|can:"guests.view_all" %}true{% else %}false{% endif %},
+        },
+        sound: {
+          userSound:        "{{ notification_settings.notification_sound|default:'chime1' }}",
+          vibrationEnabled: {{ notification_settings.vibration_enabled|default:False|yesno:'true,false' }},
+          soundMap: {
+            {% for value, label in sound_choices %}
+            "{{ value }}": "{% static 'sounds/' %}{{ value }}.mp3"{% if not forloop.last %},{% endif %}
+            {% endfor %}
+          }
+        }
+      };
+      window.VAPID_PUBLIC_KEY = "{{ VAPID_PUBLIC_KEY|escapejs }}";
+    </script>
+
+    <script src="https://unpkg.com/htmx.org@1.9.3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/bootstrap5@6.1.19/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/custom.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

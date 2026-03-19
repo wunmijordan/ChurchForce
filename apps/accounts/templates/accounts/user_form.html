@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% load static form_tags access_tags widget_tweaks %}
+
+{% block title %}{{ page_title }} — {{ church.name }}{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+
+  <div class="page-header d-print-none">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <kbd class="bg-green-lt"><h2 class="page-title mb-0">{{ page_title }}</h2></kbd>
+        </div>
+        <div class="col-auto ms-auto">
+          <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary btn-sm">
+            ← Back to team
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <div class="container py-4">
+      <div class="card shadow-sm">
+
+        <div class="card-header">
+          <h3 class="card-title mb-0">
+            {% if edit_mode %}
+              Editing: <span class="text-warning">{{ user_obj.title|default:"" }} {{ user_obj.full_name }}</span>
+            {% else %}
+              Add New Team Member
+            {% endif %}
+          </h3>
+        </div>
+
+        <div class="card-body">
+
+          <!-- Photo preview -->
+          <div class="mb-4 text-center">
+            <img id="preview-img"
+                 src="{% if user_obj and user_obj.image %}{{ user_obj.image.url }}{% else %}{% static 'images/default_image.jpg' %}{% endif %}"
+                 alt="Profile photo"
+                 class="rounded shadow-sm"
+                 style="width:100px;height:100px;object-fit:cover;">
+          </div>
+
+          <form id="userForm" method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="row g-3">
+              {% for field in form.visible_fields %}
+                {% if field.name not in "password,confirm_password,teams_hidden" %}
+                <div class="col-md-6">
+                  <label class="form-label" for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                    {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                  </label>
+                  <div class="input-group input-group-flat">
+                    {% if field.name == 'image' %}
+                      <input type="file" name="image" id="{{ field.id_for_label }}"
+                             accept="image/*" class="form-control"
+                             onchange="previewImage(this)">
+                    {% else %}
+                      {% render_field field class="form-control" %}
+                    {% endif %}
+                  </div>
+                  {% if field.errors %}
+                    <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+                  {% endif %}
+                  {% if field.help_text %}
+                    <div class="form-text text-secondary">{{ field.help_text }}</div>
+                  {% endif %}
+                </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+
+            <!-- ── Unit assignment ──────────────────────────────────── -->
+            {% if request|is_admin %}
+            <div class="mt-4">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <h6 class="mb-0 fw-bold">Unit assignments</h6>
+                <button type="button" id="add-unit-row" class="btn btn-sm btn-outline-secondary">
+                  + Add unit
+                </button>
+              </div>
+
+              <div id="unit-row-list"></div>
+              <input type="hidden" name="units_hidden" id="unitsHiddenInput">
+
+              <!-- Available units/roles injected by view -->
+              <script>
+                window.AVAILABLE_UNITS = {{ available_units_json|safe }};
+                window.PRELOADED_UNITS = {{ preloaded_units_json|safe }};
+              </script>
+            </div>
+            {% endif %}
+
+            <!-- ── Password section ────────────────────────────────── -->
+            {% if edit_mode %}
+            <div class="mt-4">
+              <button type="button" id="togglePasswordBtn" class="btn btn-outline-secondary btn-sm">
+                Change password
+              </button>
+              <div id="passwordFields" class="row g-3 mt-2" style="display:none;">
+            {% else %}
+              <div id="passwordFields" class="row g-3 mt-4">
+            {% endif %}
+
+                {% for field in form.visible_fields %}
+                  {% if field.name == 'password' or field.name == 'confirm_password' %}
+                  <div class="col-md-6">
+                    <label class="form-label">{{ field.label }}</label>
+                    {% render_field field class="form-control" type="password" %}
+                    {% if field.errors %}
+                      <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+                    {% endif %}
+                  </div>
+                  {% endif %}
+                {% endfor %}
+
+            </div>
+
+            <!-- ── Actions ─────────────────────────────────────────── -->
+            <div class="mt-4 d-flex gap-3 flex-wrap">
+              <button type="submit" class="btn btn-success fw-bold px-5">
+                {% if edit_mode %}Save changes{% else %}Create member{% endif %}
+              </button>
+              <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary px-4">Cancel</a>
+              {% if edit_mode and request|is_admin %}
+                <button type="submit" name="delete_user"
+                        class="btn btn-danger ms-auto"
+                        onclick="return confirm('Delete this member? This cannot be undone.')">
+                  Delete member
+                </button>
+              {% endif %}
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Image preview
+function previewImage(input) {
+  const img = document.getElementById('preview-img');
+  if (img && input.files[0]) img.src = URL.createObjectURL(input.files[0]);
+}
+
+// Password toggle (edit mode only)
+const toggleBtn = document.getElementById('togglePasswordBtn');
+const pwFields  = document.getElementById('passwordFields');
+if (toggleBtn && pwFields) {
+  toggleBtn.addEventListener('click', () => {
+    const hidden = pwFields.style.display === 'none' || !pwFields.style.display;
+    pwFields.style.display = hidden ? 'flex' : 'none';
+    if (!hidden) pwFields.querySelectorAll('input').forEach(i => i.value = '');
+  });
+}
+
+// Unit row builder
+document.addEventListener('DOMContentLoaded', () => {
+  const container   = document.getElementById('unit-row-list');
+  const hiddenInput = document.getElementById('unitsHiddenInput');
+  const addBtn      = document.getElementById('add-unit-row');
+  if (!container) return;
+
+  const units   = window.AVAILABLE_UNITS || [];
+  const preload = window.PRELOADED_UNITS || [];
+
+  function updateHidden() {
+    const pairs = [];
+    container.querySelectorAll('.unit-row').forEach(row => {
+      const uid  = row.querySelector('.unit-sel').value;
+      const prob = row.querySelector('.prob-chk').checked ? '1' : '0';
+      const head = row.querySelector('.head-chk').checked ? '1' : '0';
+      if (uid) pairs.push(`${uid}:${prob}:${head}`);
+    });
+    hiddenInput.value = pairs.join(',');
+  }
+
+  function addRow(unitId = '', isProb = false, isHead = false) {
+    const row = document.createElement('div');
+    row.className = 'unit-row d-flex align-items-center gap-3 mb-2 p-2 rounded border border-secondary';
+    row.innerHTML = `
+      <select class="form-select unit-sel" style="max-width:200px;">
+        <option value="">— Select unit —</option>
+        ${units.map(u => `<option value="${u.id}" ${u.id == unitId ? 'selected' : ''}>${u.name} (${u.type})</option>`).join('')}
+      </select>
+      <label class="form-check mb-0">
+        <input type="checkbox" class="form-check-input prob-chk" ${isProb ? 'checked' : ''}> Probation
+      </label>
+      <label class="form-check mb-0">
+        <input type="checkbox" class="form-check-input head-chk" ${isHead ? 'checked' : ''}> Unit Head
+      </label>
+      <button type="button" class="btn btn-sm btn-outline-danger ms-auto remove-row">✕</button>
+    `;
+    row.querySelector('.remove-row').onclick = () => { row.remove(); updateHidden(); };
+    row.querySelectorAll('select,input').forEach(el => el.addEventListener('change', updateHidden));
+    container.appendChild(row);
+    updateHidden();
+  }
+
+  // Pre-populate edit mode
+  preload.forEach(p => addRow(p.unit_id, p.is_probation, p.is_unit_head));
+
+  addBtn && addBtn.addEventListener('click', () => addRow());
+});
+</script>
+{% endblock %}

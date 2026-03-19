@@ -1,3 +1,401 @@
+<div class="btn-group">
+  <button type="button" class="btn btn-danger">Danger</button>
+  <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+    <span class="visually-hidden">Toggle Dropdown</span>
+  </button>
+  <ul class="dropdown-menu">
+    <li><a class="dropdown-item" href="#">Action</a></li>
+    <li><a class="dropdown-item" href="#">Another action</a></li>
+    <li><a class="dropdown-item" href="#">Something else here</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="#">Separated link</a></li>
+  </ul>
+</div>
+
+<!--{% if request.user|is_magnet_admin or guest.assigned_to == request.user %}
+                      <div class="dropdown">
+                        <a href="#"
+                          class="btn btn-md btn-gray border-0 dropup text-uppercase fw-bold text-{{ guest.get_status_color }}"
+                          style="width: 200px; box-shadow: 0 4px 8px #000000d2; border-radius: 24px;  background: #111827;"
+                          data-bs-toggle="dropdown"
+                          data-bs-display="static"
+                          aria-expanded="false">
+                          {{ guest.status|default:"Select Status" }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                          {% for key, label in guest.STATUS_CHOICES %}
+                            <li>
+                              <a class="dropdown-item" href="{% url 'update_status' guest.id key %}">
+                                {{ label }}
+                              </a>
+                            </li>
+                          {% endfor %}
+                        </ul>
+                      </div>
+                    {% elif guest.full_name == "Wunmi Jordan" and request.user|has_group:"Demo" %}
+                      <div class="mt-3 mb-3">
+                        <div class="dropdown">
+                          <a href="#"
+                            class="btn btn-md btn-gray border-0 dropup text-uppercase fw-bold text-{{ guest.get_status_color }}"
+                            style="width: 200px; box-shadow: 0 4px 8px #000000d2; border-radius: 24px;"
+                            data-bs-toggle="dropdown"
+                            data-bs-display="static"
+                            aria-expanded="false">
+                            {{ guest.status|default:"Select Status" }}
+                          </a>
+                          <ul class="dropdown-menu dropdown-menu-end shadow">
+                            {% for key, label in guest.STATUS_CHOICES %}
+                              <li>
+                                <a class="dropdown-item" href="{% url 'update_status' guest.id key %}">
+                                  {{ label }}
+                                </a>
+                              </li>
+                            {% endfor %}
+                          </ul>
+                        </div>
+                      </div>
+                    {% endif %}-->
+
+
+
+
+# =========================
+# Stage 0: Base Python Image
+# =========================
+FROM python:3.11-slim as base
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Working directory
+WORKDIR /app
+
+# =========================
+# Stage 1: Install System Dependencies
+# =========================
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    libffi-dev \
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libgdk-pixbuf-xlib-2.0-0 \
+    libgobject-2.0-0 \
+    libssl-dev \
+    git \
+    wget \
+    curl \
+    shared-mime-info \
+    fonts-liberation \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+
+# =========================
+# Stage 2: Copy and Install Python Dependencies
+# =========================
+COPY requirements.txt /app/
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+# =========================
+# Stage 3: Copy Project Files
+# =========================
+COPY . /app/
+
+# =========================
+# Stage 4: Collect Static, Migrate, and Set Cloudinary Env
+# =========================
+# Set Cloudinary env vars here (replace with your actual values or use .env)
+ENV CLOUDINARY_CLOUD_NAME=your_cloud_name
+ENV CLOUDINARY_API_KEY=your_api_key
+ENV CLOUDINARY_API_SECRET=your_api_secret
+
+# Collect static files and run migrations
+RUN python manage.py collectstatic --noinput
+RUN python manage.py migrate
+
+# =========================
+# Stage 5: Expose Port & Start Gunicorn
+# =========================
+CMD sh -c "gunicorn gforceapp.asgi:application -k uvicorn.workers.UvicornWorker --workers 8 --threads 8 --bind 0.0.0.0:$PORT --timeout 180"
+
+
+daphne -b 0.0.0.0 -p $PORT --ping-interval 30 --ping-timeout 120 gforceapp.asgi:application
+
+{
+  "services": [
+    {
+      "name": "web",
+      "build": {
+        "builder": "RAILPACK",
+        "buildCommand": "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+      },
+      "deploy": {
+        "startCommand": "gunicorn gforceapp.asgi:application -k uvicorn.workers.UvicornWorker --workers 8 --bind 0.0.0.0:$PORT --timeout 180"
+      }
+    },
+    {
+      "name": "scheduler",
+      "build": {
+        "builder": "RAILPACK",
+        "buildCommand": "pip install -r requirements.txt"
+      },
+      "deploy": {
+        "startCommand": "python manage.py start_scheduler"
+      }
+    }
+  ]
+}
+
+
+{
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+  },
+  "deploy": {
+    "startCommand": "daphne -b 0.0.0.0 -p $PORT --ping-interval 30 --ping-timeout 120 --access-log - gforceapp.asgi:application",
+    "restartPolicyType": "ON_FAILURE"
+  },
+  "deployProcesses": {
+    "web": "daphne -b 0.0.0.0 -p $PORT --ping-interval 30 --ping-timeout 120 --access-log - gforceapp.asgi:application",
+    "scheduler": "python manage.py start_scheduler"
+  }
+}
+
+
+
+
+
+
+scheduler.add_job(
+    broadcast_notification,
+    trigger="interval",  # or "cron"
+    days=7,
+    start_date=run_time,
+    args=[notif],
+    id=f"notif_recurring_{notif.id}"
+)
+
+
+#DJANGO_ENV=production
+#DEBUG=False
+#ALLOWED_HOSTS=magnet.gatewaynation.org,gatewaymagnetapp.onrender.com
+
+#DB_NAME=gatewaymagnetapp_db_cxpj
+#DB_USER=gatewaymagnetapp_db_cxpj_user
+#DB_PASSWORD=otNyStyjBppuIcZMM2QY7sQfofna1NRi
+#DB_HOST=dpg-d2nf06m3jp1c73cj7dqg-a.oregon-postgres.render.com
+##DB_PORT=5432
+
+#CLOUDINARY_CLOUD_NAME=dahx6bbyr
+#CLOUDINARY_API_KEY=965118234472911
+#CLOUDINARY_API_SECRET=EtuLzVQT9ngLvtxgh8uYoyMBelE
+
+#REDIS_HOST=redis-12031.c8.us-east-1-3.ec2.redns.redis-cloud.com
+#REDIS_PORT=12031
+#REDIS_PASSWORD=jylvZCL7f2CLIlBUuXds4oxVIey4xHd3
+
+
+@login_required
+def guest_list_view(request):
+    user = request.user
+    role = user.username
+
+    # --- GET filters ---
+    search_query = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    channel_filter = request.GET.get('channel', '').strip()
+    purpose_filter = request.GET.get('purpose', '').strip()
+    service_filter = request.GET.get('service', '').strip()
+    user_filter = request.GET.get('user_filter', '').strip()
+    date_of_visit_filter = request.GET.get('date_of_visit', '').strip()
+    view_type = request.GET.get('view', 'cards')
+
+    # --- Base queryset ---
+    if is_magnet_admin(user):
+        queryset = GuestEntry.objects.all()
+    else:
+        queryset = GuestEntry.objects.filter(
+            Q(assigned_to=user) | Q(full_name="Wunmi Jordan")
+        )
+
+    # --- Apply search ---
+    if search_query:
+        queryset = queryset.filter(
+            Q(full_name__icontains=search_query) |
+            Q(phone_number__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(referrer_name__icontains=search_query) |
+            Q(service_attended__icontains=search_query) |
+            Q(status__icontains=search_query) |
+            Q(channel_of_visit__icontains=search_query) |
+            Q(purpose_of_visit__icontains=search_query) |
+            Q(assigned_to__full_name__icontains=search_query)
+        )
+
+    # --- Apply other filters ---
+    if status_filter:
+        queryset = queryset.filter(status__iexact=status_filter)
+    if channel_filter:
+        queryset = queryset.filter(channel_of_visit__iexact=channel_filter)
+    if purpose_filter:
+        queryset = queryset.filter(purpose_of_visit__iexact=purpose_filter)
+    if service_filter:
+        queryset = queryset.filter(service_attended__iexact=service_filter)
+    if date_of_visit_filter:
+        queryset = queryset.filter(date_of_visit=date_of_visit_filter)
+
+    # --- Annotate ---
+    queryset = queryset.annotate(
+        report_count=Count('reports'),
+        last_reported=Max('reports__report_date')
+    ).order_by('-custom_id')
+
+    # --- Pagination ---
+    per_page = 50 if view_type == 'list' else 45
+    paginator = Paginator(queryset, per_page)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    excluded_fields = {
+        "id", "custom_id", "title", "full_name", "gender",
+        "message", "picture", "phone_number", "assigned_to"
+    }
+
+    svg_icons={
+        "email":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+            <path d="M16 12v1.5a2.5 2.5 0 0 0 5 0v-1.5a9 9 0 1 0 -5.5 8.28" />""",  # replace with real paths
+        "date_of_birth":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" />
+            <path d="M16 3v4" /><path d="M8 3v4" />
+            <path d="M4 11h16" /><path d="M11 15h1" /><path d="M12 15v3" />""",
+        "age_range":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+            <path d="M11.5 10.5m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0" />
+            <path d="M11.5 13.5m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0" />
+            <path d="M7 15v-6" /><path d="M15.5 12h3" /><path d="M17 10.5v3" />""",
+        "marital_status":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 22v-5l-1 -1v-4a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4l-1 1v5" /><path d="M17 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+            <path d="M15 22v-4h-2l2 -6a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1l2 6h-2v4" />""",
+        "home_address":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l-2 0l9 -9l9 9l-2 0" /><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+            <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />""",
+        "occupation":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" />
+            <path d="M12 12l0 .01" /><path d="M3 13a20 20 0 0 0 18 0" />""",
+        "date_of_visit":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+            <path d="M18 18m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M15 3v4" />
+            <path d="M7 3v4" /><path d="M3 11h16" /><path d="M18 16.496v1.504l1 1" />""",
+        "purpose_of_visit":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M3 21l18 0" /><path d="M10 21v-4a2 2 0 0 1 4 0v4" /><path d="M10 5l4 0" />
+            <path d="M12 3l0 5" /><path d="M6 21v-7m-2 2l8 -8l8 8m-2 -2v7" />""",
+        "channel_of_visit":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" />
+            <path d="M16 3l-4 4l-4 -4" />""",
+        "service_attended":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+            <path d="M7 20h8l-4 -4v-7l4 3l2 -2" />""",
+        "referrer_name":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572" /><path d="M12 6l-3.293 3.293a1 1 0 0 0 0 1.414l.543 .543c.69 .69 1.81 .69 2.5 0l1 -1a3.182 3.182 0 0 1 4.5 0l2.25 2.25" />
+            <path d="M12.5 15.5l2 2" /><path d="M15 13l2 2" />""",
+        "referrer_phone_number":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 3m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z" />
+            <path d="M8 4l2 0" /><path d="M9 17l0 .01" /><path d="M21 6l-2 3l2 3l-2 3l2 3" />""",
+        "status":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+            <path d="M14.997 19.317l-1.583 1.583a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 13.657 -5.584" />
+            <path d="M19 22v.01" /><path d="M19 19a2.003 2.003 0 0 0 .914 -3.782a1.98 1.98 0 0 0 -2.414 .483" />""",
+        "assigned_at":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" />
+            <path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" />""",
+    }
+
+    # --- Build uniform field_data ---
+    for guest in page_obj:
+        fields = []
+        for field in guest._meta.fields:
+            if field.name in excluded_fields:
+                continue
+            value = getattr(guest, field.name)
+
+            # Initialize time_since for all fields
+            time_since = None
+
+            # Calculate simplified time for date_of_visit
+            if field.name == "date_of_visit" and value:
+                # Convert date to datetime at midnight
+                dt_value = datetime.combine(value, datetime.min.time())
+                if is_naive(dt_value):
+                    dt_value = make_aware(dt_value)
+                delta = timesince(dt_value, now())
+                time_since = delta.split(",")[0]  # only the first unit (e.g., "3 days")
+
+            # if this field has choices, use the display method
+            if field.choices:
+                display_value = getattr(guest, f"get_{field.name}_display")()
+            else:
+                display_value = value
+
+            fields.append({
+                "name": field.name,
+                "verbose_name": field.verbose_name.title(),
+                "value": value,
+                "choices": bool(field.choices),
+                "time_since": time_since,
+                "icon": field.name,
+            })
+
+        guest.field_data = fields
+
+        # Flag guests assigned in the last 14 days
+        guest.is_new = False
+        if guest.assigned_at and (now() - guest.assigned_at <= timedelta(days=14)):
+            guest.is_new = True
+
+        guest.has_unread_reviews = guest.reviews.filter(is_read=False).exists()
+
+    # --- Build query_string excluding 'page' for pagination links ---
+    params = request.GET.copy()
+    params.pop('page', None)
+    query_string = urlencode(params)
+
+    magnet_team = Team.objects.filter(name__iexact="magnet").first()
+
+    magnet_users = CustomUser.objects.filter(is_superuser=False,
+        team_memberships__team__name__iexact="Magnet",
+        is_active=True
+    ).distinct().order_by("full_name")
+
+    # Exclude project admins (Pastor/Admin roles)
+    magnet_users = [u for u in magnet_users if not is_project_admin(u)]
+
+    # --- Context ---
+    context = {
+        'page_obj': page_obj,
+        'view_type': view_type,
+        'users': User.objects.filter(is_active=True).order_by('full_name')[:100],
+        'search_query': search_query,
+        'status_filter': status_filter,
+        'channel_filter': channel_filter,
+        'purpose_filter': purpose_filter,
+        'service_filter': service_filter,
+        'user_filter': user_filter,
+        'date_of_visit': date_of_visit_filter,
+        'show_filters': True,
+        'channels': GuestEntry.objects.values_list('channel_of_visit', flat=True).distinct().order_by('channel_of_visit'),
+        'statuses': [s[0] for s in GuestEntry.STATUS_CHOICES],
+        'purposes': GuestEntry.objects.values_list('purpose_of_visit', flat=True).distinct().order_by('purpose_of_visit'),
+        'services': GuestEntry.objects.values_list('service_attended', flat=True).distinct().order_by('service_attended'),
+        'query_string': query_string,
+        'role': role,
+        'svg_icons': svg_icons,
+        "magnet_team": {
+            "id": magnet_team.id,
+            "name": magnet_team.name,
+        } if magnet_team else None,
+        "magnet_users": magnet_users,
+        'page_title': 'Guests',
+    }
+
+    return render(request, 'guests/guest_list.html', context)
+
+
+
+
+
 <div class="row row-cards g-3">
           {% for guest in page_obj %}
           <div class="col-6 col-md-4 mb-5" data-custom-id="{{ guest.custom_id }}" id="guest-card-{{ guest.id }}">
@@ -345,6 +743,15 @@
             <div class="col text-center text-muted">You Don't Have Any Guest(s) Registered Yet.</div>
           {% endfor %}
         </div>
+
+
+        {% if guest.is_new %}
+                        <span class="badge-wrapper position-absolute top-0 start-0">
+                          <span class="badge-lg bg-green-lt rounded-2 badge-bounce">
+                            NEW
+                          </span>
+                        </span>
+                      {% endif %}
 
 
 

@@ -1,1676 +1,1253 @@
-{% extends 'base.html' %}
-{% load guest_extras %}
-{% load static %}
-{% load access_tags %}
-{% load humanize %}
-{% block title %}Guest List - Gateway Magnet{% endblock %}
-
-{% block content %}
+{% extends 'base.html' %} {% load guest_extras %} {% load guest_avatar_tags %}
+{% load access_tags %} {% load static %} {% load humanize %} {% block title
+%}Guests — {{ church.name }}{% endblock %} {% block content %}
 <div class="page-wrapper">
-  <!-- BEGIN PAGE HEADER -->
+  <!-- ── Page header ── -->
   <div class="page-header d-print-none" aria-label="Page header">
     <div class="container-xl">
       <div class="row g-2 align-items-center">
         <div class="col">
-          <!-- Dynamic Page Title -->
-          <kbd class="bg-warning-lt"><h2 class="page-title">{{ page_title }}</h2></kbd>
+          <kbd class="bg-warning-lt"
+            ><h2 class="page-title mb-0">
+              {{ page_title|default:"Guests" }}
+            </h2></kbd
+          >
         </div>
-
-        <!-- Page title actions -->
         <div class="col-auto ms-auto d-print-none">
           <div class="btn-list">
-            
-            <!-- View Toggle (Card/List) -->
-            <div class="btn-group" role="group" aria-label="View Toggle">
-              <a href="?view=cards{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
-                class="btn btn-outline-green {% if request.GET.view != 'list' %}active{% endif %}" aria-label="Card view">
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2">
-                  <rect x="4" y="4" width="6" height="6" rx="1"></rect>
-                  <rect x="14" y="4" width="6" height="6" rx="1"></rect>
-                  <rect x="4" y="14" width="6" height="6" rx="1"></rect>
-                  <rect x="14" y="14" width="6" height="6" rx="1"></rect>
+            <!-- View toggle -->
+            <div class="btn-group" role="group">
+              <a
+                href="?view=cards{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
+                class="btn btn-outline-green {% if request.GET.view != 'list' %}active{% endif %}"
+                aria-label="Card view"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="icon"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  fill="none"
+                  stroke-width="2"
+                >
+                  <rect x="4" y="4" width="6" height="6" rx="1" />
+                  <rect x="14" y="4" width="6" height="6" rx="1" />
+                  <rect x="4" y="14" width="6" height="6" rx="1" />
+                  <rect x="14" y="14" width="6" height="6" rx="1" />
                 </svg>
               </a>
-              <a href="?view=list{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
-                class="btn btn-outline-green {% if request.GET.view == 'list' %}active{% endif %}" aria-label="List view">
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2">
-                  <line x1="4" y1="6" x2="20" y2="6"></line>
-                  <line x1="4" y1="12" x2="20" y2="12"></line>
-                  <line x1="4" y1="18" x2="20" y2="18"></line>
+              <a
+                href="?view=list{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
+                class="btn btn-outline-green {% if request.GET.view == 'list' %}active{% endif %}"
+                aria-label="List view"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="icon"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  fill="none"
+                  stroke-width="2"
+                >
+                  <line x1="4" y1="6" x2="20" y2="6" />
+                  <line x1="4" y1="12" x2="20" y2="12" />
+                  <line x1="4" y1="18" x2="20" y2="18" />
                 </svg>
               </a>
             </div>
-            {% if request.user|is_magnet_admin %}
-              <div>
-                <!-- Single Button for Regular Users -->
-                <a href="{% url 'create_guest' %}" class="btn btn-gray d-none d-sm-inline-block">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#ff5e01ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users-plus">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
-                    <path d="M3 21v-2a4 4 0 0 1 4 -4h4c.96 0 1.84 .338 2.53 .901" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M16 19h6" /><path d="M19 16v6" />
-                  </svg>
-                  Add New Guest
-                </a>
 
-                <!-- Mobile Button -->
-                <a href="{% url 'create_guest' %}" class="btn btn-gray d-sm-none btn-icon" aria-label="Add guest">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#ff5e01ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users-plus">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
-                    <path d="M3 21v-2a4 4 0 0 1 4 -4h4c.96 0 1.84 .338 2.53 .901" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M16 19h6" /><path d="M19 16v6" />
-                  </svg>
-                </a>
-              </div>
+            {% if permissions|can:"guests.create" %}
+            <div>
+              <a
+                href="{% url 'guests:create_guest' %}"
+                class="btn btn-gray d-none d-sm-inline-block"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#ff5e01ff"
+                  stroke-width="2"
+                  class="icon"
+                >
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+                  <path
+                    d="M3 21v-2a4 4 0 0 1 4 -4h4c.96 0 1.84 .338 2.53 .901"
+                  />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  <path d="M16 19h6" />
+                  <path d="M19 16v6" />
+                </svg>
+                Add New Guest
+              </a>
+              <a
+                href="{% url 'guests:create_guest' %}"
+                class="btn btn-gray d-sm-none btn-icon"
+                aria-label="Add guest"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#ff5e01ff"
+                  stroke-width="2"
+                  class="icon"
+                >
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+                  <path d="M16 19h6" />
+                  <path d="M19 16v6" />
+                </svg>
+              </a>
+            </div>
             {% endif %}
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Count + search row -->
     <div class="container-xl mt-4">
       <div class="row g-2 align-items-center">
         <div class="col">
-          <h3 class="page-title">
-            <div id="guest-counter" class="text-white mt-1">
-              {% with start=page_obj.start_index end=page_obj.end_index total=page_obj.paginator.count %}
-                <kbd class="badge-outline text-green">You are viewing {{ start }}-{{ end }} of {{ total }} Guest(s)</kbd>
-              {% endwith %}
-            </div>
-          </h3>
+          <kbd class="badge-outline text-green">
+            Viewing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{
+            page_obj.paginator.count }} Guest(s)
+          </kbd>
         </div>
-
         <div class="col-auto ms-auto d-print-none">
-          <div class="d-flex">  
-            <!-- Search Form -->
-            <form method="get" class="d-flex" style="gap: 6px;">
-              <input type="search" name="q" class="form-control" style="width: 170px;"
-                placeholder="Search Here" value="{{ request.GET.q|default_if_none:'' }}">
+          <div class="d-flex gap-2">
+            <form method="get" class="d-flex" style="gap: 6px">
+              {% if request.GET.view %}<input
+                type="hidden"
+                name="view"
+                value="{{ request.GET.view }}"
+              />{% endif %}
+              <input
+                type="search"
+                name="q"
+                class="form-control"
+                style="width: 170px"
+                placeholder="Search…"
+                value="{{ request.GET.q|default_if_none:'' }}"
+              />
               <button type="submit" class="btn btn-sm btn-outline">
-                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-loader-3">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 0 0 9 9a9 9 0 0 0 9 -9a9 9 0 0 0 -9 -9" />
-                  <path d="M17 12a5 5 0 1 0 -5 5" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
                 </svg>
               </button>
             </form>
+            <a
+              href="{% url 'guests:guest_list' %}"
+              class="btn btn-sm btn-outline"
+              >✕</a
+            >
 
-            <!-- Reset Button -->
-            <a href="{% url 'guest_list' %}" class="btn btn-sm btn-outline d-flex flex-wrap gap-2 ms-2 align-items-center justify-content-end">
-              <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-x">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12" />
-                <path d="M6 6l12 12" />
-              </svg>
-            </a>
+            {% if permissions|can:"guests.bulk_delete" %}
+            <button
+              class="btn btn-sm btn-outline-danger"
+              data-bs-toggle="modal"
+              data-bs-target="#bulkDeleteModal"
+            >
+              Bulk delete
+            </button>
+            {% endif %}
           </div>
         </div>
       </div>
     </div>
   </div>
-  <!-- END PAGE HEADER -->
+  <!-- End page header -->
 
   <div class="page-body">
-    <div class="container-xl" id="guest-list-container" id="guestList">
-
+    <div class="container-xl" id="guest-list-container">
       {% if request.GET.view == 'list' %}
-        <!-- LIST VIEW -->
-        <div class="table-responsive rounded" style="max-height: 75vh; overflow-y: auto;">
-          <table class="table table-dark align-middle table-hover">
-            <thead>
-              <div class="text-white fs-4">
-                <tr>
-                  <th></th>
-                  <th>ID</th>
-                  <th>Guest</th>
-                  <th>Date of Visit</th>
-                  <th>Service</th>
-                  <th>Socials</th>
-                  <th>Status</th>
-                  <th>{% if request.user|is_magnet_admin %}Assigned{% else %}Assigned{% endif %}</th>
-                  <th>Last Report</th>
-                </tr>
-              </div>
-            </thead>
-            <tbody>
-              {% for guest in page_obj %}
-              <tr data-custom-id="{{ guest.custom_id }}">
-                <!-- Three-dots dropdown actions -->
-                <td>
-                  <div class="dropdown">
-                    <a href="#" class="text-purple" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-dots-vertical" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="5" r="1" />
-                        <circle cx="12" cy="12" r="1" />
-                        <circle cx="12" cy="19" r="1" />
-                      </svg>
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-end p-1">
-                      <a class="dropdown-item py-1 text-grey" href="{% url 'edit_guest' guest.id %}">Edit</a>
-                      <a class="dropdown-item py-1 d-flex justify-content-between align-items-center" href="{% url 'followup_report_page' guest.id %}">
-                        Report
-                        <span class="badge bg-grey text-warning ms-2">{{ guest.reports.count }}</span>
-                      </a>
-
-                      {% if request.user.is_superuser or guest.assigned_to == request.user %}
-                        <a class="dropdown-item py-1" href="#" data-bs-toggle="modal" data-bs-target="#reviewModal-{{ guest.id }}">
-                          Respond to Review
-                        </a>
-                      {% endif %}
-
-                      {% if request.user|is_project_admin or request.user|is_magnet_admin:"Minister-in-Charge" %}
-                        <a class="dropdown-item py-1" href="#" data-bs-toggle="modal" data-bs-target="#PastorreviewModal-{{ guest.id }}">
-                          Make Review
-                        </a>
-                      {% endif %}
-
-                      <!-- Trigger Single Guest Message Modal -->
-                      {% if request.user.is_superuser %}
-                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#guestMessageModal{{ guest.id }}">
-                          Send Message
-                        </a>
-                      {% endif %}
-                      <a class="dropdown-item py-1 attach-to-chat" 
-                        href="#"
-                        data-id="{{ guest.id }}"
-                        data-name="{{ guest.full_name|escapejs }}"
-                        data-title="{{ guest.title|escapejs }}"
-                        data-custom-id="{{ guest.custom_id|escapejs }}"
-                        data-date="{{ guest.date_of_visit|date:'M d, Y' }}"
-                        data-image="{% if guest.picture %}{{ guest.picture.url }}{% endif %}">
-                        Attach to Chat
-                      </a>
-                    </div>
-                  </div>
-                </td>
-                <td>{{ guest.custom_id }}</td>
-
-                <!-- Guest with picture -->
-                <td>
-                  <div class="d-flex align-items-center gap-2">
-                    {% if guest.picture %}
-                      <span class="avatar rounded" 
-                            style="background-image: url('{{ guest.picture.url }}'); width:48px; height:48px; background-size:cover; background-position:center;">
-                      </span>
-                    {% else %}
-                      <span class="avatar rounded bg-grey text-white d-flex align-items-center justify-content-center"
-                            style="width:48px; height:48px; font-weight:bold; font-size:18px;">
-                        {{ guest.initials }}
-                      </span>
-                    {% endif %}
-                    <h3 class="m-0 mb-2 text-warning mt-2 fs-2">
-                      <a href="javascript:void(0);" 
-                        class="guest-name-link" 
-                        data-bs-toggle="modal" 
-                        data-bs-target="#guestDetailModal-{{ guest.id }}">
-                        <small>{{ guest.title }}</small> {{ guest.full_name }}
-                      </a>
-                    </h3>                  
-                  </div>
-                </td>
-
-                <td>{{ guest.date_of_visit }}</td>
-                <td>{{ guest.service_attended }}</td>
-
-                <td>
-                  {% for account in guest.social_media_accounts.all %}
-                    {% if account.platform and account.handle %}
-                      {% if account.platform == 'linkedin' %}
-                        <a href="{{ account.handle }}" target="_blank" class="text-white">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="None" stroke="#037ae9ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                            <path d="M8 11v5"/>
-                            <path d="M8 8v.01"/>
-                            <path d="M12 16v-5"/>
-                            <path d="M16 16v-3a2 2 0 1 0 -4 0"/>
-                            <path d="M3 7a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v10a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4z"/>
-                          </svg>
-                        </a>
-                      {% elif account.platform == 'whatsapp' %}
-                        <a href="{{ account.handle }}" target="_blank" class="text-white">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="None" stroke="#03f74cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                            <path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9"/>
-                            <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1"/>
-                          </svg>
-                        </a>
-                      {% elif account.platform == 'instagram' %}
-                        <a href="{{ account.handle }}" target="_blank" class="text-white">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="None" stroke="#de08f1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                            <path d="M4 8a4 4 0 0 1 4 -4h8a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-8a4 4 0 0 1 -4 -4z"/>
-                            <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>
-                            <path d="M16.5 7.5v.01"/>
-                          </svg>
-                        </a>
-                      {% elif account.platform == 'twitter' %}
-                        <a href="{{ account.handle }}" target="_blank" class="text-white">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#ffffffff" stroke="#000000ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                            <path d="M4 4l11.733 16h4.267l-11.733 -16z"/>
-                            <path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/>
-                          </svg>
-                        </a>
-                      {% elif account.platform == 'tiktok' %}
-                        <a href="{{ account.handle }}" target="_blank" class="text-white">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="None" stroke="#25ECE6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                            <path d="M21 7.917v4.034a9.948 9.948 0 0 1 -5 -1.951v4.5a6.5 6.5 0 1 1 -8 -6.326v4.326a2.5 2.5 0 1 0 4 2v-11.5h4.083a6.005 6.005 0 0 0 4.917 4.917z"/>
-                          </svg>
-                        </a>
-                      {% endif %}
-                    {% endif %}
-                  {% endfor %}
-                </td>
-                <td><span class="text-{{ guest.get_status_color }}">{{ guest.status|default:"" }}</span></td>
-                <td>
-                  <!-- Assigned User Avatar -->
-                  {% if guest.assigned_to %}
-                    {% if guest.assigned_to.image %}
-                      <span class="avatar avatar-sm rounded"
-                            style="width: 32px; height: 32px; border: 1px solid #221d1dff; background-size: cover; background-position: center;
-                                  background-image: url('{{ guest.assigned_to.image.url }}');">
-                      </span>
-                    {% else %}
-                      <span class="avatar avatar-sm bg-grey text-white fw-bold d-inline-flex align-items-center justify-content-center"
-                            style="width: 32px; height: 32px; border: 2px font-size:12px;">
-                        {{ guest.assigned_to.initials }}
-                      </span>
-                    {% endif %}
-                  {% endif %}                
-                </td>
-                <td>
-                  <span class="text-sm"> 
-                    <span style="font-family: monospace;"> {{ guest.last_reported|default:"" }}</span>
-                  </span>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="8" class="text-center text-muted">No Guest(s) Registered Yet.</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-
-
-      {% else %}
-
-
-        <div class="row row-cards g-3">
-          {% for guest in page_obj %}
-          <div class="col-6 col-md-4 mb-5" data-custom-id="{{ guest.custom_id }}" id="guest-card-{{ guest.id }}">
-            <div class="card flex-fill h-100 border-0 pb-2"
-                  style="box-shadow: 0 4px 8px #000000d2; border-radius: 24px;">
-
-              <!-- Card Header with custom ID left and dropdown right -->
-              <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
-                <div class="text-secondary fs-3 fw-bold" style="font-family: monospace;">
-                  {{ guest.custom_id }}
-                  {% if guest.is_new %}
-                    <span class="badge-lg new-badge-gradient bg-green-lt text-white px-2" style="border-radius: 12px;">
-                      NEW
-                    </span>
-                  {% endif %}
-                </div>
+      <!-- ── LIST VIEW ── -->
+      <div
+        class="table-responsive rounded"
+        style="max-height: 75vh; overflow-y: auto"
+      >
+        <table class="table table-dark align-middle table-hover">
+          <thead>
+            <tr>
+              <th></th>
+              <th>ID</th>
+              <th>Guest</th>
+              <th>Date of Visit</th>
+              <th>Service</th>
+              <th>Socials</th>
+              <th>Status</th>
+              <th>Assigned</th>
+              <th>Last Report</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for guest in page_obj %}
+            <tr data-custom-id="{{ guest.custom_id }}">
+              <td>
                 <div class="dropdown">
-                  <a href="#" class="text-purple" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-dots-vertical" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <a href="#" class="text-purple" data-bs-toggle="dropdown">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
                       <circle cx="12" cy="5" r="1" />
                       <circle cx="12" cy="12" r="1" />
                       <circle cx="12" cy="19" r="1" />
                     </svg>
                   </a>
-                  <div class="card-menu dropdown-menu dropdown-menu-end p-1">
-                    <a class="dropdown-item py-1 attach-to-chat" 
+                  <div class="dropdown-menu dropdown-menu-end p-1">
+                    {% if permissions|can:"guests.edit" %}
+                    <a
+                      class="dropdown-item py-1"
+                      href="{% url 'guests:edit_guest' guest.id %}"
+                      >Edit</a
+                    >
+                    {% endif %} {% if can_report %}
+                    <a
+                      class="dropdown-item py-1 d-flex justify-content-between align-items-center"
+                      href="{% url 'guests:followup_report_page' guest.id %}"
+                    >
+                      Report
+                      <span class="badge bg-grey text-warning ms-2"
+                        >{{ guest.reports.count }}</span
+                      >
+                    </a>
+                    {% endif %} {% if permissions|can:"guests.review" %}
+                    <a
+                      class="dropdown-item py-1"
+                      href="#"
+                      data-bs-toggle="modal"
+                      data-bs-target="#reviewModal-{{ guest.id }}"
+                    >
+                      Review
+                    </a>
+                    {% endif %} {% if permissions|can:"messaging.send" %}
+                    <a
+                      class="dropdown-item py-1"
+                      href="#"
+                      data-bs-toggle="modal"
+                      data-bs-target="#guestMessageModal{{ guest.id }}"
+                    >
+                      Send Message
+                    </a>
+                    {% endif %}
+                    <a
+                      class="dropdown-item py-1 attach-to-chat"
                       href="#"
                       data-id="{{ guest.id }}"
                       data-name="{{ guest.full_name|escapejs }}"
                       data-title="{{ guest.title|escapejs }}"
                       data-custom-id="{{ guest.custom_id|escapejs }}"
                       data-date="{{ guest.date_of_visit|date:'M d, Y' }}"
-                      data-image="{% if guest.picture %}{{ guest.picture.url }}{% endif %}">
-                      Attach Guest to Chat
+                      data-image="{% if guest.picture %}{{ guest.picture.url }}{% endif %}"
+                    >
+                      Attach to Chat
                     </a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item py-1 text-grey" href="{% url 'edit_guest' guest.id %}">
-                      Edit Guest Info
-                    </a>
-                    
-                    <a href="#"
-                      class="dropdown-item py-1 d-flex justify-content-between align-items-center status-popover-trigger"
-                      data-bs-toggle="popover"
-                      data-bs-placement="left"
-                      data-bs-html="true"
-                      data-guest="{{ guest.id }}"
-                      data-status="{{ guest.status|status_color }}"
-                      onclick="return false;"
-                      title="Select Guest Status"
-                      data-bs-content='
-                        {% if request.user|is_magnet_admin or guest.assigned_to == request.user %}
-                          {% for key, label in guest.STATUS_CHOICES %}
-                            <a class="dropdown-item fw-semibold text-{{ key|status_color }} {% if key == guest.status %}active-status{% endif %}"
-                              href="{% url "update_status" guest.id key %}">
-                              {{ label }}
-                              {% if key == guest.status %}
-                                <i class="ti ti-check ms-auto"></i>
-                              {% endif %}
-                            </a>
-                          {% endfor %}
-                        {% elif guest.full_name == "Wunmi Jordan" and request.user|has_group:"Demo" %}
-                          {% for key, label in guest.STATUS_CHOICES %}
-                            <a class="dropdown-item fw-semibold text-{{ key|status_color }} {% if key == guest.status %}active-status{% endif %}"
-                              href="{% url "update_status" guest.id key %}">
-                              {{ label }}
-                              {% if key == guest.status %}
-                                <i class="ti ti-check ms-auto"></i>
-                              {% endif %}
-                            </a>
-                          {% endfor %}
-                        {% endif %}
-                      '>
-                      Update Guest Status
-                      <i class="ti ti-chevron-left"></i>
-                    </a>
-
-                    <div class="dropdown-divider"></div>
-                    {% if request.user|is_project_admin or request.user|is_magnet_admin:"Minister-in-Charge" %}
-                      <a class="dropdown-item py-1" href="#" data-bs-toggle="modal" data-bs-target="#PastorreviewModal-{{ guest.id }}">
-                        Make Review on Guest
-                      </a>
-                    {% endif %}
-                    {% if request.user.is_superuser or guest.assigned_to == request.user %}
-                      <a class="dropdown-item py-1 d-flex justify-content-between align-items-center" href="{% url 'followup_report_page' guest.id %}">
-                        Make Report on Guest
-                        <span class="badge bg-grey text-warning ms-2">{{ guest.reports.count }}</span>
-                      </a>
-                    {% elif guest.full_name == "Wunmi Jordan" %}
-                      <a class="dropdown-item py-1 d-flex justify-content-between align-items-center" href="{% url 'followup_report_page' guest.id %}">
-                        Make Report on Guest
-                        <span class="badge bg-grey text-warning ms-2">{{ guest.reports.count }}</span>
-                      </a>
-                    {% endif %}
-                    {% if request.user.is_superuser or guest.assigned_to == request.user %}
-                      <a class="dropdown-item py-1" href="#" data-bs-toggle="modal" data-bs-target="#reviewModal-{{ guest.id }}">
-                        Respond to Review
-                      </a>
-                    {% elif guest.full_name == "Wunmi Jordan" %}
-                      <a class="dropdown-item py-1" href="#" data-bs-toggle="modal" data-bs-target="#reviewModal-{{ guest.id }}">
-                        Respond to Review
-                      </a>
-                    {% endif %}
-
-                    
-                    <div class="dropdown-divider"></div>
-
-                    <!-- Trigger Single Guest Message Modal -->
-                    {% if request.user.is_superuser %}
-                      <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#guestMessageModal{{ guest.id }}">
-                        Send Message to Guest
-                      </a>
-                    {% endif %}
-                    
                   </div>
                 </div>
+              </td>
+              <td>{{ guest.custom_id }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  {% render_guest_avatar guest "avatar-sm" %}
+                  <h3 class="m-0 text-warning fs-2">
+                    <a
+                      href="#"
+                      class="guest-name-link"
+                      data-bs-toggle="modal"
+                      data-bs-target="#guestDetailModal-{{ guest.id }}"
+                    >
+                      <small>{{ guest.title }}</small> {{ guest.full_name }}
+                    </a>
+                  </h3>
+                </div>
+              </td>
+              <td>{{ guest.date_of_visit }}</td>
+              <td>{{ guest.service_attended }}</td>
+              <td>
+                {% include "guests/partials/_social_icons.html" with
+                accounts=guest.social_media_accounts.all %}
+              </td>
+              <td>
+                <span class="badge bg-{{ guest.status|status_color }}-lt">
+                  {{ guest.status }}
+                </span>
+              </td>
+              <td>
+                {% if guest.assigned_to %} {% if
+                guest.assigned_to.workforce_member.member.user.image %}
+                <span
+                  class="avatar avatar-sm rounded"
+                  style="background-image:url('{{ guest.assigned_to.workforce_member.member.user.image.url }}');width:32px;height:32px;background-size:cover;"
+                ></span>
+                {% else %}
+                <span
+                  class="avatar avatar-sm bg-grey text-white fw-bold d-inline-flex align-items-center justify-content-center"
+                  style="width: 32px; height: 32px; font-size: 12px"
+                >
+                  {{ guest.assigned_to.workforce_member.member.user.initials }}
+                </span>
+                {% endif %} {% endif %}
+              </td>
+              <td>
+                <span style="font-family: monospace"
+                  >{{ guest.last_reported|default:"—" }}</span
+                >
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-4">
+                No guests registered yet.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% else %}
+      <!-- ── CARD VIEW — original UX preserved ── -->
+      <div class="row row-cards g-3">
+        {% for guest in page_obj %}
+        <div
+          class="col-6 col-md-4 mb-5"
+          data-custom-id="{{ guest.custom_id }}"
+          id="guest-card-{{ guest.id }}"
+        >
+          <div
+            class="card flex-fill h-100 border-0 pb-2"
+            style="box-shadow: 0 4px 8px #000000d2; border-radius: 24px"
+          >
+            <!-- Card header: custom ID + dropdown -->
+            <div
+              class="card-header border-0 pb-0 d-flex justify-content-between align-items-center"
+            >
+              <div
+                class="text-secondary fs-3 fw-bold"
+                style="font-family: monospace"
+              >
+                {{ guest.custom_id }} {% if guest.is_new %}
+                <span
+                  class="badge-lg bg-green-lt text-white px-2"
+                  style="border-radius: 12px"
+                  >NEW</span
+                >
+                {% endif %}
               </div>
+              <div class="dropdown">
+                <a href="#" class="text-purple" data-bs-toggle="dropdown">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="5" r="1" />
+                    <circle cx="12" cy="12" r="1" />
+                    <circle cx="12" cy="19" r="1" />
+                  </svg>
+                </a>
+                <div class="card-menu dropdown-menu dropdown-menu-end p-1">
+                  <a
+                    class="dropdown-item py-1 attach-to-chat"
+                    href="#"
+                    data-id="{{ guest.id }}"
+                    data-name="{{ guest.full_name|escapejs }}"
+                    data-title="{{ guest.title|escapejs }}"
+                    data-custom-id="{{ guest.custom_id|escapejs }}"
+                    data-date="{{ guest.date_of_visit|date:'M d, Y' }}"
+                    data-image="{% if guest.picture %}{{ guest.picture.url }}{% endif %}"
+                  >
+                    Attach to Chat
+                  </a>
+                  <div class="dropdown-divider"></div>
+                  {% if permissions|can:"guests.edit" %}
+                  <a
+                    class="dropdown-item py-1"
+                    href="{% url 'guests:edit_guest' guest.id %}"
+                    >Edit Guest Info</a
+                  >
+                  {% endif %}
 
-              <!-- Card Body -->
-              <div class="card-body position-relative" style="padding-bottom: 50px;">
-                <div class="row align-items-start mb-2">
-                  <div class="col-6 pt-2 mb-2 text-center position-relative" style="width: 140px;">
-                    <!-- Guest Avatar / Picture with Preview Modal Trigger -->
-                    <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#previewModal{{ guest.id }}" class="position-relative d-inline-block">
-                      {% if guest.picture %}
-                        <span class="avatar avatar-xl" 
-                              style="background-image: url('{{ guest.picture.url }}');  
-                                    display:inline-block;  
-                                    width:130px;  
-                                    height:130px;  
-                                    border-radius:1rem;  
-                                    background-size:cover;  
-                                    background-position:center;  
-                                    box-shadow: 0 2px 5px #000000f3;  
-                                    transition: box-shadow 0.3s ease;"  
-                              onmouseover="this.style.boxShadow='0 2px 5px #ff7b0067'"  
-                              onmouseout="this.style.boxShadow='0 2px 5px #4ecf0333'">
-                        </span>
-                      {% else %}
-                        <span class="avatar avatar-xl bg-grey text-white d-inline-flex align-items-center justify-content-center"
-                              style="width:130px; height:130px; font-weight:bold;
-                                      font-size:24px; line-height:1; border-radius:1rem;
-                                      box-shadow: 0 2px 5px #000000f3;">
-                          {{ guest.initials }}
-                        </span>
-                      {% endif %}
+                  <!-- Status update sub-popover trigger -->
+                  <a
+                    href="#"
+                    class="dropdown-item py-1 d-flex justify-content-between align-items-center status-popover-trigger"
+                    data-bs-toggle="popover"
+                    data-bs-placement="left"
+                    data-bs-html="true"
+                    data-guest="{{ guest.id }}"
+                    onclick="return false;"
+                    title="Select Status"
+                    data-bs-content="{% if can_update_status %}<div>{% for status in guest_statuses %}<a class='dropdown-item fw-semibold text-{{ status.slug|status_color }} {% if status == guest.status %}active-status{% endif %}' href='{% url 'guests:update_guest_status' guest.id %}?status={{ status.id }}'>{{ status.name }}{% if status == guest.status %} ✓{% endif %}</a>{% endfor %}</div>{% else %}<span class='text-muted small'>Not authorised</span>{% endif %}"
+                  >
+                    Update Status
+                    <i class="ti ti-chevron-left"></i>
+                  </a>
 
-                      
-
-                      <!-- New Review Badge -->
-                      <div id="review-badge-{{ guest.id }}" class="review-badge-wrapper">
-                        {% if guest.has_unread_reviews %}
-                          <span class="badge-wrapper position-absolute top-0 start-100">
-                            <span class="badge-lg bg-red-lt rounded-2 badge-wiggle">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                class="icon icon-tabler icons-tabler-outline icon-tabler-message-plus">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M8 9h8" />
-                                <path d="M8 13h6" />
-                                <path d="M12.01 18.594l-4.01 2.406v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v5.5" />
-                                <path d="M16 19h6" />
-                                <path d="M19 16v6" />
-                              </svg>
-                            </span>
-                          </span>
-                        {% endif %}
-                      </div>
-                    </a>
-
-                    <!-- Preview Modal -->
-                    <div class="modal modal-md modal-blur fade" id="previewModal{{ guest.id }}" tabindex="-1" aria-hidden="true">
-                      <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content border-0 text-white pb-0"
-                              style="border-radius: 24px !important; box-shadow: 0 4px 8px #000000f3;">
-                          <div class="modal-header" style="border-bottom: none;">
-                            <h5 class="modal-title text-warning text-center">{{ guest.title|default:"" }} {{ guest.full_name }}</h5>
-                            <button class="btn-animate-icon btn-animate-icon-rotate ms-auto border-0" data-bs-dismiss="modal" style="background: none !important;">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff0000ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-x">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M18 6l-12 12" /><path d="M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                          <div class="modal-body text-center p-4">
-                            {% if guest.picture %}
-                              <img src="{{ guest.picture.url }}" class="img-fluid" 
-                                    alt="{{ guest.title|default:'' }} {{ guest.full_name }}"
-                                    style="border-radius: 20px !important; box-shadow: 0 4px 8px #000000f3;">
-                            {% else %}
-                              <div class="bg-grey p-5 d-inline-block"
-                                    style="border-radius: 20px !important; box-shadow: 0 4px 8px #000000f3;">
-                                <span class="fw-bold display-4">{{ guest.initials }}</span>
-                              </div>
-                            {% endif %}
-                            <!--<p class="mt-3 mb-0 fw-bold">{{ guest.title|default:"" }} {{ guest.full_name }}</p>-->
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-6 px-3 mt-0 pt-0 d-flex flex-column justify-content-center" 
-                        style="bottom: 0; height: 135px;">
-                    <!-- Guest name clickable to detail page -->
-                    <div class="p-0">
-                      <small class="fst-italic text-secondary">{{ guest.title }}</small>
-                      <h3 class="d-flex text-white fs-2">
-                        <a href="javascript:void(0);" 
-                          class="guest-name-link"
-                          style="line-height: 1.2; line-spacing: normal;"
-                          data-bs-toggle="modal" 
-                          data-bs-target="#guestDetailModal-{{ guest.id }}">
-                          {{ guest.full_name }}
-                        </a>
-                      </h3>
-                    </div>
-
-                    <div class="gap-2">
-                      <a href="tel:{{ guest.phone_number }}" class="text-white" title="Call {{ guest.title }} {{ guest.full_name }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-phone-call">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" />
-                          <path d="M15 7a2 2 0 0 1 2 2" /><path d="M15 3a6 6 0 0 1 6 6" />
-                        </svg>
-                      </a>
-                      {% for account in guest.social_media_accounts.all %}
-                        {% if account.platform and account.handle %}
-                          {% if account.platform == 'linkedin' %}
-                            <a href="{{ account.handle }}" target="_blank" class="text-white">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="None" stroke="#037ae9ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M8 11v5"/>
-                                <path d="M8 8v.01"/>
-                                <path d="M12 16v-5"/>
-                                <path d="M16 16v-3a2 2 0 1 0 -4 0"/>
-                                <path d="M3 7a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v10a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4z"/>
-                              </svg>
-                            </a>
-                          {% elif account.platform == 'whatsapp' %}
-                            <a href="{{ account.handle }}" target="_blank" class="text-white">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="None" stroke="#03f74cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9"/>
-                                <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1"/>
-                              </svg>
-                            </a>
-                          {% elif account.platform == 'instagram' %}
-                            <a href="{{ account.handle }}" target="_blank" class="text-white">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="None" stroke="#de08f1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M4 8a4 4 0 0 1 4 -4h8a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-8a4 4 0 0 1 -4 -4z"/>
-                                <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>
-                                <path d="M16.5 7.5v.01"/>
-                              </svg>
-                            </a>
-                          {% elif account.platform == 'twitter' %}
-                            <a href="{{ account.handle }}" target="_blank" class="text-white">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#ffffffff" stroke="#000000ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M4 4l11.733 16h4.267l-11.733 -16z"/>
-                                <path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/>
-                              </svg>
-                            </a>
-                          {% elif account.platform == 'tiktok' %}
-                            <a href="{{ account.handle }}" target="_blank" class="text-white">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="None" stroke="#25ECE6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M21 7.917v4.034a9.948 9.948 0 0 1 -5 -1.951v4.5a6.5 6.5 0 1 1 -8 -6.326v4.326a2.5 2.5 0 1 0 4 2v-11.5h4.083a6.005 6.005 0 0 0 4.917 4.917z"/>
-                              </svg>
-                            </a>
-                          {% endif %}
-                        {% endif %}
-                      {% endfor %}
-                      
-                    </div>
-                  </div>
-                </div>
-
-                <div class="row my-0">
-                  <!-- Date of Visit -->
-
-                  <div class="col-6 align-items-center">
-                    <!--<span class="avatar avatar-xs bg-gray-lt text-secondary me-1">
-                      <svg  xmlns="http://www.w3.org/2000/svg"  width="12"  height="12"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-calendar-check">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M11.5 21h-5.5a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v6" />
-                        <path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /><path d="M15 19l2 2l4 -4" />
-                      </svg>
-                    </span>-->
-                    <div class="text-white bg-teal-lt" 
-                          style="font-family: monospace;
-                                  border-radius: 24px 24px 0 24px; 
-                                  padding: 8px;
-                                  text-align: center;
-                                  font-size: 0.75rem;"> 
-                      {{ guest.date_of_visit }}
-                    </div>
-                  </div>
-
-                  <!-- Service Attended -->
-                  <div class="col-6 align-items-center">
-                    <!--<span class="avatar avatar-xs bg-gray-lt text-warning me-1">
-                      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-pray">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
-                        <path d="M7 20h8l-4 -4v-7l4 3l2 -2" />
-                      </svg>
-                    </span>-->
-                    <div class="text-white bg-warning-lt text-white" 
-                          style="border-radius: 24px 24px 24px 0; 
-                                  padding: 8px;
-                                  text-align: center;
-                                  font-size: 0.75rem;">
-                      {{ guest.service_attended }}
-                    </div>
-                  </div>
-                </div>
-
-                <div class="row mt-2">
-                  {% if guest.last_reported %}
-                    <!--<span class="avatar avatar-xs bg-gray-lt text-indigo me-1">
-                      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-file-description">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                        <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
-                        <path d="M9 17h6" /><path d="M9 13h6" />
-                      </svg>
-                    </span>-->
-                    <div class="align-items-center"
-                          style="background: #111827; border-radius: 24px; 
-                                  padding: 8px;
-                                  text-align: center;
-                                  width: fit-content;
-                                  margin: 0 auto;">
-                      <span class="fs-6 fst-italic text-secondary"> Last Report Date:</span>
-                      <span style="font-family: monospace; font-size: 0.8rem;">{{ guest.last_reported }}</span>
-                    </div>
-                  {% else %}
-                    <div class="align-items-center bg-danger-lt text-muted"
-                          style="border-radius: 24px; 
-                                  padding: 8px;
-                                  text-align: center;
-                                  font-size: 0.6rem;
-                                  font-style: italic;
-                                  width: fit-content;
-                                  margin: 0 auto;">
-                      No Reports Yet
-                    </div>
+                  <div class="dropdown-divider"></div>
+                  {% if permissions|can:"guests.review" %}
+                  <a
+                    class="dropdown-item py-1"
+                    href="#"
+                    data-bs-toggle="modal"
+                    data-bs-target="#reviewModal-{{ guest.id }}"
+                  >
+                    Make Review
+                  </a>
+                  {% endif %} {% if can_report %}
+                  <a
+                    class="dropdown-item py-1 d-flex justify-content-between align-items-center"
+                    href="{% url 'guests:followup_report_page' guest.id %}"
+                  >
+                    Make Report
+                    <span class="badge bg-grey text-warning ms-2"
+                      >{{ guest.reports.count }}</span
+                    >
+                  </a>
+                  {% endif %}
+                  <div class="dropdown-divider"></div>
+                  {% if permissions|can:"messaging.send" %}
+                  <a
+                    class="dropdown-item py-1"
+                    href="#"
+                    data-bs-toggle="modal"
+                    data-bs-target="#guestMessageModal{{ guest.id }}"
+                  >
+                    Send Message
+                  </a>
                   {% endif %}
                 </div>
+              </div>
+            </div>
 
-                <div class="mt-1 position-absolute pb-2"
-                      style="right: 20px; bottom: 1px;">
-                  <!-- Badges -->
-                  <div class="d-flex" style="justify-content: center; align-items: center;">
-                    {% if request.user|is_magnet_admin %}
-                      {% if guest.assigned_to %}
-                        <!-- Assigned User Avatar (right side of name row) -->
-                        {% if guest.assigned_to.image %}
-                          <span class="avatar"
-                                style="width: 32px; height: 32px; 
-                                      background-image: url('{{ guest.assigned_to.image.url }}'); 
-                                      background-size: cover; 
-                                      background-position: center;
-                                      border-radius:6px;
-                                      box-shadow: 0 4px 8px #000000d2;">
-                          </span>
-                        {% endif %}
-                        <div class="badge {{ guest.assigned_to.color_class }} ms-1 px-2 py-2"
-                              style="font-size: 0.6rem; box-shadow: 0 4px 8px #000000d2; 
-                                    font-style: italic; border-radius: 0 24px 24px 0">
-                          {{ guest.assigned_to.title|default:"" }} {{ guest.assigned_to.full_name }}
-                        </div>
-                      {% endif %}
+            <!-- Card body -->
+            <div
+              class="card-body position-relative"
+              style="padding-bottom: 50px"
+            >
+              <div class="row align-items-start mb-2">
+                <!-- Photo -->
+                <div
+                  class="col-6 pt-2 mb-2 text-center position-relative"
+                  style="width: 140px"
+                >
+                  <a
+                    href="#"
+                    data-bs-toggle="modal"
+                    data-bs-target="#previewModal{{ guest.id }}"
+                    class="position-relative d-inline-block"
+                  >
+                    {% if guest.picture %}
+                    <span
+                      class="avatar avatar-xl"
+                      style="background-image:url('{{ guest.picture.url }}');display:inline-block;
+                                   width:130px;height:130px;border-radius:1rem;background-size:cover;
+                                   background-position:center;box-shadow:0 2px 5px #000000f3;"
+                    ></span>
                     {% else %}
-                      {% if guest.assigned_to %}
-                      {% endif %}
+                    <span
+                      class="avatar avatar-xl bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                      style="
+                        width: 130px;
+                        height: 130px;
+                        font-weight: bold;
+                        font-size: 24px;
+                        border-radius: 1rem;
+                        box-shadow: 0 2px 5px #000000f3;
+                      "
+                    >
+                      {{ guest.initials }}
+                    </span>
                     {% endif %}
-                  </div> 
-                </div>                
-
-                  <!-- Guest Status Update -->
-                <div class="mt-1 position-absolute pb-2"
-                      style="bottom: 32px; left: 0;">
-                  <div class="my-3">
-                    <div class="ribbon ribbon-start gap-1 text-uppercase fw-bold bg-{{ guest.get_status_color|default:'gray-800' }} text-white d-flex"
-                          style="box-shadow: 0 4px 8px #000000d2; max-width: 500px; font-size: 0.7rem; border-radius: 0 24px 24px 12px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-progress">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 20.777a8.942 8.942 0 0 1 -2.48 -.969" />
-                        <path d="M14 3.223a9.003 9.003 0 0 1 0 17.554" /><path d="M4.579 17.093a8.961 8.961 0 0 1 -1.227 -2.592" />
-                        <path d="M3.124 10.5c.16 -.95 .468 -1.85 .9 -2.675l.169 -.305" /><path d="M6.907 4.579a8.954 8.954 0 0 1 3.093 -1.356" />
-                      </svg>
-                      {{ guest.status|default:"New Guest" }}
-
-                      <a href="#"
-                        class="py-1 d-flex justify-content-between align-items-center info-popover-trigger"
-                        data-bs-toggle="popover"
-                        data-bs-placement="top"
-                        data-bs-html="true"
-                        data-bs-content='
-                          Click
-                          <i class="bi bi-three-dots-vertical"></i>
-                          on the top-right corner, to update Guest Status
-                        '>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#ffffff" class="icon icon-tabler icons-tabler-filled icon-tabler-info-square-rounded">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                          <path d="M12 2l.642 .005l.616 .017l.299 .013l.579 .034l.553 .046c4.687 .455 6.65 2.333 7.166 6.906l.03 .29l.046 .553l.041 .727l.006 .15l.017 .617l.005 .642l-.005 .642l-.017 .616l-.013 .299l-.034 .579l-.046 .553c-.455 4.687 -2.333 6.65 -6.906 7.166l-.29 .03l-.553 .046l-.727 .041l-.15 .006l-.617 .017l-.642 .005l-.642 -.005l-.616 -.017l-.299 -.013l-.579 -.034l-.553 -.046c-4.687 -.455 -6.65 -2.333 -7.166 -6.906l-.03 -.29l-.046 -.553l-.041 -.727l-.006 -.15l-.017 -.617l-.004 -.318v-.648l.004 -.318l.017 -.616l.013 -.299l.034 -.579l.046 -.553c.455 -4.687 2.333 -6.65 6.906 -7.166l.29 -.03l.553 -.046l.727 -.041l.15 -.006l.617 -.017c.21 -.003 .424 -.005 .642 -.005zm0 9h-1l-.117 .007a1 1 0 0 0 0 1.986l.117 .007v3l.007 .117a1 1 0 0 0 .876 .876l.117 .007h1l.117 -.007a1 1 0 0 0 .876 -.876l.007 -.117l-.007 -.117a1 1 0 0 0 -.764 -.857l-.112 -.02l-.117 -.006v-3l-.007 -.117a1 1 0 0 0 -.876 -.876l-.117 -.007zm.01 -3l-.127 .007a1 1 0 0 0 0 1.986l.117 .007l.127 -.007a1 1 0 0 0 0 -1.986l-.117 -.007z" />
-                        </svg>
-                      </a>
+                    <!-- Unread review badge -->
+                    <div
+                      id="review-badge-{{ guest.id }}"
+                      class="review-badge-wrapper"
+                    >
+                      {% if guest.has_unread_reviews %}
+                      <span
+                        class="badge-wrapper position-absolute top-0 start-100"
+                      >
+                        <span class="badge-lg bg-red-lt rounded-2 badge-wiggle">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="36"
+                            height="36"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          >
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                            <path d="M8 9h8" />
+                            <path d="M8 13h6" />
+                            <path
+                              d="M12.01 18.594l-4.01 2.406v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v5.5"
+                            />
+                            <path d="M16 19h6" />
+                            <path d="M19 16v6" />
+                          </svg>
+                        </span>
+                      </span>
+                      {% endif %}
                     </div>
-                    <!--{% if request.user|is_magnet_admin or guest.assigned_to == request.user %}
-                      <div class="dropdown">
-                        <a href="#"
-                          class="btn btn-md btn-gray border-0 dropup text-uppercase fw-bold text-{{ guest.get_status_color }}"
-                          style="width: 200px; box-shadow: 0 4px 8px #000000d2; border-radius: 24px;  background: #111827;"
-                          data-bs-toggle="dropdown"
-                          data-bs-display="static"
-                          aria-expanded="false">
-                          {{ guest.status|default:"Select Status" }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end shadow">
-                          {% for key, label in guest.STATUS_CHOICES %}
-                            <li>
-                              <a class="dropdown-item" href="{% url 'update_status' guest.id key %}">
-                                {{ label }}
-                              </a>
-                            </li>
-                          {% endfor %}
-                        </ul>
-                      </div>
-                    {% elif guest.full_name == "Wunmi Jordan" and request.user|has_group:"Demo" %}
-                      <div class="mt-3 mb-3">
-                        <div class="dropdown">
-                          <a href="#"
-                            class="btn btn-md btn-gray border-0 dropup text-uppercase fw-bold text-{{ guest.get_status_color }}"
-                            style="width: 200px; box-shadow: 0 4px 8px #000000d2; border-radius: 24px;"
-                            data-bs-toggle="dropdown"
-                            data-bs-display="static"
-                            aria-expanded="false">
-                            {{ guest.status|default:"Select Status" }}
-                          </a>
-                          <ul class="dropdown-menu dropdown-menu-end shadow">
-                            {% for key, label in guest.STATUS_CHOICES %}
-                              <li>
-                                <a class="dropdown-item" href="{% url 'update_status' guest.id key %}">
-                                  {{ label }}
-                                </a>
-                              </li>
-                            {% endfor %}
-                          </ul>
+                  </a>
+
+                  <!-- Photo preview modal (inline) -->
+                  <div
+                    class="modal modal-md modal-blur fade"
+                    id="previewModal{{ guest.id }}"
+                    tabindex="-1"
+                    aria-hidden="true"
+                  >
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div
+                        class="modal-content border-0 text-white pb-0"
+                        style="
+                          border-radius: 24px;
+                          box-shadow: 0 4px 8px #000000f3;
+                        "
+                      >
+                        <div class="modal-header" style="border-bottom: none">
+                          <h5 class="modal-title text-warning text-center">
+                            {{ guest.title|default:"" }} {{ guest.full_name }}
+                          </h5>
+                          <button
+                            class="btn border-0 ms-auto"
+                            data-bs-dismiss="modal"
+                            style="background: none"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#ff0000ff"
+                              stroke-width="2"
+                            >
+                              <path
+                                stroke="none"
+                                d="M0 0h24v24H0z"
+                                fill="none"
+                              />
+                              <path d="M18 6l-12 12" />
+                              <path d="M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div class="modal-body text-center p-4">
+                          {% if guest.picture %}
+                          <img
+                            src="{{ guest.picture.url }}"
+                            class="img-fluid"
+                            style="
+                              border-radius: 20px;
+                              box-shadow: 0 4px 8px #000000f3;
+                            "
+                            alt="{{ guest.full_name }}"
+                          />
+                          {% else %}
+                          <div
+                            class="bg-grey p-5 d-inline-block"
+                            style="border-radius: 20px"
+                          >
+                            <span class="fw-bold display-4"
+                              >{{ guest.initials }}</span
+                            >
+                          </div>
+                          {% endif %}
                         </div>
                       </div>
-                    {% endif %}-->
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Name + socials -->
+                <div
+                  class="col-6 px-3 mt-0 pt-0 d-flex flex-column justify-content-center"
+                  style="height: 135px"
+                >
+                  <div>
+                    <small class="fst-italic text-secondary"
+                      >{{ guest.title }}</small
+                    >
+                    <h3 class="d-flex text-white fs-2">
+                      <a
+                        href="#"
+                        class="guest-name-link"
+                        style="line-height: 1.2"
+                        data-bs-toggle="modal"
+                        data-bs-target="#guestDetailModal-{{ guest.id }}"
+                      >
+                        {{ guest.full_name }}
+                      </a>
+                    </h3>
+                  </div>
+                  <div class="gap-2">
+                    <a
+                      href="tel:{{ guest.phone_number }}"
+                      class="text-white"
+                      title="Call"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#f59f00"
+                        stroke-width="2"
+                      >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path
+                          d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5-2.5l5 2v4a2 2 0 0 1-2 2a16 16 0 0 1-15-15a2 2 0 0 1 2-2"
+                        />
+                        <path d="M15 7a2 2 0 0 1 2 2" />
+                        <path d="M15 3a6 6 0 0 1 6 6" />
+                      </svg>
+                    </a>
+                    {% for account in guest.social_media_accounts.all %} {% if
+                    account.platform and account.handle %} {% include
+                    "guests/partials/_social_icon.html" with
+                    platform=account.platform handle=account.handle %} {% endif
+                    %} {% endfor %}
                   </div>
                 </div>
               </div>
 
+              <!-- Visit info row -->
+              <div class="row my-0">
+                <div class="col-6">
+                  <div
+                    class="text-white bg-teal-lt"
+                    style="
+                      font-family: monospace;
+                      border-radius: 24px 24px 0 24px;
+                      padding: 8px;
+                      text-align: center;
+                      font-size: 0.75rem;
+                    "
+                  >
+                    {{ guest.date_of_visit }}
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div
+                    class="text-white bg-warning-lt"
+                    style="
+                      border-radius: 24px 24px 24px 0;
+                      padding: 8px;
+                      text-align: center;
+                      font-size: 0.75rem;
+                    "
+                  >
+                    {{ guest.service_attended }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Last report -->
+              <div class="row mt-2">
+                {% if guest.last_reported %}
+                <div
+                  class="align-items-center"
+                  style="
+                    background: #111827;
+                    border-radius: 24px;
+                    padding: 8px;
+                    text-align: center;
+                    width: fit-content;
+                    margin: 0 auto;
+                  "
+                >
+                  <span class="fs-6 fst-italic text-secondary"
+                    >Last Report:
+                  </span>
+                  <span style="font-family: monospace; font-size: 0.8rem"
+                    >{{ guest.last_reported }}</span
+                  >
+                </div>
+                {% else %}
+                <div
+                  class="align-items-center bg-danger-lt text-muted"
+                  style="
+                    border-radius: 24px;
+                    padding: 8px;
+                    text-align: center;
+                    font-size: 0.6rem;
+                    font-style: italic;
+                    width: fit-content;
+                    margin: 0 auto;
+                  "
+                >
+                  No Reports Yet
+                </div>
+                {% endif %}
+              </div>
+
+              <!-- Assigned officer (bottom-right) -->
+              <div
+                class="mt-1 position-absolute pb-2"
+                style="right: 20px; bottom: 1px"
+              >
+                {% if permissions|can:"guests.view_all" and guest.assigned_to %}
+                {% with officer=guest.assigned_to.workforce_member.member.user
+                %}
+                <div class="d-flex align-items-center">
+                  {% if officer.image %}
+                  <span
+                    class="avatar"
+                    style="width:32px;height:32px;background-image:url('{{ officer.image.url }}');background-size:cover;border-radius:6px;box-shadow:0 4px 8px #000000d2;"
+                  ></span>
+                  {% endif %}
+                  <div
+                    class="badge ms-1 px-2 py-2"
+                    style="
+                      font-size: 0.6rem;
+                      box-shadow: 0 4px 8px #000000d2;
+                      font-style: italic;
+                      border-radius: 0 24px 24px 0;
+                    "
+                  >
+                    {{ officer.title|default:"" }} {{ officer.full_name }}
+                  </div>
+                </div>
+                {% endwith %} {% endif %}
+              </div>
+
+              <!-- Status ribbon (bottom-left) -->
+              <div
+                class="mt-1 position-absolute pb-2"
+                style="bottom: 32px; left: 0"
+              >
+                <div class="my-3">
+                  <div
+                    class="ribbon ribbon-start gap-1 text-uppercase fw-bold bg-{{ guest.status|status_color }}-lt text-white d-flex"
+                    style="
+                      box-shadow: 0 4px 8px #000000d2;
+                      font-size: 0.7rem;
+                      border-radius: 0 24px 24px 12px;
+                    "
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M10 20.777a8.942 8.942 0 0 1 -2.48 -.969" />
+                      <path d="M14 3.223a9.003 9.003 0 0 1 0 17.554" />
+                      <path d="M4.579 17.093a8.961 8.961 0 0 1 -1.227 -2.592" />
+                      <path
+                        d="M3.124 10.5c.16 -.95 .468 -1.85 .9 -2.675l.169 -.305"
+                      />
+                      <path d="M6.907 4.579a8.954 8.954 0 0 1 3.093 -1.356" />
+                    </svg>
+                    {{ guest.status.name|default:"New Guest" }}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-
-          {% empty %}
-            <div class="col text-center text-muted">You Don't Have Any Guest(s) Registered Yet.</div>
-          {% endfor %}
         </div>
-
+        {% empty %}
+        <div class="col text-center text-muted py-5">
+          No guests registered yet.
+        </div>
+        {% endfor %}
+      </div>
       {% endif %}
 
-
+      <!-- Pagination -->
       <div class="d-flex justify-content-center mt-4">
         <ul class="pagination ms-auto">
-
-          {# Previous Button #}
           {% if page_obj.has_previous %}
-            <li class="page-item">
-              <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}" aria-label="Previous">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                  <path d="M15 6l-6 6l6 6"></path>
-                </svg>
-              </a>
-            </li>
+          <li class="page-item">
+            <a
+              class="page-link"
+              href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.view %}&view={{ request.GET.view }}{% endif %}"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                class="icon icon-1"
+              >
+                <path d="M15 6l-6 6l6 6" />
+              </svg>
+            </a>
+          </li>
           {% else %}
-            <li class="page-item disabled">
-              <span class="page-link">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                  <path d="M15 6l-6 6l6 6"></path>
-                </svg>
-              </span>
-            </li>
-          {% endif %}
-
-          {# Page Numbers (max 5 visible) #}
-          {% for num in page_obj.paginator.page_range %}
-            {% if num >= page_obj.number|add:-2 and num <= page_obj.number|add:2 %}
-              {% if num == page_obj.number %}
-                <li class="page-item active">
-                  <span class="page-link">{{ num }}</span>
-                </li>
-              {% else %}
-                <li class="page-item">
-                  <a class="page-link" href="?page={{ num }}{% if query_string %}&{{ query_string }}{% endif %}">{{ num }}</a>
-                </li>
-              {% endif %}
-            {% endif %}
-          {% endfor %}
-
-          {# Next Button #}
-          {% if page_obj.has_next %}
-            <li class="page-item">
-              <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}" aria-label="Next">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                  <path d="M9 6l6 6l-6 6"></path>
-                </svg>
-              </a>
-            </li>
+          <li class="page-item disabled">
+            <span class="page-link">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                class="icon icon-1"
+              >
+                <path d="M15 6l-6 6l6 6" />
+              </svg>
+            </span>
+          </li>
+          {% endif %} {% for num in page_obj.paginator.page_range %} {% if num
+          >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+          <li
+            class="page-item {% if num == page_obj.number %}active{% endif %}"
+          >
+            <a
+              class="page-link"
+              href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.view %}&view={{ request.GET.view }}{% endif %}"
+              >{{ num }}</a
+            >
+          </li>
+          {% endif %} {% endfor %} {% if page_obj.has_next %}
+          <li class="page-item">
+            <a
+              class="page-link"
+              href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.view %}&view={{ request.GET.view }}{% endif %}"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                class="icon icon-1"
+              >
+                <path d="M9 6l6 6l-6 6" />
+              </svg>
+            </a>
+          </li>
           {% else %}
-            <li class="page-item disabled">
-              <span class="page-link">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                  <path d="M9 6l6 6l-6 6"></path>
-                </svg>
-              </span>
-            </li>
+          <li class="page-item disabled">
+            <span class="page-link"
+              ><svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                class="icon icon-1"
+              >
+                <path d="M9 6l6 6l-6 6" />
+              </svg>
+            </span>
+          </li>
           {% endif %}
-
         </ul>
       </div>
-
-      <!--Guest Picture Preview-->
-      {% for guest in page_obj %}
-      <div class="modal fade" id="previewModal{{ guest.id }}" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content bg-dark border-light text-white">
-            <div class="modal-body text-center">
-              <img src="{% if guest and guest.picture %}{{ guest.picture.url }}{% else %}{% static 'images/default_image.jpg' %}{% endif %}"
-                  class="img-fluid rounded shadow">
-              <p class="mt-3 mb-0 fw-bold">{{ guest.full_name }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      {% endfor %}
     </div>
   </div>
 </div>
 
-
-
-
-<!-- Guest Detail Modal -->
-{% for guest in page_obj %}
-  {% if guest.id %}
-    <div class="modal fade modal-blur" id="guestDetailModal-{{ guest.id }}" tabindex="-1" aria-labelledby="guestDetailModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-          <div class="modal-header align-items-center justify-content-center">
-            <h2 class="modal-title text-warning" id="guestDetailModalLabel">GUEST DETAILS</h2>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div class="row g-2 align-items-center">
-              <div class="col">
-                <div class="mb-4 text-center">
-                  <!-- Guest Avatar / Picture with Preview Modal Trigger -->
-                  <a href="javascript:void(0);" 
-                        class="position-relative d-inline-block"
-                        style="object-fit: cover; width: 100px; height: 100px;">
-                    {% if guest.picture %}
-                      <span class="avatar avatar-xl rounded" 
-                            style="background-image: url('{{ guest.picture.url }}');  
-                                  display:inline-block;  
-                                  width:100px;  
-                                  height:100px;  
-                                  border-radius:0.5rem;  
-                                  background-size:cover;  
-                                  background-position:center;  
-                                  box-shadow: 0 2px 5px #008ca567,  
-                                              0 4px 10px #008ca567;  
-                                  transition: box-shadow 0.3s ease;"  
-                            onmouseover="this.style.boxShadow='0 6px 12px #ff7b0067, 0 10px 25px #ff7b0067'"  
-                            onmouseout="this.style.boxShadow='0 2px 4px #4ecf0333, 0 6px 10px #4ecf0333'">
-                      </span>
-                    {% else %}
-                      <span class="avatar avatar-xl bg-grey text-white d-inline-flex align-items-center justify-content-center"
-                            style="width:100px; height:100px; font-weight:bold; font-size:24px; line-height:1; border-radius:0.5rem;">
-                        {{ guest.initials }}
-                      </span>
-                    {% endif %}
-                  </a>
-
-                  <!-- Guest name clickable to detail page -->
-                  <h3 class="m-0 mb-2 text-white mt-2 fs-2">
-                    <small>{{ guest.title }}</small> {{ guest.full_name }}
-                  </h3>
-                  <div class="text-muted fs-3 fw-bold" style="font-family: monospace;">
-                    {{ guest.custom_id }}
-                  </div>
-                  <div class="my-2">
-                    <a href="tel:{{ guest.phone_number }}" class="text-white" title="Call {{ guest.title }} {{ guest.full_name }}">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-phone-call">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" />
-                        <path d="M15 7a2 2 0 0 1 2 2" /><path d="M15 3a6 6 0 0 1 6 6" />
-                      </svg>
-                    </a>
-                    <!-- Social Media Accounts -->
-                    {% for account in guest.social_media_accounts.all %}
-                      {% if account.platform and account.handle %}
-                        {% if account.platform == 'linkedin' %}
-                          <a href="{{ account.handle }}" target="_blank" class="text-white">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="None" stroke="#037ae9ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                              <path d="M8 11v5"/>
-                              <path d="M8 8v.01"/>
-                              <path d="M12 16v-5"/>
-                              <path d="M16 16v-3a2 2 0 1 0 -4 0"/>
-                              <path d="M3 7a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v10a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4z"/>
-                            </svg>
-                          </a>
-                        {% elif account.platform == 'whatsapp' %}
-                          <a href="{{ account.handle }}" target="_blank" class="text-white">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="None" stroke="#03f74cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                              <path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9"/>
-                              <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1"/>
-                            </svg>
-                          </a>
-                        {% elif account.platform == 'instagram' %}
-                          <a href="{{ account.handle }}" target="_blank" class="text-white">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="None" stroke="#de08f1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                              <path d="M4 8a4 4 0 0 1 4 -4h8a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-8a4 4 0 0 1 -4 -4z"/>
-                              <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>
-                              <path d="M16.5 7.5v.01"/>
-                            </svg>
-                          </a>
-                        {% elif account.platform == 'twitter' %}
-                          <a href="{{ account.handle }}" target="_blank" class="text-white">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#ffffffff" stroke="#000000ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                              <path d="M4 4l11.733 16h4.267l-11.733 -16z"/>
-                              <path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/>
-                            </svg>
-                          </a>
-                        {% elif account.platform == 'tiktok' %}
-                          <a href="{{ account.handle }}" target="_blank" class="text-white">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="None" stroke="#25ECE6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                              <path d="M21 7.917v4.034a9.948 9.948 0 0 1 -5 -1.951v4.5a6.5 6.5 0 1 1 -8 -6.326v4.326a2.5 2.5 0 1 0 4 2v-11.5h4.083a6.005 6.005 0 0 0 4.917 4.917z"/>
-                            </svg>
-                          </a>
-                        {% endif %}
-                      {% endif %}
-                    {% endfor %} 
-                  </div>
-                </div>
-                <div class="row g-4">                  
-
-                  {% for field in guest.field_data %}
-                    <div class="col-md-6">
-                      <ul class="timeline">
-                        <li class="timeline-event">
-                          <div class="timeline-event-icon bg-x-lt" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                              {{ svg_icons|get_item:field.icon|safe }}
-                            </svg>
-                          </div>
-                          <div class="card timeline-event-card">
-                            <div class="card-body">
-                              <div class="text-secondary float-end"> <!-- Optional timestamp -->
-                                {{ field.timestamp|default:"" }}
-                              </div>
-                              <!-- Dynamic Time Ago for date_of_visit only -->
-                              {% if field.name == "date_of_visit" and field.time_since %}
-                                <i><small class="text-muted">{{ field.verbose_name|capfirst }}</small></i>
-                                <div class="text-secondary float-end small">
-                                  {{ field.time_since }} ago
-                                </div>
-                              {% else %}
-                                <i><small class="text-muted">{{ field.verbose_name|capfirst }}</small></i>
-                              {% endif %}
-                              <p class="text-base text-warning fs-3">
-                                {{ field.value|default_if_none:"" }}
-                              </p>
-                              <!-- Optional description -->
-                              {% if field.name == "message" and field.value %}
-                                <p class="text-muted">{{ field.value }}</p>
-                              {% endif %}
-                            </div>
-                          </div>
-                        </li>
-                      </ul>
-                    </div>
-                    {% if forloop.counter|divisibleby:2 %}
-                      </div><div class="row g-4">  {# Close row every 2 columns #}
-                    {% endif %}
-                  {% endfor %}
-                </div>
-                  
-                <!-- Reassign Guest Form -->
-                <div class="mt-4 d-flex align-items-center justify-content-center gap-2 mb-3">
-                  {% if request.user|is_magnet_admin %}
-                    <form method="post" action="{% url 'reassign_guest' guest.id %}" class="d-flex mt-2" style="gap: 0.5rem;">
-                      {% csrf_token %}
-                      <select name="assigned_to" class="form-select" required>
-                        <option value="">Select User</option>
-                        {% for u in magnet_users %}
-                          {% if request.user.is_superuser %}
-                            <option value="{{ u.id }}" {% if guest.assigned_to == u %}selected{% endif %}>
-                              {{ u.title|default:"" }} {{ u.full_name }}
-                            </option>
-                          {% elif request.user|is_magnet_admin and not u.is_superuser %}
-                            <option value="{{ u.id }}" {% if guest.assigned_to == u %}selected{% endif %}>
-                              {{ u.title|default:"" }} {{ u.full_name }}
-                            </option>
-                          {% endif %}
-                        {% endfor %}
-                      </select>
-                      <button type="submit" class="btn btn-green">Reassign</button>
-                    </form>
-                  {% endif %}
-                </div>
-            
-                {% if request.user|is_project_admin or request.user|is_magnet_admin:"Minister-in-Charge" %}
-                <!-- Accordion -->
-                <div class="accordion accordion-tabs position-relative accordion-scrollable" id="accordion-tabs">              
-
-                  <!-- Reports -->
-                  <div class="accordion-item bg-transparent">
-                    <div class="accordion-header">
-                      <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-reports-{{ guest.id }}">
-                        Reports
-                      </button>
-                    </div>
-                    <div id="collapse-reports-{{ guest.id }}" class="accordion-collapse collapse" data-bs-parent="#accordion-{{ guest.id }}">
-                      <div class="accordion-body" style="overflow-y:auto; max-height:100px;">
-                        {% if guest.reports.exists %}
-                          <ul class="list-group list-group-flush">
-                            {% for report in guest.reports.all %}
-                              <li class="list-group-item">
-                                <div class="d-flex justify-content-between align-items-center">
-                                  <div>
-                                    <small class="text-muted me-3" style="font-family: monospace;">{{ report.report_date|date:"M d, Y" }}</small>
-                                  </div>
-                                  <div>
-                                    <span class="text-white me-2">{{ report.note }}</span>
-                                  </div>
-                                  <div class="text-end ms-2">
-                                    <span class="badge
-                                      {% if report.guest.status == 'planted' %}bg-success-lt
-                                      {% elif report.guest.status == 'planted_elsewhere' %}bg-danger-lt
-                                      {% elif report.guest.status == 'relocated' %}bg-primary-lt
-                                      {% elif report.guest.status == 'work_in_progress' %}bg-warning-lt
-                                      {% else %}bg-grey-lt{% endif %}">
-                                      {{ report.guest.get_status_display }}
-                                    </span>
-                                    <div class="badges-list mt-1">
-                                      {% if report.service_sunday %}<span class="badge bg-indigo-lt">Sunday</span>{% endif %}
-                                      {% if report.service_midweek %}<span class="badge bg-purple-lt">Midweek</span>{% endif %}
-                                    </div>
-                                  </div>
-                                </div>
-                              </li>
-                            {% endfor %}
-                          </ul>
-                        {% else %}
-                          <p class="text-muted">No reports available.</p>
-                        {% endif %}
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Reviews -->
-                  <div class="accordion-item bg-transparent">
-                    <div class="accordion-header">
-                      <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-reviews-{{ guest.id }}">
-                        Reviews
-                      </button>
-                    </div>
-                    <div id="collapse-reviews-{{ guest.id }}" class="accordion-collapse collapse" data-bs-parent="#accordion-{{ guest.id }}">
-                      <div class="accordion-body">
-                        <div class="mb-2">
-                          
-                          {% if guest.reviews.exists %}
-                            <div class="mb-3 text-end">
-                              {% regroup guest.reviews.all by created_at.date as reviews_by_date %}
-
-                              {% for day in reviews_by_date %}
-                                <!-- Day Header -->
-                                <div class="text-center text-muted my-2">
-                                  {{ day.grouper|date:"M d, Y" }}
-                                </div>
-
-                                {% for review in day.list %}
-                              
-                                  <div class="{% if review.reviewer == request.user %}text-end{% else %}text-start{% endif %} mb-2">
-                                    <div class="d-inline-block px-3 py-2 rounded-2 
-                                                {% if review.reviewer == request.user %}
-                                                  bg-green-lt text-white
-                                                {% else %}
-                                                  bg-warning-lt text-white
-                                                {% endif %}">
-                                      <span class="text-muted fs-5">
-                                        <strong>
-                                          {% if review.reviewer == request.user %}
-                                            You
-                                          {% else %}
-                                            {{ review.reviewer.full_name }}
-                                          {% endif %}
-                                        </strong>
-                                      </span><br>
-                                      {{ review.comment }}
-                                      <div>
-                                        <em>
-                                          <small class="text-muted d-block{% if reply.reviewer == request.user %}text-end{% endif %}">
-                                          {{ review.created_at|time:"H:i" }}
-                                          </small>
-                                        </em>
-                                      </div>
-                                    </div>
-                                  </div>
-                                {% endfor %}
-                              {% endfor %} 
-                              <!-- Reply Form -->
-                              <form method="post" action="{% url 'submit_review' guest.id role %}" id="PastorReviewform-{{ guest.id }}">
-                                {% csrf_token %}
-                                <input type="hidden" name="parent_id" value="{{ review.id }}">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                  <!-- Expanding Textarea -->
-                                  <textarea name="comment" rows="1" class="form-control bg-gray border-0 flex-grow-1 me-2"
-                                            style="width: 450px; min-height:40px; max-height:300px; overflow:hidden; resize:none;"
-                                            placeholder="Reply..." oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px';"></textarea>
-
-                                  <!-- Send Button -->
-                                  <button type="submit" class="avatar bg-gray-lt border-0 text-green p-1 d-flex align-items-center justify-content-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-send-2">
-                                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                      <path d="M4.698 4.034l16.302 7.966l-16.302 7.966a.503 .503 0 0 1 -.546 -.124a.555 .555 0 0 1 -.12 -.568l2.468 -7.274l-2.468 -7.274a.555 .555 0 0 1 .12 -.568a.503 .503 0 0 1 .546 -.124z" />
-                                      <path d="M6.5 12h14.5" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              </form>
-                            </div>
-                          {% endif %}
-                        </div>
-
-                        {% if not guest.reviews.exists %}
-                          <!-- New Review Form -->
-                          <form method="post" action="{% url 'submit_review' guest.id role %}" id="PastorReviewform-new-{{ guest.id }}">
-                            {% csrf_token %}
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                              <!-- Expanding Textarea -->
-                              <textarea name="comment" rows="1" class="form-control bg-gray border-0 flex-grow-1 me-2"
-                                        style="width: 450px; min-height:40px; max-height:300px; overflow:hidden; resize:none;"
-                                        placeholder="Send a Review..." oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px';"></textarea>
-
-                              <!-- Send Button -->
-                              <button type="submit" class="avatar bg-gray-lt border-0 text-green p-1 d-flex align-items-center justify-content-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-send-2">
-                                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                  <path d="M4.698 4.034l16.302 7.966l-16.302 7.966a.503 .503 0 0 1 -.546 -.124a.555 .555 0 0 1 -.12 -.568l2.468 -7.274l-2.468 -7.274a.555 .555 0 0 1 .12 -.568a.503 .503 0 0 1 .546 -.124z" />
-                                  <path d="M6.5 12h14.5" />
-                                </svg>
-                              </button>
-                            </div>
-                          </form>
-                        {% endif %}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {% endif %}
+<!-- ── Guest Detail Modal ── -->
+{% for guest in page_obj %} {% if guest.id %}
+<div
+  class="modal fade modal-blur"
+  id="guestDetailModal-{{ guest.id }}"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div
+    class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"
+  >
+    <div class="modal-content">
+      <div class="modal-header align-items-center justify-content-center">
+        <h2 class="modal-title text-warning">GUEST DETAILS</h2>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-2 align-items-center">
+          <div class="col">
+            <div class="mb-4 text-center">
+              {% render_guest_avatar guest "avatar-xl" %}
+              <h3 class="m-0 mb-2 text-white mt-2 fs-2">
+                <small>{{ guest.title }}</small> {{ guest.full_name }}
+              </h3>
+              <div
+                class="text-muted fs-3 fw-bold"
+                style="font-family: monospace"
+              >
+                {{ guest.custom_id }}
+              </div>
+              <div class="my-2">
+                <a href="tel:{{ guest.phone_number }}" class="text-white">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#f59f00"
+                    stroke-width="2"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path
+                      d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5-2.5l5 2v4a2 2 0 0 1-2 2a16 16 0 0 1-15-15a2 2 0 0 1 2-2"
+                    />
+                    <path d="M15 7a2 2 0 0 1 2 2" />
+                    <path d="M15 3a6 6 0 0 1 6 6" />
+                  </svg>
+                </a>
+                {% for account in guest.social_media_accounts.all %} {% if
+                account.platform and account.handle %} {% include
+                "guests/partials/_social_icon.html" with
+                platform=account.platform handle=account.handle %} {% endif %}
+                {% endfor %}
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  {% endif %}
-{% endfor %}
 
-
-
-
-<!-- Single Guest Message Modal -->
-{% for guest in page_obj %}
-  <div class="modal fade" id="guestMessageModal{{ guest.id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Send Message to {{ guest.full_name }}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <form method="post" action="{% url 'send_guest_message' guest.id %}">
-            {% csrf_token %}
-            <input type="hidden" name="recipient_id" value="{{ guest.id }}">
-            
-            <div class="mb-3">
-              <label>Subject</label>
-              <input type="text" name="subject" class="form-control" placeholder="Subject (optional)">
+            <!-- Field data timeline -->
+            <div class="row g-4">
+              {% for field in guest.field_data %}
+              <div class="col-md-6">
+                <ul class="timeline">
+                  <li class="timeline-event">
+                    <div
+                      class="timeline-event-icon bg-x-lt"
+                      style="
+                        width: 32px;
+                        height: 32px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                      "
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        {{ svg_icons|get_item:field.icon|safe }}
+                      </svg>
+                    </div>
+                    <div class="card timeline-event-card">
+                      <div class="card-body">
+                        <i
+                          ><small class="text-muted"
+                            >{{ field.verbose_name|capfirst }}</small
+                          ></i
+                        >
+                        {% if field.name == "date_of_visit" and field.time_since
+                        %}
+                        <div class="text-secondary float-end small">
+                          {{ field.time_since }} ago
+                        </div>
+                        {% endif %}
+                        <p class="text-base text-warning fs-3">
+                          {{ field.value|default_if_none:"" }}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              {% endfor %}
             </div>
 
-            <div class="mb-3">
-              <label>Message Body</label>
-              <textarea name="body" rows="5" class="form-control" required></textarea>
+            <!-- Reassign form -->
+            {% if permissions|can:"guests.reassign" %}
+            <div
+              class="mt-4 d-flex align-items-center justify-content-center gap-2 mb-3"
+            >
+              <form
+                method="post"
+                action="{% url 'guests:reassign_guest' guest.id %}"
+                class="d-flex mt-2"
+                style="gap: 0.5rem"
+              >
+                {% csrf_token %}
+                <select name="assigned_to" class="form-select" required>
+                  <option value="">Select member</option>
+                  {% for m in assignable_members %}
+                  <option
+                    value="{{ m.id }}"
+                    {%
+                    if
+                    guest.assigned_to_id=""
+                    ="m.id"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    {{ m.workforce_member.member.user.title|default:"" }} {{
+                    m.workforce_member.member.user.full_name }}
+                  </option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-green">Reassign</button>
+              </form>
             </div>
+            {% endif %}
 
-            <div class="text-end">
-              <button type="submit" class="btn btn-primary">Send Message</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-{% endfor %}
-
-
-<!-- Pastor's Review Modal -->
-{% for guest in page_obj %}
-  {% if guest.id %}
-    <div class="modal fade modal-blur" id="PastorreviewModal-{{ guest.id }}" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-          <div class="modal-header align-items-center justify-content-center">
-            <h5 class="modal-title">Review for <span class="text-warning fs-2">{{ guest.title }} {{ guest.full_name }}</span></h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <!-- Accordion -->
-            <div class="accordion accordion-tabs position-relative accordion-scrollable" id="accordion-tabs">              
-
-              <!-- Reports -->
+            <!-- Reports + Reviews accordion (admin/review perm only) -->
+            {% if permissions|can:"guests.review" %}
+            <div class="accordion accordion-tabs" id="accordion-{{ guest.id }}">
               <div class="accordion-item bg-transparent">
                 <div class="accordion-header">
-                  <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-reports-{{ guest.id }}">
+                  <button
+                    class="accordion-button collapsed"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#collapse-reports-{{ guest.id }}"
+                  >
                     Reports
                   </button>
                 </div>
-                <div id="collapse-reports-{{ guest.id }}" class="accordion-collapse collapse" data-bs-parent="#accordion-{{ guest.id }}">
-                  <div class="accordion-body">
+                <div
+                  id="collapse-reports-{{ guest.id }}"
+                  class="accordion-collapse collapse"
+                >
+                  <div
+                    class="accordion-body"
+                    style="overflow-y: auto; max-height: 200px"
+                  >
                     {% if guest.reports.exists %}
-                      <ul class="list-group list-group-flush">
-                        {% for report in guest.reports.all %}
-                          <li class="list-group-item">
-                            <div class="d-flex justify-content-between align-items-center">
-                              <div>
-                                <small class="text-muted" style="font-family: monospace;">{{ report.report_date|date:"M d, Y" }}</small>
-                              </div>
-                              <div>
-                                <strong class="text-white">{{ report.note }}</strong>
-                              </div>
-                              <div class="text-end">
-                                <span class="badge
-                                  {% if report.guest.status == 'planted' %}bg-success-lt
-                                  {% elif report.guest.status == 'planted_elsewhere' %}bg-danger-lt
-                                  {% elif report.guest.status == 'relocated' %}bg-primary-lt
-                                  {% elif report.guest.status == 'work_in_progress' %}bg-warning-lt
-                                  {% else %}bg-grey-lt{% endif %}">
-                                  {{ report.guest.get_status_display }}
-                                </span>
-                                <div class="badges-list mt-1">
-                                  {% if report.service_sunday %}<span class="badge bg-indigo-lt">Sunday</span>{% endif %}
-                                  {% if report.service_midweek %}<span class="badge bg-purple-lt">Midweek</span>{% endif %}
-                                </div>
-                              </div>
-                            </div>
-                          </li>
-                        {% endfor %}
-                      </ul>
+                    <ul class="list-group list-group-flush">
+                      {% for report in guest.reports.all %}
+                      <li class="list-group-item">
+                        <div
+                          class="d-flex justify-content-between align-items-center"
+                        >
+                          <small
+                            class="text-muted"
+                            style="font-family: monospace"
+                            >{{ report.report_date|date:"M d, Y" }}</small
+                          >
+                          <span class="text-white">{{ report.note }}</span>
+                          <div>
+                            {% if report.service_sunday %}<span
+                              class="badge bg-indigo-lt"
+                              >Sunday</span
+                            >{% endif %} {% if report.service_midweek %}<span
+                              class="badge bg-purple-lt"
+                              >Midweek</span
+                            >{% endif %}
+                          </div>
+                        </div>
+                      </li>
+                      {% endfor %}
+                    </ul>
                     {% else %}
-                      <p class="text-muted">No reports available.</p>
+                    <p class="text-muted">No reports yet.</p>
                     {% endif %}
                   </div>
                 </div>
               </div>
-
-              <!-- Reviews -->
               <div class="accordion-item bg-transparent">
                 <div class="accordion-header">
-                  <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-reviews-{{ guest.id }}">
+                  <button
+                    class="accordion-button collapsed"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#collapse-reviews-{{ guest.id }}"
+                  >
                     Reviews
                   </button>
                 </div>
-                <div id="collapse-reviews-{{ guest.id }}" class="accordion-collapse collapse" data-bs-parent="#accordion-{{ guest.id }}">
+                <div
+                  id="collapse-reviews-{{ guest.id }}"
+                  class="accordion-collapse collapse"
+                >
                   <div class="accordion-body">
-                    <div class="mb-2">
-                      
-                      {% if guest.reviews.exists %}
-                        <div class="mb-3 text-end" id="reviews-container-{{ guest.id }}">
-                          {% regroup guest.reviews.all by created_at.date as reviews_by_date %}
-
-                          {% for day in reviews_by_date %}
-                            <!-- Day Header -->
-                            <div class="text-center text-muted my-2">
-                              {{ day.grouper|date:"M d, Y" }}
-                            </div>
-
-                            {% for review in day.list %}
-                          
-                              <div class="{% if review.reviewer == request.user %}text-end{% else %}text-start{% endif %} mb-2">
-                                <div class="d-inline-block px-3 py-2 rounded-2 
-                                            {% if review.reviewer == request.user %}
-                                              bg-green-lt text-white
-                                            {% else %}
-                                              bg-warning-lt text-white
-                                            {% endif %}">
-                                  <em><span class="text-muted fs-5">
-                                    <strong>
-                                      {% if review.reviewer == request.user %}
-                                        You
-                                      {% else %}
-                                        {{ review.reviewer.title|default:"" }}{{ review.reviewer.full_name }}
-                                      {% endif %}
-                                    </strong>
-                                  </span></em><br>
-                                  {{ review.comment }}
-                                  <div>
-                                    <em>
-                                      <small class="text-muted d-block{% if reply.reviewer == request.user %}text-end{% endif %}">
-                                      {{ review.created_at|time:"H:i" }}
-                                      </small>
-                                    </em>
-                                  </div>
-                                </div>
-                              </div>
-                            {% endfor %}
-                          {% endfor %} 
-                          <!-- Reply Form -->
-                          <form method="post" action="{% url 'submit_review' guest.id role %}" id="PastorReviewform-{{ guest.id }}">
-                            {% csrf_token %}
-                            <input type="hidden" name="parent_id" value="{{ review.id }}">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                              <!-- Expanding Textarea -->
-                              <textarea name="comment" rows="1" class="form-control bg-gray border-0 flex-grow-1 me-2"
-                                        style="width: 450px; min-height:40px; max-height:300px; overflow:hidden; resize:none;"
-                                        placeholder="Reply..." oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px';"></textarea>
-
-                              <!-- Send Button -->
-                              <button type="submit" class="avatar bg-gray-lt border-0 text-green p-1 d-flex align-items-center justify-content-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-send-2">
-                                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                  <path d="M4.698 4.034l16.302 7.966l-16.302 7.966a.503 .503 0 0 1 -.546 -.124a.555 .555 0 0 1 -.12 -.568l2.468 -7.274l-2.468 -7.274a.555 .555 0 0 1 .12 -.568a.503 .503 0 0 1 .546 -.124z" />
-                                  <path d="M6.5 12h14.5" />
-                                </svg>
-                              </button>
-                            </div>
-                          </form>
-                        </div>
-                      {% endif %}
-                    </div>
-
-                    {% if not guest.reviews.exists %}
-                      <!-- New Review Form -->
-                      <form method="post" class="review-form" data-guest-id="{{ guest.id }}" action="{% url 'submit_review' guest.id role %}" id="PastorReviewform-new-{{ guest.id }}">
-                        {% csrf_token %}
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                          <!-- Expanding Textarea -->
-                          <textarea name="comment" rows="1" class="form-control bg-gray border-0 flex-grow-1 me-2"
-                                    style="width: 450px; min-height:40px; max-height:300px; overflow:hidden; resize:none;"
-                                    placeholder="Send a Review..." oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px';"></textarea>
-
-                          <!-- Send Button -->
-                          <button type="submit" class="avatar bg-gray-lt border-0 text-green p-1 d-flex align-items-center justify-content-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-send-2">
-                              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                              <path d="M4.698 4.034l16.302 7.966l-16.302 7.966a.503 .503 0 0 1 -.546 -.124a.555 .555 0 0 1 -.12 -.568l2.468 -7.274l-2.468 -7.274a.555 .555 0 0 1 .12 -.568a.503 .503 0 0 1 .546 -.124z" />
-                              <path d="M6.5 12h14.5" />
-                            </svg>
-                          </button>
-                        </div>
-                      </form>
-                    {% endif %}
+                    {% include "guests/partials/_review_thread.html" with
+                    guest=guest %}
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  {% endif %}
-{% endfor %}
-
-
-<!-- User Review Modal -->
-{% for guest in page_obj %}
-  {% if guest.id %}
-    <div class="modal fade modal-blur" id="reviewModal-{{ guest.id }}" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-          <div class="modal-header align-items-center justify-content-center">
-            <h5 class="modal-title">Review for <span class="text-warning fs-2">{{ guest.title }} {{ guest.full_name }}</span></h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            {% if guest.reviews.exists %}
-              <div class="mb-3 text-end" id="reviews-container-{{ guest.id }}">
-                {% regroup guest.reviews.all by created_at.date as reviews_by_date %}
-
-                {% for day in reviews_by_date %}
-                  <!-- Day Header -->
-                  <div class="text-center text-muted my-2">
-                    {{ day.grouper|date:"M d, Y" }}
-                  </div>
-
-                  {% for review in day.list %}
-                
-                    <div class="{% if review.reviewer == request.user %}text-end{% else %}text-start{% endif %} mb-2">
-                      <div class="d-inline-block px-3 py-2 rounded-2 
-                                  {% if review.reviewer == request.user %}
-                                    bg-green-lt text-white
-                                  {% else %}
-                                    bg-warning-lt text-white
-                                  {% endif %}">
-                        <em><span class="text-muted fs-5">
-                          <strong>
-                            {% if review.reviewer == request.user %}
-                              You
-                            {% else %}
-                              {{ review.reviewer.title|default:"" }}{{ review.reviewer.full_name }}
-                            {% endif %}
-                          </strong>
-                        </span></em><br>
-                        {{ review.comment }}
-                        <div>
-                          <em>
-                            <small class="text-muted d-block{% if reply.reviewer == request.user %}text-end{% endif %}">
-                            {{ review.created_at|time:"H:i" }}
-                            </small>
-                          </em>
-                        </div>
-                      </div>
-                    </div>
-                  {% endfor %}
-                {% endfor %} 
-                <!-- Reply Form -->
-                <form method="post" class="review-form d-flex mt-1" data-guest-id="{{ guest.id }}" action="{% url 'submit_review' guest.id role %}">
-                  {% csrf_token %}
-                  <input type="hidden" name="parent_id" value="{{ review.id }}">
-                  <div class="d-flex justify-content-between align-items-center mb-3">
-                    <!-- Expanding Textarea -->
-                    <textarea name="comment" rows="1" class="form-control border-0 flex-grow-1 me-2" style="width: 450px;" placeholder="Reply..." oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px';"></textarea>
-
-                    <!-- Send Button -->
-                    <button type="submit" class="avatar bg-gray-lt border-0 text-green p-1 d-flex align-items-center justify-content-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-send-2">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M4.698 4.034l16.302 7.966l-16.302 7.966a.503 .503 0 0 1 -.546 -.124a.555 .555 0 0 1 -.12 -.568l2.468 -7.274l-2.468 -7.274a.555 .555 0 0 1 .12 -.568a.503 .503 0 0 1 .546 -.124z" />
-                        <path d="M6.5 12h14.5" />
-                      </svg>
-                    </button>
-                  </div>
-                </form>
-              </div>
-            {% else %}
-              <p class="text-muted">No Reviews available yet.</p>
             {% endif %}
           </div>
         </div>
       </div>
     </div>
-  {% endif %}
-{% endfor %}
+  </div>
+</div>
+{% endif %} {% endfor %}
 
+<!-- ── Send message modal ── -->
+{% if permissions|can:"messaging.send" %} {% for guest in page_obj %}
+<div
+  class="modal fade"
+  id="guestMessageModal{{ guest.id }}"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Message — {{ guest.full_name }}</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form
+          method="post"
+          action="{% url 'messaging:send_guest_message' guest.id %}"
+        >
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Message</label>
+            <textarea
+              name="body"
+              rows="4"
+              class="form-control"
+              required
+            ></textarea>
+          </div>
+          <div class="text-end">
+            <button type="submit" class="btn btn-primary">Send</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %} {% endif %}
 
-<!-- Guest Review Modal JS -->
+<!-- ── Bulk delete modal ── -->
+{% if permissions|can:"guests.bulk_delete" %} {% include
+"guests/bulk_delete_modal.html" with guests=page_obj %} {% endif %}
+
+<!-- ── Review modals (one per guest) ── -->
+{% for guest in page_obj %} {% if permissions|can:"guests.review" %}
+<div
+  class="modal fade modal-blur"
+  id="reviewModal-{{ guest.id }}"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div
+    class="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable"
+  >
+    <div class="modal-content">
+      <div class="modal-header align-items-center justify-content-center">
+        <h5 class="modal-title">
+          Review —
+          <span class="text-warning fs-2"
+            >{{ guest.title }} {{ guest.full_name }}</span
+          >
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body">
+        {% include "guests/partials/_review_thread.html" with guest=guest %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %} {% endfor %}
+
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-
-  // === CSRF helper ===
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== "") {
-      const cookies = document.cookie.split(";");
-      for (let cookie of cookies) {
-        cookie = cookie.trim();
-        if (cookie.startsWith(name + "=")) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
-        }
-      }
-    }
-    return cookieValue;
-  }
-
-  // === Badge updater ===
-  function updateReviewBadge(guestId, hasUnread) {
-    const badgeWrapper = document.getElementById("review-badge-" + guestId);
-    if (!badgeWrapper) return;
-    badgeWrapper.innerHTML = hasUnread
-      ? `<span class="badge bg-red-lt position-absolute top-0 start-100 translate-middle">+</span>`
-      : "";
-  }
-
-  // === Hook up all review/reply forms for every guest ===
-  const reviewForms = document.querySelectorAll(
-    {% for guest in page_obj %}
-      `#reviewModal{{ guest.id }} form, #PastorreviewModal{{ guest.id }} form`{% if not forloop.last %}, {% endif %}
-    {% endfor %}
-  );
-
-  reviewForms.forEach(form => {
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-
-      const formData = new FormData(this);
-
-      fetch(this.action, {
-        method: "POST",
-        body: formData,
-        headers: {
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === "success") {
-          // Append review/reply
-          const chatArea = document.getElementById("reviews-container-" + data.review.guest_id);
-          if (chatArea) {
-            const newMsg = document.createElement("div");
-            newMsg.classList.add("chat-message", "mb-2");
-            newMsg.innerHTML = `<strong>${data.review.reviewer}:</strong> ${data.review.comment}`;
-            chatArea.appendChild(newMsg);
-          }
-
-          // Trigger badge for Pastor Review (no parent_id)
-          if (!data.review.parent_id) {
-            updateReviewBadge(data.review.guest_id, true);
-          }
-
-          // Clear textarea
-          this.querySelector("textarea[name='comment']").value = "";
-        }
-      })
-      .catch(err => console.error("Error submitting review:", err));
-    });
-  });
-
-});
-</script>
-
-<script>
-  // Magnet team from Django
-  window.magnet_team = {{ magnet_team|safe }};
-  if (!window.magnet_team || !window.magnet_team.id) {
-    console.error("⚠️ Magnet team not found in context!");
-  }
-
-  document.querySelectorAll(".attach-to-chat").forEach(btn => {
+  // Attach-to-chat handler — routes to the Magnet/Guests unit chat room
+  document.querySelectorAll(".attach-to-chat").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
-
       const guestData = {
         id: btn.dataset.id,
         name: btn.dataset.name,
         title: btn.dataset.title,
         custom_id: btn.dataset.customId,
         date_of_visit: btn.dataset.date,
-        image: btn.dataset.image || null
+        image: btn.dataset.image || null,
       };
-
-      console.log("Attaching guest:", guestData);
-
-      localStorage.setItem("attachGuest", JSON.stringify(guestData));
-
-      // Ensure Magnet team is valid
-      if (!window.magnet_team || !window.magnet_team.id) {
-        alert("Magnet team not found. Please contact admin.");
-        return;
-      }
-
-      const magnetTeamId = window.magnet_team.id;
-      console.log("Redirecting to chat with magnetTeamId:", magnetTeamId);
-
-      // Redirect to chat
-      window.location.href = `/?team_id=${magnetTeamId}&guest_id=${guestData.id}`;
+      sessionStorage.setItem("attachGuest", JSON.stringify(guestData));
+      // Navigate to default chat room; room_id injected by view as window.GUESTS_ROOM_ID
+      const roomId = window.GUESTS_ROOM_ID || "";
+      window.location.href = roomId
+        ? `/?room_id=${roomId}&guest_id=${guestData.id}`
+        : "/";
     });
   });
-</script>
 
-
-
-<script>
-  async function logUserActivity(activityType, guestId = null, description = "") {
-    try {
-      await fetch("/log-user-activity/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        body: JSON.stringify({
-          activity_type: activityType,
-          guest_id: guestId,
-          description: description,
-        }),
-      });
-    } catch (err) {
-      console.warn("Activity log failed:", err);
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", function () {
-    // initialize all status popovers
-    document.querySelectorAll('.status-popover-trigger').forEach(function (el) {
-      el.addEventListener('click', function (e) {
-        e.preventDefault(); 
-        e.stopPropagation(); // CRITICAL: keeps dropdown open
-      });
-      let statusColor = el.dataset.status;
-      new bootstrap.Popover(el, {
-        trigger: 'click',
-        sanitize: false,   // allow html
-        html: true,
-        customClass: `status-popover-${statusColor}`
-      });
-    });
-
-    // Close popovers when clicking a status link inside them (so the dropdown menu doesn't remain open)
-    document.body.addEventListener('click', function (e) {
-      // if a link inside a popover was clicked, hide any visible popovers
-      if (e.target.closest('.popover .dropdown-item')) {
-        document.querySelectorAll('.status-popover-trigger').forEach(function (el) {
-          let pop = bootstrap.Popover.getInstance(el);
-          if (pop) pop.hide();
-        });
-      }
-
-      // optional: clicking outside should close any open popovers (Bootstrap mostly handles this,
-      // but this ensures it when inside dropdown menus)
-      if (!e.target.closest('.status-popover-trigger') && !e.target.closest('.popover')) {
-        document.querySelectorAll('.status-popover-trigger').forEach(function (el) {
-          let pop = bootstrap.Popover.getInstance(el);
-          if (pop) pop.hide();
-        });
-      }
-    }, true);
-
-    // Status info popovers
-    document.querySelectorAll('.info-popover-trigger').forEach(function (el) {
-      el.addEventListener('click', function (e) {
-        e.preventDefault(); 
-        e.stopPropagation(); // CRITICAL: keeps dropdown open
+  // Status popovers
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".status-popover-trigger").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
       });
       new bootstrap.Popover(el, {
-        trigger: 'click',
-        sanitize: false,   // allow html
+        trigger: "click",
+        sanitize: false,
         html: true,
       });
     });
-
-    document.body.addEventListener('click', function (e) {
-      // optional: clicking outside should close any open popovers (Bootstrap mostly handles this,
-      // but this ensures it when inside dropdown menus)
-      if (!e.target.closest('.info-popover-trigger') && !e.target.closest('.popover')) {
-        document.querySelectorAll('.info-popover-trigger').forEach(function (el) {
-          let pop = bootstrap.Popover.getInstance(el);
-          if (pop) pop.hide();
-        });
-      }
-    }, true);
+    document.body.addEventListener(
+      "click",
+      (e) => {
+        if (
+          !e.target.closest(".status-popover-trigger") &&
+          !e.target.closest(".popover")
+        ) {
+          document.querySelectorAll(".status-popover-trigger").forEach((el) => {
+            const pop = bootstrap.Popover.getInstance(el);
+            if (pop) pop.hide();
+          });
+        }
+      },
+      true,
+    );
   });
 </script>
-
 {% endblock %}
-
-
-
-
-
-
-
-
-
-
-

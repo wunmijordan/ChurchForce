@@ -1,0 +1,157 @@
+{% extends "public_base.html" %} {% load static widget_tweaks %} {% block title
+%}Create your church account — ChurchForce{% endblock %} {% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+      <div class="text-center mb-4">
+        <img
+          src="{% static 'images/icons/icon-192x192.png' %}"
+          alt="ChurchForce"
+          width="56"
+          height="56"
+          style="border-radius: 12px"
+          class="mb-3"
+        />
+        <h2 class="fw-bold">Start your free trial</h2>
+        <p class="text-secondary">14 days free. No credit card required.</p>
+      </div>
+
+      <div class="card bg-dark border-secondary shadow">
+        <div class="card-body p-4">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <h6 class="text-uppercase text-secondary fw-bold small mb-3">
+              Your organisation
+            </h6>
+
+            <div class="mb-3">
+              <label class="form-label"
+                >Church Name <span class="text-danger">*</span></label
+              >
+              {% render_field form.church_name class="form-control"
+              placeholder="e.g. Grace Chapel" %} {% if form.church_name.errors
+              %}
+              <div class="text-danger small mt-1">
+                {{ form.church_name.errors.0 }}
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label"
+                >URL handle <span class="text-danger">*</span></label
+              >
+              <div class="input-group">
+                <span
+                  class="input-group-text text-secondary"
+                  style="background: #1a1a2e; border-color: #444"
+                  >workforce.church/</span
+                >
+                {% render_field form.url_handle class="form-control"
+                placeholder="grace-chapel" %}
+              </div>
+              <div class="form-text text-secondary">
+                Letters, numbers and hyphens only.
+              </div>
+              {% if form.url_handle.errors %}
+              <div class="text-danger small mt-1">
+                {{ form.url_handle.errors.0 }}
+              </div>
+              {% endif %}
+            </div>
+
+            <hr class="border-secondary my-4" />
+            <h6 class="text-uppercase text-secondary fw-bold small mb-3">
+              Your account
+            </h6>
+
+            <div class="mb-3">
+              <label class="form-label"
+                >Full name <span class="text-danger">*</span></label
+              >
+              {% render_field form.full_name class="form-control"
+              placeholder="John Doe" %} {% if form.full_name.errors %}
+              <div class="text-danger small mt-1">
+                {{ form.full_name.errors.0 }}
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label"
+                >Email address <span class="text-danger">*</span></label
+              >
+              {% render_field form.email class="form-control"
+              placeholder="john@gracechapel.org" %} {% if form.email.errors %}
+              <div class="text-danger small mt-1">
+                {{ form.email.errors.0 }}
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label"
+                  >Password <span class="text-danger">*</span></label
+                >
+                {% render_field form.password class="form-control" %} {% if
+                form.password.errors %}
+                <div class="text-danger small mt-1">
+                  {{ form.password.errors.0 }}
+                </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label"
+                  >Confirm password <span class="text-danger">*</span></label
+                >
+                {% render_field form.password_confirm class="form-control" %} {%
+                if form.password_confirm.errors %}
+                <div class="text-danger small mt-1">
+                  {{ form.password_confirm.errors.0 }}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger py-2 small">
+              {{ form.non_field_errors.0 }}
+            </div>
+            {% endif %}
+
+            <button
+              type="submit"
+              class="btn w-100 mt-2 fw-bold py-2"
+              style="background: #ff5e01; color: #fff; border: none"
+            >
+              Create my free account
+            </button>
+
+            <p class="text-center text-secondary small mt-3 mb-0">
+              Already have an account?
+              <a href="{% url 'login' %}" class="text-light">Sign in</a>
+            </p>
+          </form>
+        </div>
+      </div>
+
+      <div class="row text-center mt-4 text-secondary small">
+        <div class="col-4">
+          <div class="fw-bold text-light">✓ All features</div>
+          <div>Guests, chat, attendance</div>
+        </div>
+        <div class="col-4">
+          <div class="fw-bold text-light">✓ 14 days free</div>
+          <div>No card needed</div>
+        </div>
+        <div class="col-4">
+          <div class="fw-bold text-light">✓ Your own URL</div>
+          <div>Branded from day one</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,233 @@
+{% extends "base.html" %} {% load static widget_tweaks %} {% block title
+%}Church Settings{% endblock %} {% block content %}
+<div class="container py-4">
+  <div class="row">
+    <div class="col-12 col-lg-9">
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <h2 class="mb-0 fw-bold">Church Settings</h2>
+        <span class="badge bg-blue-lt text-blue">Admin only</span>
+      </div>
+
+      {% if messages %} {% for message in messages %}
+      <div
+        class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show"
+        role="alert"
+      >
+        {{ message }}
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+        ></button>
+      </div>
+      {% endfor %} {% endif %}
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %} {# ── Church Profile ── #}
+        <div class="card bg-dark border-secondary mb-4">
+          <div class="card-header py-3">
+            <h5 class="mb-0 fw-bold">Church Profile</h5>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label">Organisation name</label>
+                {% render_field profile_form.name class="form-control" %} {% if
+                profile_form.name.errors %}
+                <div class="text-danger small mt-1">
+                  {{ profile_form.name.errors.0 }}
+                </div>
+                {% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Brand colour</label>
+                {% render_field profile_form.primary_color class="form-control
+                form-control-color w-100" %}
+              </div>
+              <div class="col-md-12">
+                <label class="form-label">Logo</label>
+                {% render_field profile_form.logo class="form-control" %}
+              </div>
+              <div class="col-md-8">
+                <label class="form-label">Timezone</label>
+                {% render_field profile_form.timezone class="form-control" %}
+                <div class="form-text text-secondary">
+                  {{ profile_form.timezone.help_text }}
+                </div>
+                {% if profile_form.timezone.errors %}
+                <div class="text-danger small mt-1">
+                  {{ profile_form.timezone.errors.0 }}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# ── Venue & Attendance ── #}
+        <div class="card bg-dark border-secondary mb-4">
+          <div class="card-header py-3">
+            <h5 class="mb-0 fw-bold">Venue &amp; Attendance Geo-fencing</h5>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-5">
+                <label class="form-label">Latitude</label>
+                {% render_field profile_form.latitude class="form-control" %}
+                <div class="form-text text-secondary">
+                  {{ profile_form.latitude.help_text }}
+                </div>
+                {% if profile_form.latitude.errors %}
+                <div class="text-danger small mt-1">
+                  {{ profile_form.latitude.errors.0 }}
+                </div>
+                {% endif %}
+              </div>
+              <div class="col-md-5">
+                <label class="form-label">Longitude</label>
+                {% render_field profile_form.longitude class="form-control" %}
+                {% if profile_form.longitude.errors %}
+                <div class="text-danger small mt-1">
+                  {{ profile_form.longitude.errors.0 }}
+                </div>
+                {% endif %}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Radius (km)</label>
+                {% render_field profile_form.attendance_radius_km
+                class="form-control" %}
+              </div>
+              <div class="col-12">
+                <a
+                  href="https://www.google.com/maps"
+                  target="_blank"
+                  rel="noopener"
+                  class="btn btn-outline-secondary btn-sm"
+                >
+                  Open Google Maps to find coordinates →
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# ── Guest Pipeline ── #}
+        <div class="card bg-dark border-secondary mb-4">
+          <div class="card-header py-3">
+            <h5 class="mb-0 fw-bold">Guest Pipeline</h5>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label"
+                  >Attendance threshold for Committed status</label
+                >
+                {% render_field settings_form.committed_attendance_threshold
+                class="form-control" %}
+                <div class="form-text text-secondary">
+                  {{ settings_form.committed_attendance_threshold.help_text }}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Rolling window (weeks)</label>
+                {% render_field settings_form.committed_attendance_window_weeks
+                class="form-control" %}
+                <div class="form-text text-secondary">
+                  {{ settings_form.committed_attendance_window_weeks.help_text
+                  }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# ── Custom ID Prefixes ── #}
+        <div class="card bg-dark border-secondary mb-4">
+          <div class="card-header py-3">
+            <h5 class="mb-0 fw-bold">Custom ID Prefixes</h5>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Member ID prefix</label>
+                {% render_field settings_form.member_id_prefix
+                class="form-control text-uppercase" %}
+                <div class="form-text text-secondary">
+                  e.g. <code>MBR</code> → MBR000001
+                </div>
+                {% if settings_form.member_id_prefix.errors %}
+                <div class="text-danger small mt-1">
+                  {{ settings_form.member_id_prefix.errors.0 }}
+                </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Guest ID prefix</label>
+                {% render_field settings_form.guest_id_prefix
+                class="form-control text-uppercase" %}
+                <div class="form-text text-secondary">
+                  e.g. <code>GNG</code> → GNG000001
+                </div>
+                {% if settings_form.guest_id_prefix.errors %}
+                <div class="text-danger small mt-1">
+                  {{ settings_form.guest_id_prefix.errors.0 }}
+                </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Date display format</label>
+                {% render_field settings_form.date_format class="form-control"
+                %}
+                <div class="form-text text-secondary">
+                  Python strftime format. Default: <code>%d %b %Y</code>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# ── Feature Flags ── #}
+        <div class="card bg-dark border-secondary mb-4">
+          <div class="card-header py-3">
+            <h5 class="mb-0 fw-bold">Features</h5>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              {% for field in settings_form %} {% if "enable_" in
+              field.html_name %}
+              <div class="col-md-6">
+                <div class="form-check">
+                  {% render_field field class="form-check-input" %}
+                  <label
+                    class="form-check-label"
+                    for="{{ field.id_for_label }}"
+                  >
+                    {{ field.label }}
+                  </label>
+                </div>
+              </div>
+              {% endif %} {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-3">
+          <a
+            href="{% url 'accounts:admin_dashboard' %}"
+            class="btn btn-outline-secondary px-4"
+          >
+            Cancel
+          </a>
+          <button
+            type="submit"
+            class="btn fw-bold px-5"
+            style="background: #ff5e01; color: #fff; border: none"
+          >
+            Save settings
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

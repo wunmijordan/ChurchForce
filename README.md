@@ -1,2 +1,3 @@
-# gforceapp
-Gateway Nation Workforce
+# churchforce
+
+Church Workforce Management

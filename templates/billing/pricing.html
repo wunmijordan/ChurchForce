@@ -1,0 +1,112 @@
+{% extends "public_base.html" %} {% load static %} {% block title %}Pricing —
+ChurchForce{% endblock %} {% block content %}
+<div class="container py-5">
+  <div class="text-center mb-5">
+    <h1 class="fw-bold">Simple, transparent pricing</h1>
+    <p class="text-secondary lead">
+      Start free. Upgrade when your church is ready.
+    </p>
+  </div>
+
+  <div class="row justify-content-center g-4">
+    {% for plan in plans %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <div
+        class="card h-100 border-{% if plan.highlight %}warning{% else %}secondary{% endif %} {% if plan.highlight %}shadow-lg{% endif %} bg-dark"
+        style="{% if plan.highlight %}border-width:2px;{% endif %}"
+      >
+        {% if plan.highlight %}
+        <div
+          class="card-header text-center py-2 fw-bold small"
+          style="
+            background: #ff5e01;
+            color: #fff;
+            border-bottom: none;
+            border-radius: 6px 6px 0 0;
+          "
+        >
+          ⭐ Most Popular
+        </div>
+        {% endif %}
+
+        <div class="card-body p-4 d-flex flex-column">
+          <h4 class="fw-bold mb-1">{{ plan.label }}</h4>
+          <p class="text-secondary small mb-3">{{ plan.description }}</p>
+
+          <div class="mb-4">
+            <span class="display-6 fw-bold">{{ plan.price }}</span>
+            <span class="text-secondary">{{ plan.duration }}</span>
+          </div>
+
+          <ul class="list-unstyled mb-4 flex-grow-1">
+            {% for feature in plan.features %}
+            <li class="mb-2 text-secondary">
+              <span style="color: #22c55e" class="me-2">✓</span> {{ feature }}
+            </li>
+            {% endfor %}
+          </ul>
+
+          {% if church and current_plan == plan.key %}
+          <button class="btn btn-outline-secondary w-100" disabled>
+            Current plan
+          </button>
+          {% elif plan.key == "trial" %}
+          <a
+            href="{% url 'tenants:signup' %}"
+            class="btn btn-outline-light w-100"
+          >
+            Start free trial
+          </a>
+          {% else %}
+          <a
+            href="{% url 'billing:upgrade' %}"
+            class="btn w-100 fw-bold"
+            style="{% if plan.highlight %}background:#ff5e01;color:#fff;border:none;{% else %}background:transparent;color:#fff;border:1px solid #555;{% endif %}"
+            onclick="document.getElementById('selected_plan').value='{{ plan.key }}'"
+          >
+            {{ plan.cta }}
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# Hidden form to carry selected plan to upgrade view #}
+  <form
+    id="upgradeForm"
+    method="get"
+    action="{% url 'billing:upgrade' %}"
+    class="d-none"
+  >
+    <input type="hidden" name="plan" id="selected_plan" />
+  </form>
+
+  <div class="text-center mt-5 text-secondary small">
+    <p>
+      All plans include: multi-tenant isolation, push notifications, real-time
+      chat, guest pipeline, and attendance tracking.
+    </p>
+    <p>
+      Questions?
+      <a href="mailto:hello@churchforce.io" class="text-light"
+        >hello@churchforce.io</a
+      >
+    </p>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+  // Wire upgrade links to submit the hidden form with the selected plan
+  document.querySelectorAll('[onclick*="selected_plan"]').forEach((btn) => {
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const plan = this.getAttribute("onclick").match(/'([^']+)'/)[1];
+      document.getElementById("selected_plan").value = plan;
+      document.getElementById("upgradeForm").submit();
+    });
+  });
+</script>
+{% endblock %} {% endblock %}

@@ -1,12 +1,13 @@
 {
-  "name": "Gateway Nation Workforce App",
-  "short_name": "GForceApp",
+  "name": "ChurchForce",
+  "short_name": "ChurchForce",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#2e303e",
   "theme_color": "#2e303e",
   "orientation": "portrait-primary",
-  "description": "Workforce Hub for Gateway Nation",
+  "description": "Workforce Hub for your Church",
+  "scope": "/",
   "icons": [
     {
       "src": "/static/images/icons/icon-192x192.png",

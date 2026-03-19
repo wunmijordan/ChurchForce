@@ -1,1 +1,1 @@
-web: gunicorn gforceapp.wsgi:application --bind 0.0.0.0:$PORT
+web: gunicorn churchforce.wsgi:application --bind 0.0.0.0:$PORT

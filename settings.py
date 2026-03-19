@@ -29,7 +29,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'gforceapp.urls'
+ROOT_URLCONF = 'churchforce.urls'
 
 TEMPLATES = [
     {
@@ -47,7 +47,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'gforceapp.wsgi.application'
+WSGI_APPLICATION = 'churchforce.wsgi.application'
 
 DATABASES = {
     'default': {

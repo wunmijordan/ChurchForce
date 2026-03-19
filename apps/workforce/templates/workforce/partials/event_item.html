@@ -1,0 +1,104 @@
+{% load static %}
+<li
+  class="list-group-item bg-gray text-white d-flex justify-content-between align-items-center"
+  data-id="{{ event.id }}"
+>
+  <div class="d-flex align-items-center gap-3">
+    {% if event.event_image %}
+    <img
+      src="{{ event.event_image.url }}"
+      alt="{{ event.name }}"
+      style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px"
+    />
+    {% else %}
+    <img
+      src="{% static 'images/event-placeholder.png' %}"
+      alt="No image"
+      style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px"
+    />
+    {% endif %}
+    <div>
+      <strong class="text-warning">{{ event.name }}</strong> — {% if
+      event.postponed %} {% if event.date %}
+      <i class="text-danger">
+        Postponed → {{ event.date }}{% if event.time %} at {{ event.time }}{%
+        endif %}
+      </i>
+      {% else %}
+      <i class="text-danger">Postponed (Date TBD)</i>
+      {% endif %} {% else %} {{ event.date|default:"Weekly" }} {% if event.time
+      %} at {{ event.time }}{% endif %} {% endif %} {% if event.end_date %} → {{
+      event.end_date }}{% endif %}
+      <br />
+      <small class="text-muted">
+        {{ event.attendance_mode }} {{ event.event_type }} —
+        <span class="text-white {{ event.team_color_class }}"
+          >{% if event.team %} {{ event.team.name }}{% else %}ChurchForce{%
+          endif %}</span
+        >
+      </small>
+    </div>
+  </div>
+  <div class="ms-auto">
+    <span
+      class="me-2 edit-btn"
+      data-id="{{ event.id }}"
+      data-name="{{ event.name }}"
+      data-event_type="{{ event.event_type }}"
+      data-image="{% if event.event_image %}{{ event.event_image.url }}{% endif %}"
+      data-team_id="{% if event.team %}{{ event.team.id }}{% else %}{% endif %}"
+      data-postponed="{{ event.postponed|yesno:'true,false' }}"
+      data-date="{{ event.date|date:'Y-m-d' }}"
+      data-end_date="{{ event.end_date|date:'Y-m-d' }}"
+      data-time="{{ event.time|time:'H:i' }}"
+      data-duration_days="{{ event.duration_days }}"
+      data-attendance_mode="{{ event.attendance_mode|default:'' }}"
+      data-is_recurring_weekly="{{ event.is_recurring_weekly|yesno:'true,false' }}"
+      data-day_of_week="{{ event.day_of_week|default:'' }}"
+      data-is_active="{{ event.is_active|yesno:'true,false' }}"
+      data-registrable="{{ event.registrable|yesno:'true,false' }}"
+      data-registration_link="{{ event.registration_link|default:'' }}"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="rgba(155, 130, 107, 1)"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="icon icon-tabler icons-tabler-outline icon-tabler-edit"
+      >
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
+        <path
+          d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"
+        />
+        <path d="M16 5l3 3" />
+      </svg>
+    </span>
+    <span class="delete-btn" data-id="{{ event.id }}">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="rgba(255, 0, 0, 1)"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="icon icon-tabler icons-tabler-outline icon-tabler-trash"
+      >
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M4 7l16 0" />
+        <path d="M10 11l0 6" />
+        <path d="M14 11l0 6" />
+        <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+        <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+      </svg>
+    </span>
+  </div>
+</li>
