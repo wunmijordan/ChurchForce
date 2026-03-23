@@ -3,7 +3,7 @@ from django.dispatch import receiver
 
 from tenants.models import Church
 from bootstrap.models import ChurchTemplate
-from bootstrap.services import apply_template_to_church
+from bootstrap.services import apply_template_to_church, ensure_default_template
 
 
 @receiver(post_save, sender=Church)
@@ -30,8 +30,8 @@ def bootstrap_church(sender, instance, created, **kwargs):
     template = (
         instance.template
         or ChurchTemplate.objects.filter(is_default=True, is_active=True).first()
+        or ensure_default_template()
     )
-
     if not template:
         return
 
@@ -41,3 +41,5 @@ def bootstrap_church(sender, instance, created, **kwargs):
         return
 
     apply_template_to_church(template, instance)
+
+

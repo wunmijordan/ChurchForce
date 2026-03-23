@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-import pytz, json
+import pytz
 
 from django.conf import settings
 from django.contrib import messages
@@ -16,7 +16,7 @@ from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.utils.timezone import localtime, now
 
-from .forms import CustomUserCreationForm, CustomUserChangeForm, GroupForm
+from .forms import CustomUserCreationForm, CustomUserChangeForm, ProfileEditForm
 from .models import CustomUser, ChurchMember
 from units.models import ChurchUnit, UnitMembership
 from workforce.models import AttendanceRecord, ClockRecord
@@ -83,6 +83,8 @@ class CustomLoginForm(AuthenticationForm):
     pass
 
 
+# apps/accounts/views.py
+
 class CustomLoginView(LoginView):
     form_class = CustomLoginForm
     template_name = "accounts/login.html"
@@ -96,12 +98,31 @@ class CustomLoginView(LoginView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse_lazy("workforce:chat_room")
+        # 1. Get the current church from the request context
+        church = getattr(self.request, 'church', None)
+        
+        # 2. Check if the welcome screen is enabled in settings
+        if church and hasattr(church, 'settings'):
+            if church.settings.enable_welcome_screen:
+                return reverse_lazy("post_login_redirect")
+        
+        # 3. If disabled or church not found, go straight to dashboard logic
+        if has_perm(self.request, "dashboard.admin"):
+            return reverse_lazy("dashboard:admin_dashboard")
+        return reverse_lazy("dashboard:dashboard")
+
 
 
 def post_login_redirect(request):
-    # TODO: read timezone from church.timezone or user settings
-    tz = pytz.timezone("Africa/Lagos")
+    church = getattr(request, 'church', None)
+    
+    # Safety: If admin turned it off, bypass the modal even if they visit the URL
+    if church and hasattr(church, 'settings') and not church.settings.enable_welcome_screen:
+        if has_perm(request, "dashboard.admin"):
+            return redirect("dashboard:admin_dashboard")
+        return redirect("dashboard:dashboard")
+
+    tz = pytz.timezone(getattr(church, 'timezone', 'Africa/Lagos'))
     now_in_wat = localtime(now(), timezone=tz)
     today_str = now_in_wat.strftime("%Y-%m-%d")
     day_name = now_in_wat.strftime("%A")
@@ -112,10 +133,10 @@ def post_login_redirect(request):
         request.session.modified = True
         quote = DAY_QUOTES.get(day_name, "Stay faithful — your work in the Kingdom is never in vain.")
 
-        if has_perm(request, "accounts.admin_dashboard"):
-            dashboard_url = reverse("accounts:admin_dashboard")
+        if has_perm(request, "dashboard.admin"):
+            dashboard_url = reverse("dashboard:admin_dashboard")
         else:
-            dashboard_url = reverse("dashboard")
+            dashboard_url = reverse("dashboard:dashboard")
 
         return render(request, "accounts/welcome_modal.html", {
             "day_name": day_name,
@@ -125,9 +146,9 @@ def post_login_redirect(request):
             "dashboard_label": "Proceed to Dashboard",
         })
 
-    if has_perm(request, "accounts.admin_dashboard"):
-        return redirect("accounts:admin_dashboard")
-    return redirect("dashboard")
+    if has_perm(request, "dashboard.admin"):
+        return redirect("dashboard:admin_dashboard")
+    return redirect("dashboard:dashboard")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -398,26 +419,6 @@ def manage_user(request, user_id=None):
         "userMemberships": memberships,
     }
 
-    # In manage_user view context:
-    available_units = ChurchUnit.raw_objects.filter(church=church, is_active=True)
-    available_units_json = json.dumps([
-        {"id": u.id, "name": u.name, "type": u.get_unit_type_display()}
-        for u in available_units
-    ])
-
-    # For edit mode:
-    preloaded_units = []
-    if user_obj:
-        member = ChurchMember.raw_objects.filter(church=church, user=user_obj).first()
-        if member and hasattr(member, 'workforce_member'):
-            preloaded_units = [
-                {"unit_id": m.unit_id, "is_probation": m.is_probation, "is_unit_head": m.is_unit_head}
-                for m in UnitMembership.raw_objects.filter(
-                    church=church, workforce_member__member=member, is_active=True
-                )
-            ]
-    preloaded_units_json = json.dumps(preloaded_units)
-
     return render(request, "accounts/user_form.html", {
         "form": form,
         "edit_mode": is_edit,
@@ -454,88 +455,6 @@ def show_credentials(request):
         "next_url": next_url,
         "page_title": "New Member Credentials",
     })
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Groups
-# ─────────────────────────────────────────────────────────────────────────────
-
-@login_required
-def manage_groups(request):
-    if not has_perm(request, "accounts.manage_groups"):
-        return HttpResponseForbidden("Not allowed.")
-
-    groups = Group.objects.all().order_by("name")
-    form = GroupForm(request.POST or None)
-
-    if request.method == "POST":
-        if form.is_valid():
-            group = form.save()
-            messages.success(request, f"Group '{group.name}' created.")
-            return redirect("accounts:manage_groups")
-        else:
-            messages.error(request, "Error creating group. Please try again.")
-
-    return render(request, "accounts/manage_groups.html", {
-        "groups": groups,
-        "form": form,
-    })
-
-
-@login_required
-def delete_group(request, group_id):
-    if not has_perm(request, "accounts.manage_groups"):
-        return HttpResponseForbidden("Not allowed.")
-
-    group = get_object_or_404(Group, id=group_id)
-
-    PROTECTED_GROUPS = {"Admin", "Pastor", "Minister", "Workforce Member"}
-    if group.name in PROTECTED_GROUPS:
-        messages.error(request, f"Cannot delete the '{group.name}' group.")
-        return redirect("accounts:manage_groups")
-
-    if group.user_set.exists():
-        messages.error(request, f"Cannot delete '{group.name}' — users are still assigned to it.")
-        return redirect("accounts:manage_groups")
-
-    group.delete()
-    messages.success(request, f"Group '{group.name}' deleted.")
-    return redirect("accounts:manage_groups")
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# AJAX helpers
-# ─────────────────────────────────────────────────────────────────────────────
-
-@login_required
-def load_teams(request):
-    church = getattr(request, "church", None)
-    if not church:
-        return JsonResponse([], safe=False)
-
-    teams = ChurchUnit.raw_objects.filter(
-        church=church, is_active=True
-    ).values("id", "name")
-    return JsonResponse(list(teams), safe=False)
-
-
-def load_roles(request):
-    """Return unit roles scoped to this church, optionally filtered by unit."""
-    church = getattr(request, "church", None)
-    if not church:
-        return JsonResponse([], safe=False)
-
-    unit_id   = request.GET.get("unit_id")
-    unit_name = request.GET.get("group")
-
-    roles = UnitRole.raw_objects.filter(church=church, is_active=True)
-
-    if unit_id:
-        roles = roles.filter(unit_id=unit_id)
-    elif unit_name:
-        roles = roles.filter(unit__name__iexact=unit_name)
-
-    return JsonResponse(list(roles.values("id", "name")), safe=False)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -896,7 +815,7 @@ def _send_invitation_email(invitation, request):
         church_name = invitation.church.name
 
         body_lines = [
-            f"You've been invited to join {church_name} on Workforce.",
+            f"You've been invited to join {church_name} Workforce.",
         ]
         if invitation.message:
             body_lines.append(f"\nMessage from {invitation.invited_by.full_name or 'the admin'}:")
@@ -909,10 +828,10 @@ def _send_invitation_email(invitation, request):
         ]
 
         send_mail(
-            subject=f"You're invited to join {church_name} on Workforce",
+            subject=f"You're invited to join {church_name} Workforce",
             message="\n".join(body_lines),
             from_email=getattr(django_settings, "DEFAULT_FROM_EMAIL",
-                               "noreply@workforce.church"),
+                               "noreply@churchforce.io"),
             recipient_list=[invitation.email],
             fail_silently=True,
         )
@@ -923,28 +842,6 @@ def _send_invitation_email(invitation, request):
 # ─────────────────────────────────────────────────────────────────────────────
 # Member self-service profile edit
 # ─────────────────────────────────────────────────────────────────────────────
-
-class ProfileEditForm(forms.ModelForm):
-    """
-    Allows a member to edit a safe subset of their own profile.
-    Excluded: username, email, is_staff, is_superuser, groups, permissions,
-              church-level fields — anything that would affect access control.
-    """
-    class Meta:
-        model  = CustomUser
-        fields = [
-            "full_name", "title", "phone_number",
-            "date_of_birth", "marital_status", "address", "image",
-        ]
-        widgets = {
-            "full_name":     forms.TextInput(attrs={"class": "form-control"}),
-            "title":         forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Mr, Mrs, Dr"}),
-            "phone_number":  forms.TextInput(attrs={"class": "form-control"}),
-            "date_of_birth": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
-            "marital_status":forms.Select(attrs={"class": "form-select"}),
-            "address":       forms.Textarea(attrs={"class": "form-control", "rows": 3}),
-            "image":         forms.ClearableFileInput(attrs={"class": "form-control"}),
-        }
 
 
 @login_required
@@ -982,7 +879,7 @@ def profile_edit(request):
 def edit_profile(request):
     """
     Member self-service profile editing.
-    Only exposes safe fields — never username, email, is_staff, etc.
+    Only exposes safe fields — never username, email, etc.
     """
     from django import forms as dforms
 

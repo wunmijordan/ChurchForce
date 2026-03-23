@@ -1,78 +1,45 @@
-{# Usage: {% include "guests/partials/_review_thread.html" with guest=guest %}
-#} {% load access_tags %} {% if guest.reviews.exists %}
-<div class="mb-3" id="reviews-container-{{ guest.id }}">
-  {% regroup guest.reviews.all by created_at.date as reviews_by_date %} {% for
-  day in reviews_by_date %}
-  <div class="text-center text-muted my-2 small">
-    {{ day.grouper|date:"M d, Y" }}
+{# Usage: {% include "guests/partials/_review_thread.html" with guest=guest %} #}
+{% load access_tags %}
+
+{% if guest.reviews.exists %}
+  <div class="mb-3" id="reviews-container-{{ guest.id }}">
+    {% regroup guest.reviews.all by created_at.date as reviews_by_date %}
+    {% for day in reviews_by_date %}
+      <div class="text-center text-muted my-2 small">{{ day.grouper|date:"M d, Y" }}</div>
+      {% for review in day.list %}
+        <div class="{% if review.reviewer == request.member %}text-end{% else %}text-start{% endif %} mb-2">
+          <div class="d-inline-block px-3 py-2 rounded-2
+                      {% if review.reviewer == request.member %}bg-green-lt text-white{% else %}bg-warning-lt text-white{% endif %}">
+            <em><span class="text-muted fs-5">
+              <strong>
+                {% if review.reviewer == request.member %}You{% else %}{{ review.reviewer.user.full_name }}{% endif %}
+              </strong>
+            </span></em><br>
+            {{ review.comment }}
+            <div><small class="text-muted d-block">{{ review.created_at|time:"H:i" }}</small></div>
+          </div>
+        </div>
+      {% endfor %}
+    {% endfor %}
   </div>
-  {% for review in day.list %}
-  <div
-    class="{% if review.reviewer == request.member %}text-end{% else %}text-start{% endif %} mb-2"
-  >
-    <div
-      class="d-inline-block px-3 py-2 rounded-2 {% if review.reviewer == request.member %}bg-green-lt text-white{% else %}bg-warning-lt text-white{% endif %}"
-    >
-      <em
-        ><span class="text-muted fs-5">
-          <strong>
-            {% if review.reviewer == request.member %}You{% else %}{{
-            review.reviewer.user.full_name }}{% endif %}
-          </strong>
-        </span></em
-      ><br />
-      {{ review.comment }}
-      <div>
-        <small class="text-muted d-block"
-          >{{ review.created_at|time:"H:i" }}</small
-        >
-      </div>
-    </div>
-  </div>
-  {% endfor %} {% endfor %}
-</div>
 {% else %}
-<p class="text-muted small">No reviews yet.</p>
+  <p class="text-muted small">No reviews yet.</p>
 {% endif %}
 
 <!-- Reply / new review form -->
 {% if permissions|can:"guests.review" %}
-<form
-  method="post"
-  class="review-form d-flex mt-2"
-  data-guest-id="{{ guest.id }}"
-  action="{% url 'guests:submit_review' guest.id 'member' %}"
->
+<form method="post" class="review-form d-flex mt-2" data-guest-id="{{ guest.id }}"
+      action="{% url 'guests:submit_review' guest.id 'member' %}">
   {% csrf_token %}
-  <textarea
-    name="comment"
-    rows="1"
-    class="form-control border-0 flex-grow-1 me-2"
-    style="min-height: 40px; max-height: 200px; overflow: hidden; resize: none"
-    placeholder="{% if guest.reviews.exists %}Reply…{% else %}Write a review…{% endif %}"
-    oninput="
-      this.style.height = 'auto';
-      this.style.height = this.scrollHeight + 'px';
-    "
-  ></textarea>
-  <button
-    type="submit"
-    class="avatar bg-gray-lt border-0 text-green p-1 d-flex align-items-center justify-content-center"
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-    >
-      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-      <path
-        d="M4.698 4.034l16.302 7.966l-16.302 7.966a.503.503 0 0 1-.546-.124a.555.555 0 0 1-.12-.568l2.468-7.274l-2.468-7.274a.555.555 0 0 1 .12-.568a.503.503 0 0 1 .546-.124z"
-      />
-      <path d="M6.5 12h14.5" />
+  <textarea name="comment" rows="1" class="form-control border-0 flex-grow-1 me-2"
+            style="min-height:40px;max-height:200px;overflow:hidden;resize:none;"
+            placeholder="{% if guest.reviews.exists %}Reply…{% else %}Write a review…{% endif %}"
+            oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';"></textarea>
+  <button type="submit" class="avatar bg-gray-lt border-0 text-green p-1 d-flex align-items-center justify-content-center">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <path d="M4.698 4.034l16.302 7.966l-16.302 7.966a.503.503 0 0 1-.546-.124a.555.555 0 0 1-.12-.568l2.468-7.274l-2.468-7.274a.555.555 0 0 1 .12-.568a.503.503 0 0 1 .546-.124z"/>
+      <path d="M6.5 12h14.5"/>
     </svg>
   </button>
 </form>

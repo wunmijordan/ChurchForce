@@ -1,15 +1,16 @@
 from django.contrib import admin
+from core.admin import ChurchAdmin, ChurchTabularInline
 from music.models import Track, ChordChart, Setlist, SetlistSong, RehearsalSession
 
 
-class ChordChartInline(admin.TabularInline):
+class ChordChartInline(ChurchTabularInline):
     model       = ChordChart
     extra       = 1
     fields      = ("key", "label", "content", "flat_score_id", "file")
     show_change_link = True
 
 
-class SetlistSongInline(admin.TabularInline):
+class SetlistSongInline(ChurchTabularInline):
     model   = SetlistSong
     extra   = 1
     fields  = ("order", "track", "performance_key", "notes")
@@ -17,7 +18,7 @@ class SetlistSongInline(admin.TabularInline):
 
 
 @admin.register(Track)
-class TrackAdmin(admin.ModelAdmin):
+class TrackAdmin(ChurchAdmin):
     list_display  = (
         "title", "artist", "original_key", "tempo",
         "unit", "church", "is_active",
@@ -30,7 +31,7 @@ class TrackAdmin(admin.ModelAdmin):
 
 
 @admin.register(ChordChart)
-class ChordChartAdmin(admin.ModelAdmin):
+class ChordChartAdmin(ChurchAdmin):
     list_display  = ("__str__", "track", "key", "label", "church", "is_active")
     list_filter   = ("church", "key", "is_active")
     search_fields = ("track__title", "label", "church__name")
@@ -39,7 +40,7 @@ class ChordChartAdmin(admin.ModelAdmin):
 
 
 @admin.register(Setlist)
-class SetlistAdmin(admin.ModelAdmin):
+class SetlistAdmin(ChurchAdmin):
     list_display  = ("title", "event", "unit", "church", "finalized", "is_active")
     list_filter   = ("church", "unit", "finalized", "is_active")
     search_fields = ("title", "church__name", "unit__name", "event__name")
@@ -49,7 +50,7 @@ class SetlistAdmin(admin.ModelAdmin):
 
 
 @admin.register(RehearsalSession)
-class RehearsalSessionAdmin(admin.ModelAdmin):
+class RehearsalSessionAdmin(ChurchAdmin):
     list_display  = ("event", "setlist", "unit", "church", "completed", "is_active")
     list_filter   = ("church", "unit", "completed", "is_active")
     search_fields = ("event__name", "unit__name", "church__name")

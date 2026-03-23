@@ -11,13 +11,13 @@ urlpatterns = [
     path("<int:guest_id>/detail/",            views.guest_detail_api,    name="guest_detail_api"),
 
     # ── Status & assignment ───────────────────────────────────────────
-    path("status/<int:pk>/",                  views.update_guest_status, name="update_guest_status"),
-    path("<int:guest_id>/status/<str:status_key>/", views.update_status_view, name="update_status"),
+    #path("status/<int:pk>/",                  views.update_guest_status, name="update_guest_status"),
+    #path("<int:guest_id>/status/<str:status_key>/", views.update_status_view, name="update_status"),
     path("<int:guest_id>/reassign/",          views.reassign_guest,      name="reassign_guest"),
 
     # ── Reviews ───────────────────────────────────────────────────────
-    path("reviews/<int:guest_id>/<str:role>/", views.submit_review,     name="submit_review"),
-    path("<int:guest_id>/reviews/read/",      views.mark_reviews_read,  name="mark_reviews_read"),
+    #path("reviews/<int:guest_id>/<str:role>/", views.submit_review,     name="submit_review"),
+    #path("<int:guest_id>/reviews/read/",      views.mark_reviews_read,  name="mark_reviews_read"),
 
     # ── Follow-up reports ─────────────────────────────────────────────
     path("<int:guest_id>/report/",            views.followup_report_page, name="followup_report_page"),
@@ -28,7 +28,7 @@ urlpatterns = [
     path("attendance/",                       views.mark_attendance,     name="mark_attendance"),
 
     # ── Bulk operations ───────────────────────────────────────────────
-    path("bulk-delete/",                      views.bulk_delete_guests,  name="bulk_delete_guests"),
+    #path("bulk-delete/",                      views.bulk_delete_guests,  name="bulk_delete_guests"),
 
     # ── Import / export ───────────────────────────────────────────────
     path("export/csv/",                       views.export_csv,           name="export_csv"),
@@ -44,10 +44,10 @@ urlpatterns = [
     path("ajax/top-services/",                views.top_services_data,    name="top_services_data"),
 
     # ── Membership pipeline ───────────────────────────────────────────
-    path("<int:guest_id>/apply/",             views.create_application,   name="create_application"),
-    path("applications/<int:app_id>/approve/", views.approve_application, name="approve_application"),
-    path("applications/<int:app_id>/decline/", views.decline_application, name="decline_application"),
-    path("applications/<int:app_id>/induct/",  views.induct_member,       name="induct_member"),
-    path("applications/<int:app_id>/step/<int:step_id>/complete/",
-                                              views.complete_step,        name="complete_step"),
+    #path("<int:guest_id>/apply/",             views.create_application,   name="create_application"),
+    #path("applications/<int:app_id>/approve/", views.approve_application, name="approve_application"),
+    #path("applications/<int:app_id>/decline/", views.decline_application, name="decline_application"),
+    #path("applications/<int:app_id>/induct/",  views.induct_member,       name="induct_member"),
+    #path("applications/<int:app_id>/step/<int:step_id>/complete/",
+    #                                          views.complete_step,        name="complete_step"),
 ]

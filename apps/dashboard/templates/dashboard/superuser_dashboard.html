@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Church Management{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+    <div>
+      <h2 class="mb-1 fw-bold">Church Management</h2>
+      <div class="text-secondary">Superuser dashboard for scoped and global views.</div>
+    </div>
+    <div class="text-secondary small">Total: {{ total_count }}</div>
+  </div>
+
+  <div class="card bg-dark border-secondary mb-3">
+    <div class="card-body">
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <div class="btn-group" role="group" aria-label="Scope">
+          <a class="btn btn-sm {% if scope != 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?scope=scoped&status={{ status }}&q={{ query|urlencode }}">Scoped</a>
+          <a class="btn btn-sm {% if scope == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?scope=all&status={{ status }}&q={{ query|urlencode }}">All Churches</a>
+        </div>
+
+        <form class="d-flex flex-wrap gap-2 align-items-center" method="get">
+          <input type="hidden" name="scope" value="{{ scope }}">
+          <select name="status" class="form-select form-select-sm" style="width: 160px;">
+            <option value="active" {% if status == 'active' %}selected{% endif %}>Active only</option>
+            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive only</option>
+            <option value="all" {% if status == 'all' %}selected{% endif %}>All statuses</option>
+          </select>
+          <input type="text" name="q" value="{{ query }}" placeholder="Search name, slug, domain" class="form-control form-control-sm" style="width: 240px;">
+          <button class="btn btn-sm btn-outline-secondary" type="submit">Filter</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-dark border-secondary">
+    <div class="card-body">
+      {% if churches %}
+      <div class="table-responsive">
+        <table class="table table-sm table-vcenter">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Slug</th>
+              <th>Subdomain</th>
+              <th>Custom Domain</th>
+              <th>Plan</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in churches %}
+            <tr>
+              <td class="fw-semibold">{{ c.name }}</td>
+              <td>{{ c.slug }}</td>
+              <td>{{ c.subdomain|default:"-" }}</td>
+              <td>{{ c.custom_domain|default:"-" }}</td>
+              <td>{{ c.plan.name|default:"-" }}</td>
+              <td>
+                {% if c.is_active %}
+                  <span class="badge bg-green-lt">Active</span>
+                {% else %}
+                  <span class="badge bg-red-lt">Inactive</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="text-secondary">No churches found for this filter.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

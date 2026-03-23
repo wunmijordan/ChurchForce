@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from accounts.models import ChurchMember
+from django.db import transaction
 from django.utils import timezone
 from django.utils.timezone import now
 from guests.models import GuestEntry
@@ -157,39 +158,183 @@ class WorkforceTraineeProfile(ChurchOwnedModel):
 
     def __str__(self):
         return f"Trainee: {self.member} [{self.get_reason_display()}]"
+    
+    def is_eligible_for_promotion(self):
+        """
+        Central promotion eligibility logic.
+        LMS is only ONE possible requirement.
+        """
 
+        # Induction flow
+        if self.reason == "induction":
+            if not self.lms_enrollment:
+                return False
+
+            return self.lms_enrollment.status in (
+                "passed",
+                "certified",
+            )
+
+        # Disciplinary probation
+        if self.reason == "probation":
+            if self.probation_ends_at:
+                return timezone.now().date() >= self.probation_ends_at
+
+        return True
+
+    @transaction.atomic
     def promote_to_workforce(self, promoted_by_member=None):
         """
-        Upgrade this trainee to a full WorkforceMember in their preferred unit.
-        Called when induction LMS is completed or probation ends.
-        """
-        from django.utils import timezone
-        stage = WorkforceStage.raw_objects.filter(
-            church=self.church, is_active=True
-        ).order_by("order").first()
-        if not stage:
-            raise ValueError("No WorkforceStage configured for this church.")
+        Upgrade trainee → WorkforceMember.
 
-        wf, created = WorkforceMember.raw_objects.get_or_create(
+        THIS is the single authority for workforce promotion.
+        """
+
+        from workforce.models import WorkforceMember, WorkforceStage
+        from units.models import UnitMembership
+
+        if not self.is_active:
+            raise ValueError("Trainee profile already inactive.")
+
+        if not self.is_eligible_for_promotion():
+            raise ValueError("Trainee not eligible for promotion.")
+
+        stage = WorkforceStage.raw_objects.filter(
+            church=self.church,
+            is_active=True,
+        ).order_by("order").first()
+
+        if not stage:
+            raise ValueError("No WorkforceStage configured.")
+
+        # Create workforce member
+        wf = WorkforceMember.raw_objects.create(
             church=self.church,
             member=self.member,
-            defaults={"stage": stage},
+            stage=stage,
+            is_active=True,
         )
 
+        # Assign preferred unit automatically
         if self.preferred_unit:
-            from units.models import UnitMembership
             UnitMembership.raw_objects.get_or_create(
                 church=self.church,
                 workforce_member=wf,
                 unit=self.preferred_unit,
-                defaults={"is_probation": False},
+                defaults={
+                    "is_probation": False,
+                    "is_active": True,
+                },
             )
 
+        # Close trainee lifecycle
         self.promoted_at = timezone.now()
         self.promoted_by = promoted_by_member
-        self.is_active   = False  # deactivate trainee profile
-        self.save(update_fields=["promoted_at", "promoted_by", "is_active"])
+        self.is_active = False
+
+        self.save(update_fields=[
+            "promoted_at",
+            "promoted_by",
+            "is_active",
+        ])
+
         return wf
+
+
+class TraineePromotionEvaluation(ChurchOwnedModel):
+    """
+    Snapshot of trainee readiness evaluation.
+    """
+
+    trainee = models.ForeignKey(
+        "workforce.WorkforceTraineeProfile",
+        on_delete=models.CASCADE,
+        related_name="evaluations",
+    )
+
+    lms_completed = models.BooleanField(default=False)
+    probation_completed = models.BooleanField(default=False)
+
+    # extensible future checks
+    all_requirements_met = models.BooleanField(default=False)
+
+    evaluated_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-evaluated_at"]
+
+
+class WorkforceReadinessSnapshot(ChurchOwnedModel):
+    """
+    Cached evaluation of trainee readiness.
+    Rebuilt automatically by evaluator.
+    """
+
+    trainee = models.OneToOneField(
+        "workforce.WorkforceTraineeProfile",
+        on_delete=models.CASCADE,
+        related_name="readiness_snapshot",
+    )
+
+    # ---- requirement results ----
+    lms_completed = models.BooleanField(default=False)
+    required_steps_completed = models.BooleanField(default=False)
+    probation_complete = models.BooleanField(default=False)
+    approval_received = models.BooleanField(default=False)
+
+    # ---- aggregate ----
+    is_ready = models.BooleanField(default=False)
+
+    evaluated_at = models.DateTimeField(auto_now=True)
+
+    details = models.JSONField(default=dict, blank=True)
+
+
+class PromotionApprovalRole(ChurchOwnedModel):
+    role = models.ForeignKey("permissions.MembershipRole", on_delete=models.CASCADE)
+
+    order = models.PositiveSmallIntegerField(default=1)
+    is_required = models.BooleanField(default=True)
+
+
+class PromotionRule(ChurchOwnedModel):
+    name = models.CharField(max_length=120)
+
+    require_lms_completion = models.BooleanField(default=True)
+    require_all_steps = models.BooleanField(default=True)
+    require_probation_end = models.BooleanField(default=False)
+    require_admin_approval = models.BooleanField(default=True)
+
+    auto_promote = models.BooleanField(
+        default=False,
+        help_text="If true, promotion happens automatically when ready."
+    )
+
+    is_default = models.BooleanField(default=True)
+
+
+class LeaderTask(ChurchOwnedModel):
+    TASK_TYPES = [
+        ("promotion_review", "Promotion Review"),
+        ("approval_required", "Approval Required"),
+    ]
+
+    task_type = models.CharField(max_length=30, choices=TASK_TYPES)
+
+    trainee = models.ForeignKey(
+        "workforce.WorkforceTraineeProfile",
+        on_delete=models.CASCADE,
+    )
+    assigned_role = models.ForeignKey(
+        "permissions.MembershipRole",
+        on_delete=models.CASCADE,
+    )
+
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+
+    completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
 
 
 class ChatMessage(ChurchOwnedModel):

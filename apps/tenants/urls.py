@@ -1,6 +1,5 @@
 from django.urls import path
 from tenants import views
-from tenants import settings_views
 
 app_name = "tenants"
 
@@ -15,6 +14,5 @@ urlpatterns = [
     path("trial-expired/",          views.trial_expired,          name="trial_expired"),
     path("subscription-inactive/",  views.subscription_inactive,  name="subscription_inactive"),
     # Church admin settings
-    path("settings/church/",  settings_views.church_settings, name="church_settings"),
-    path("settings/me/",      settings_views.member_settings, name="member_settings"),
+    path("settings/church/",  views.church_settings, name="church_settings"),
 ]

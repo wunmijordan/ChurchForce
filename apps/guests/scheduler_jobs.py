@@ -130,6 +130,7 @@ def _send_contact_reminder(guest, church, level):
     """Send in-contact reminder notifications."""
     from notifications.utils import notify_members
     from units.models import UnitMembership
+    from django.utils import timezone
 
     name = guest.full_name
     officer_member = None
@@ -271,3 +272,4 @@ def register_guest_jobs(scheduler):
         replace_existing=True,
     )
     print("✅ [Scheduler] Guest pipeline jobs registered.")
+

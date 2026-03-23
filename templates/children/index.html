@@ -1,0 +1,76 @@
+﻿{% extends "base.html" %}
+{% load access_tags %}
+{% block title %}Children{% endblock %} {% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+    <div>
+      <h2 class="mb-1 fw-bold">Children Module</h2>
+      <div class="text-secondary">Discovery - {{ focus }}</div>
+    </div>
+    <div class="d-flex gap-2">
+      {% if permissions|can:"children.manage" or request.user.is_superuser %}
+      <a class="btn btn-outline-secondary" href="{% url 'children:session_create' %}">New Check-In</a>
+      <a class="btn btn-primary" href="{% url 'children:child_create' %}">Add Child</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card bg-dark border-secondary">
+        <div class="card-header">
+          <h5 class="mb-0">Children</h5>
+        </div>
+        <div class="card-body">
+          {% if children %}
+          <div class="table-responsive">
+            <table class="table table-sm table-vcenter">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Unit</th>
+                  <th>Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for child in children %}
+                <tr>
+                  <td>{{ child.first_name }} {{ child.last_name }}</td>
+                  <td>{{ child.unit.name|default:"-" }}</td>
+                  <td>{{ child.grade|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-secondary">No children added yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card bg-dark border-secondary">
+        <div class="card-header">
+          <h5 class="mb-0">Recent Sessions</h5>
+        </div>
+        <div class="card-body">
+          {% if sessions %}
+            <ul class="list-unstyled mb-0">
+              {% for session in sessions %}
+              <li class="mb-2">
+                <div class="fw-semibold"><a href="{% url 'children:session_detail' session.id %}" class="text-white text-decoration-none">{{ session.title }}</a></div>
+                <div class="text-secondary small">{{ session.session_date }}</div>
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="text-secondary">No sessions yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

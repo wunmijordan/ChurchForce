@@ -13,6 +13,7 @@ from lms.models import (
     LMSCourse, LMSModule, LMSEnrollment,
     LMSSubmission, LMSReview, LMSCertificate,
 )
+from workforce.services.evaluator import evaluate_trainee_progress
 
 
 def _is_admin(request):
@@ -146,6 +147,9 @@ def review_submission(request, submission_id):
             if passed_course:
                 _issue_certificate(enrollment, issued_by=member)
                 _try_promote_trainee(enrollment)
+
+    for trainee in submission.enrollment.trainee_profiles.all():
+        evaluate_trainee_progress(trainee)
 
     messages.success(request, f"Review submitted — {'Passed' if passed else 'Failed'}.")
     return redirect(request.META.get("HTTP_REFERER") or "/")

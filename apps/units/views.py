@@ -115,6 +115,12 @@ def unit_create(request):
         color       = request.POST.get("color", "blue").strip()
         report_to_id = request.POST.get("report_to", "").strip()
         is_default  = request.POST.get("is_default") == "on"
+        guest_management = request.POST.get("guest_management") == "on"
+        music_module = request.POST.get("music_module") == "on"
+        media_module = request.POST.get("media_module") == "on"
+        children_module = request.POST.get("children_module") == "on"
+        youth_module = request.POST.get("youth_module") == "on"
+        teenagers_module = request.POST.get("teenagers_module") == "on"
 
         if not name:
             messages.error(request, "Name is required.")
@@ -128,7 +134,11 @@ def unit_create(request):
             unit = ChurchUnit.raw_objects.create(
                 church=church, name=name, unit_type=unit_type,
                 description=description, color=color,
-                report_to=report_to, is_default=is_default, is_active=True,
+                report_to=report_to, is_default=is_default,
+                guest_management=guest_management, music_module=music_module,
+                media_module=media_module, children_module=children_module,
+                youth_module=youth_module, teenagers_module=teenagers_module,
+                is_active=True,
             )
             messages.success(request, f"'{unit.name}' created.")
             return redirect("units:detail", unit_id=unit.id)
@@ -137,7 +147,6 @@ def unit_create(request):
     return render(request, "units/unit_form.html", {
         "all_units": all_units, "page_title": "Create Unit / Group", "action": "create",
     })
-
 
 @login_required
 def unit_edit(request, unit_id):
@@ -152,6 +161,12 @@ def unit_edit(request, unit_id):
         unit.description = request.POST.get("description", unit.description).strip()
         unit.color       = request.POST.get("color", unit.color).strip()
         unit.is_default  = request.POST.get("is_default") == "on"
+        unit.guest_management = request.POST.get("guest_management") == "on"
+        unit.music_module = request.POST.get("music_module") == "on"
+        unit.media_module = request.POST.get("media_module") == "on"
+        unit.children_module = request.POST.get("children_module") == "on"
+        unit.youth_module = request.POST.get("youth_module") == "on"
+        unit.teenagers_module = request.POST.get("teenagers_module") == "on"
         rid = request.POST.get("report_to", "").strip()
         unit.report_to   = ChurchUnit.raw_objects.filter(church=church, id=int(rid)).first() \
                            if rid and rid.isdigit() else None
@@ -164,7 +179,6 @@ def unit_edit(request, unit_id):
         "unit": unit, "all_units": all_units,
         "page_title": f"Edit {unit.name}", "action": "edit",
     })
-
 
 @login_required
 @require_POST
@@ -417,7 +431,7 @@ def campus_create(request):
 
     return render(request, "units/campus_form.html", {
         "parent_campuses": Campus.raw_objects.filter(church=church, is_active=True),
-        "growth_choices":  Campus.GROWTH_STAGE_CHOICES,
+        "growth_choices":  (getattr(getattr(church, "settings", None), "campus_growth_stages", None) or []),
         "page_title": "Add Campus", "action": "create",
     })
 
@@ -472,3 +486,12 @@ def ajax_unit_members(request, unit_id):
             continue
 
     return JsonResponse({"members": data})
+
+
+
+
+
+
+
+
+

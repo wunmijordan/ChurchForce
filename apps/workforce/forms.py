@@ -32,7 +32,7 @@ class EventForm(forms.ModelForm):
             "duration_days",
             "end_date",
             "time",
-            "team",
+            "unit",
             "is_active",
             "is_recurring_weekly",
             "registrable",
@@ -78,7 +78,7 @@ class EventForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         if not self.church:
-            self.fields["team"].queryset = ChurchUnit.raw_objects.none()
+            self.fields["unit"].queryset = ChurchUnit.raw_objects.none()
             return
 
         # Resolve permissions if not passed in
@@ -89,20 +89,20 @@ class EventForm(forms.ModelForm):
         # Scope teams to this church
         # raw_objects used — form runs inside a request but we want an
         # explicit church= filter regardless of context var state
-        teams_qs = ChurchUnit.raw_objects.filter(
+        units_qs = ChurchUnit.raw_objects.filter(
             church=self.church,
             is_active=True,
         )
 
         if resolver and resolver.can("events.manage_all"):
             # Admin sees all units
-            self.fields["team"].queryset = teams_qs
+            self.fields["unit"].queryset = units_qs
             return
 
         # Non-admin: only units the user is a member of
         if self.user:
-            teams_qs = teams_qs.filter(
+            units_qs = units_qs.filter(
                 memberships__workforce_member__member__user=self.user
             ).distinct()
 
-        self.fields["team"].queryset = teams_qs
+        self.fields["unit"].queryset = units_qs

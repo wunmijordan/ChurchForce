@@ -454,3 +454,26 @@ class CustomUserChangeForm(ChurchFormMixin, forms.ModelForm):
                     )
 
         return user
+
+
+class ProfileEditForm(forms.ModelForm):
+    """
+    Allows a member to edit a safe subset of their own profile.
+    Excluded: username, email, is_staff, is_superuser, groups, permissions,
+              church-level fields — anything that would affect access control.
+    """
+    class Meta:
+        model  = CustomUser
+        fields = [
+            "full_name", "title", "phone_number",
+            "date_of_birth", "marital_status", "address", "image",
+        ]
+        widgets = {
+            "full_name":     forms.TextInput(attrs={"class": "form-control"}),
+            "title":         forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Mr, Mrs, Dr"}),
+            "phone_number":  forms.TextInput(attrs={"class": "form-control"}),
+            "date_of_birth": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "marital_status":forms.Select(attrs={"class": "form-select"}),
+            "address":       forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "image":         forms.ClearableFileInput(attrs={"class": "form-control"}),
+        }

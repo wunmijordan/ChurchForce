@@ -1,11 +1,12 @@
 from django.contrib import admin
+from core.admin import ChurchAdmin, ChurchTabularInline
 from lms.models import (
     LMSCourse, LMSModule, LMSEnrollment,
     LMSSubmission, LMSReview, LMSCertificate,
 )
 
 
-class LMSModuleInline(admin.TabularInline):
+class LMSModuleInline(ChurchTabularInline):
     model  = LMSModule
     extra  = 1
     fields = ("order", "title", "content_type", "is_required", "requires_attachment")
@@ -13,7 +14,7 @@ class LMSModuleInline(admin.TabularInline):
 
 
 @admin.register(LMSCourse)
-class LMSCourseAdmin(admin.ModelAdmin):
+class LMSCourseAdmin(ChurchAdmin):
     list_display  = (
         "title", "course_type", "delivery_mode", "church",
         "unit", "passing_score", "strict_sequence", "is_active",
@@ -26,7 +27,7 @@ class LMSCourseAdmin(admin.ModelAdmin):
 
 
 @admin.register(LMSModule)
-class LMSModuleAdmin(admin.ModelAdmin):
+class LMSModuleAdmin(ChurchAdmin):
     list_display  = (
         "title", "course", "content_type", "order",
         "is_required", "requires_attachment", "church",
@@ -37,7 +38,7 @@ class LMSModuleAdmin(admin.ModelAdmin):
 
 
 @admin.register(LMSEnrollment)
-class LMSEnrollmentAdmin(admin.ModelAdmin):
+class LMSEnrollmentAdmin(ChurchAdmin):
     list_display  = (
         "member", "course", "status", "score", "church", "created_at",
     )
@@ -51,7 +52,7 @@ class LMSEnrollmentAdmin(admin.ModelAdmin):
 
 
 @admin.register(LMSSubmission)
-class LMSSubmissionAdmin(admin.ModelAdmin):
+class LMSSubmissionAdmin(ChurchAdmin):
     list_display  = (
         "__str__", "status", "score", "retake_count", "church", "created_at",
     )
@@ -64,7 +65,7 @@ class LMSSubmissionAdmin(admin.ModelAdmin):
 
 
 @admin.register(LMSReview)
-class LMSReviewAdmin(admin.ModelAdmin):
+class LMSReviewAdmin(ChurchAdmin):
     list_display  = ("__str__", "passed", "score", "proctor", "reviewed_at")
     list_filter   = ("passed",)
     search_fields = (
@@ -76,7 +77,7 @@ class LMSReviewAdmin(admin.ModelAdmin):
 
 
 @admin.register(LMSCertificate)
-class LMSCertificateAdmin(admin.ModelAdmin):
+class LMSCertificateAdmin(ChurchAdmin):
     list_display  = ("enrollment", "church", "issued_at", "issued_by")
     list_filter   = ("church",)
     search_fields = (

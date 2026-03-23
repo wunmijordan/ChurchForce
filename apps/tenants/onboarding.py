@@ -62,7 +62,7 @@ def provision_church(
     from accounts.models import CustomUser, ChurchMember
     from billing.models import SubscriptionPlan, ChurchSubscription
     from bootstrap.models import ChurchTemplate
-    from bootstrap.services import apply_template_to_church
+    from bootstrap.services import apply_template_to_church, ensure_default_template
 
     # ----------------------------------------------------------------
     # 1. Validate uniqueness up front for clean user-facing errors
@@ -119,12 +119,12 @@ def provision_church(
     # 4. Create ChurchMember (links user -> church)
     # ----------------------------------------------------------------
 
-    ChurchMember.raw_objects.create(
+    member = ChurchMember.raw_objects.create(
         church=church,
         user=user,
         is_active=True,
+        is_admin=True,
     )
-
     # ----------------------------------------------------------------
     # 5. Start trial subscription
     # ----------------------------------------------------------------
@@ -155,13 +155,13 @@ def provision_church(
     template = (
         church.template
         or ChurchTemplate.objects.filter(is_default=True, is_active=True).first()
+        or ensure_default_template()
     )
-
     if template:
         from units.models import ChurchUnit
         already_seeded = ChurchUnit.raw_objects.filter(church=church).exists()
         if not already_seeded:
-            apply_template_to_church(template, church)
+            apply_template_to_church(template, church, admin_member=member, admin_user=user)
 
     return church, user
 
@@ -201,3 +201,5 @@ def activate_custom_domain(church, custom_domain: str):
     church.custom_domain = domain
     church.save(update_fields=["custom_domain", "updated_at"])
     return church
+
+

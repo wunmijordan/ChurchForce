@@ -1,46 +1,48 @@
-{% extends 'dashboard/dashboard.html' %} {% load access_tags %} {% load static
-%} {% block title %}Admin Dashboard — {{ church.name }}{% endblock %} {# Admin
-dashboard inherits the full member dashboard and appends admin-only panels.
-Guard: this template should only be rendered when request|is_admin is True. The
-view enforces this — the template is a secondary safety net only. #} {% block
-extra_js %} {{ block.super }} {% if request|is_admin %}
+{% extends 'dashboard/dashboard.html' %}
+{% load access_tags %}
+{% load static %}
+
+{% block title %}Admin Dashboard — {{ church.name }}{% endblock %}
+
+{# Admin dashboard inherits the full member dashboard and appends admin-only panels.
+   Guard: this template should only be rendered when request|is_admin is True.
+   The view enforces this — the template is a secondary safety net only. #}
+
+{% block extra_js %}
+{{ block.super }}
+
+{% if request|is_admin %}
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // ── User selector: when admin picks a user, update stats via AJAX ──
-    const userSelect = document.getElementById("userSelect");
-    const summaryCol = document.getElementById("summaryColumn");
-    const clockIn = document.getElementById("totalClockIn");
-    const clockOut = document.getElementById("totalClockOut");
+document.addEventListener("DOMContentLoaded", function () {
 
-    if (userSelect) {
-      userSelect.addEventListener("change", function () {
-        const userId = this.value;
-        if (!userId) {
-          summaryCol && (summaryCol.style.display = "none");
-          return;
-        }
+  // ── User selector: when admin picks a user, update stats via AJAX ──
+  const userSelect = document.getElementById("userSelect");
+  const summaryCol = document.getElementById("summaryColumn");
+  const clockIn    = document.getElementById("totalClockIn");
+  const clockOut   = document.getElementById("totalClockOut");
 
-        fetch(`{% url 'dashboard:dashboard' %}?user_id=${userId}`, {
-          headers: { "X-Requested-With": "XMLHttpRequest" },
-        })
-          .then((r) => r.json())
-          .then((data) => {
-            if (summaryCol) summaryCol.style.display = "";
-            if (clockIn) clockIn.textContent = data.total_clock_in ?? "--";
-            if (clockOut) clockOut.textContent = data.total_clock_out ?? "--";
-            document.getElementById("summaryPresent") &&
-              (document.getElementById("summaryPresent").textContent =
-                data.present ?? "--");
-            document.getElementById("summaryExcused") &&
-              (document.getElementById("summaryExcused").textContent =
-                data.excused ?? "--");
-            document.getElementById("summaryAbsent") &&
-              (document.getElementById("summaryAbsent").textContent =
-                data.absent ?? "--");
-          })
-          .catch(console.error);
-      });
-    }
-  });
+  if (userSelect) {
+    userSelect.addEventListener("change", function () {
+      const userId = this.value;
+      if (!userId) { summaryCol && (summaryCol.style.display = "none"); return; }
+
+      fetch(`{% url 'dashboard:dashboard' %}?user_id=${userId}`, {
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (summaryCol) summaryCol.style.display = "";
+        if (clockIn)  clockIn.textContent  = data.total_clock_in  ?? "--";
+        if (clockOut) clockOut.textContent = data.total_clock_out ?? "--";
+        document.getElementById("summaryPresent") && (document.getElementById("summaryPresent").textContent = data.present ?? "--");
+        document.getElementById("summaryExcused") && (document.getElementById("summaryExcused").textContent = data.excused ?? "--");
+        document.getElementById("summaryAbsent")  && (document.getElementById("summaryAbsent").textContent  = data.absent  ?? "--");
+      })
+      .catch(console.error);
+    });
+  }
+});
 </script>
-{% endif %} {% endblock %}
+{% endif %}
+
+{% endblock %}

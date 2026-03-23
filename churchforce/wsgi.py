@@ -1,5 +1,5 @@
 """
-WSGI config for ChurchForce project.
+WSGI config for churchforce project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 

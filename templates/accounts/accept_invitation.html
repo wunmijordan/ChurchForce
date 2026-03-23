@@ -1,139 +1,94 @@
-{% extends "public_base.html" %} {% load static widget_tweaks %} {% block title
-%}Accept Invitation — {{ church.name }}{% endblock %} {% block content %}
+{% extends "public_base.html" %}
+{% load static widget_tweaks %}
+
+{% block title %}Accept Invitation — {{ church.name }}{% endblock %}
+
+{% block content %}
 <div class="container py-5">
   <div class="row justify-content-center">
     <div class="col-12 col-md-8 col-lg-6">
+
       <div class="text-center mb-4">
         {% if church.logo %}
-        <img
-          src="{{ church.logo.url }}"
-          alt="{{ church.name }}"
-          width="64"
-          height="64"
-          style="border-radius: 12px; object-fit: cover"
-          class="mb-3"
-        />
+          <img src="{{ church.logo.url }}" alt="{{ church.name }}" width="64" height="64"
+               style="border-radius:12px; object-fit:cover;" class="mb-3">
         {% else %}
-        <img
-          src="{% static 'images/icons/icon-192x192.png' %}"
-          width="56"
-          height="56"
-          style="border-radius: 12px"
-          class="mb-3"
-        />
+          <img src="{% static 'images/icons/icon-192x192.png' %}" width="56" height="56"
+               style="border-radius:12px;" class="mb-3">
         {% endif %}
         <h2 class="fw-bold">You're invited to join</h2>
         <h4 class="text-secondary">{{ church.name }}</h4>
         {% if invitation.message %}
-        <p class="text-secondary mt-2 fst-italic">"{{ invitation.message }}"</p>
+          <p class="text-secondary mt-2 fst-italic">"{{ invitation.message }}"</p>
         {% endif %}
       </div>
 
       <div class="card bg-dark border-secondary shadow">
         <div class="card-body p-4">
-          {% if messages %} {% for message in messages %}
-          <div
-            class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} py-2 small"
-          >
-            {{ message }}
-          </div>
-          {% endfor %} {% endif %}
+
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} py-2 small">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
 
           <form method="post" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
 
             <div class="mb-3">
-              <label class="form-label"
-                >Full name <span class="text-danger">*</span></label
-              >
-              <input
-                type="text"
-                name="full_name"
-                class="form-control"
-                value="{{ invitation.full_name }}"
-                placeholder="Your full name"
-                required
-              />
+              <label class="form-label">Full name <span class="text-danger">*</span></label>
+              <input type="text" name="full_name" class="form-control"
+                     value="{{ invitation.full_name }}" placeholder="Your full name" required>
             </div>
 
             <div class="mb-3">
               <label class="form-label">Email address</label>
-              <input
-                type="email"
-                class="form-control bg-dark border-secondary text-secondary"
-                value="{{ invitation.email }}"
-                readonly
-              />
-              <div class="form-text text-secondary">
-                This is the address your invitation was sent to.
-              </div>
+              <input type="email" class="form-control bg-dark border-secondary text-secondary"
+                     value="{{ invitation.email }}" readonly>
+              <div class="form-text text-secondary">This is the address your invitation was sent to.</div>
             </div>
 
             <div class="mb-3">
-              <label class="form-label"
-                >Username <span class="text-danger">*</span></label
-              >
-              <input
-                type="text"
-                name="username"
-                class="form-control"
-                placeholder="Choose a username"
-                required
-                autocomplete="username"
-              />
+              <label class="form-label">Username <span class="text-danger">*</span></label>
+              <input type="text" name="username" class="form-control"
+                     placeholder="Choose a username" required autocomplete="username">
             </div>
 
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label class="form-label"
-                  >Password <span class="text-danger">*</span></label
-                >
-                <input
-                  type="password"
-                  name="password"
-                  class="form-control"
-                  placeholder="Create a password"
-                  required
-                  autocomplete="new-password"
-                />
+                <label class="form-label">Password <span class="text-danger">*</span></label>
+                <input type="password" name="password" class="form-control"
+                       placeholder="Create a password" required autocomplete="new-password">
               </div>
               <div class="col-md-6 mb-3">
-                <label class="form-label"
-                  >Confirm password <span class="text-danger">*</span></label
-                >
-                <input
-                  type="password"
-                  name="password_confirm"
-                  class="form-control"
-                  placeholder="Repeat password"
-                  required
-                  autocomplete="new-password"
-                />
+                <label class="form-label">Confirm password <span class="text-danger">*</span></label>
+                <input type="password" name="password_confirm" class="form-control"
+                       placeholder="Repeat password" required autocomplete="new-password">
               </div>
             </div>
 
             {% if invitation.suggested_unit %}
-            <div class="alert alert-secondary py-2 small mb-3">
-              You have been suggested for the
-              <strong>{{ invitation.suggested_unit.name }}</strong> unit.
-            </div>
+              <div class="alert alert-secondary py-2 small mb-3">
+                You have been suggested for the
+                <strong>{{ invitation.suggested_unit.name }}</strong> unit.
+              </div>
             {% endif %}
 
-            <button
-              type="submit"
-              class="btn w-100 fw-bold py-2 mt-2"
-              style="background: #ff5e01; color: #fff; border: none"
-            >
+            <button type="submit" class="btn w-100 fw-bold py-2 mt-2"
+                    style="background:#ff5e01;color:#fff;border:none;">
               Create my account &amp; join {{ church.name }}
             </button>
           </form>
+
         </div>
       </div>
 
       <p class="text-center text-secondary small mt-3">
-        Already have an account?
-        <a href="{% url 'login' %}" class="text-light">Sign in</a>
+        Already have an account? <a href="{% url 'login' %}" class="text-light">Sign in</a>
       </p>
+
     </div>
   </div>
 </div>

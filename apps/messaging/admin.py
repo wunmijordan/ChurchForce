@@ -1,8 +1,9 @@
 from django.contrib import admin
+from core.admin import ChurchAdmin, ChurchTabularInline
 from messaging.models import GuestMessage, MessageLog
 
 
-class MessageLogInline(admin.TabularInline):
+class MessageLogInline(ChurchTabularInline):
     model          = MessageLog
     extra          = 0
     readonly_fields = ("phone", "recipient_name", "status", "provider", "provider_reference", "error_message", "created_at")
@@ -10,7 +11,7 @@ class MessageLogInline(admin.TabularInline):
 
 
 @admin.register(GuestMessage)
-class GuestMessageAdmin(admin.ModelAdmin):
+class GuestMessageAdmin(ChurchAdmin):
     list_display  = ("__str__", "church", "status", "sent_at", "created_at")
     list_filter   = ("church", "status")
     search_fields = (
@@ -24,7 +25,7 @@ class GuestMessageAdmin(admin.ModelAdmin):
 
 
 @admin.register(MessageLog)
-class MessageLogAdmin(admin.ModelAdmin):
+class MessageLogAdmin(ChurchAdmin):
     list_display  = (
         "recipient_name", "phone", "status", "category",
         "provider", "church", "created_at",

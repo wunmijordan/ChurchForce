@@ -195,6 +195,47 @@ def upgrade_to_white_label(church, custom_domain: str, expires_at=None):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Activate subscription from a completed PaymentRecord
+# ─────────────────────────────────────────────────────────────────────────────
+
+def activate_subscription_from_payment(payment):
+    """
+    Called after a PaymentRecord is confirmed successful (via webhook or
+    payment_callback). Reads the payment's plan and interval, computes the
+    valid_until date, and delegates to the appropriate upgrade function.
+
+    payment.plan.white_label == True  -> upgrade_to_white_label()
+    payment.plan.white_label == False -> upgrade_to_saas()
+
+    The subdomain / custom_domain are read from payment.raw_payload metadata
+    which is stored by initiate_payment() before hitting Paystack.
+    """
+    from datetime import timedelta
+    from django.utils.timezone import now
+
+    church   = payment.church
+    plan     = payment.plan
+    interval = payment.interval or "monthly"
+    metadata = payment.raw_payload.get("metadata", {}) if payment.raw_payload else {}
+
+    # Compute expiry from billing interval
+    interval_days = {
+        "monthly":  30,
+        "annual":   365,
+        "biannual": 730,
+    }
+    days = interval_days.get(interval, 30)
+    expires_at = now() + timedelta(days=days)
+
+    if plan.white_label:
+        custom_domain = metadata.get("custom_domain", "")
+        upgrade_to_white_label(church, custom_domain=custom_domain, expires_at=expires_at)
+    else:
+        subdomain = metadata.get("subdomain", "") or church.subdomain or ""
+        upgrade_to_saas(church, subdomain=subdomain, expires_at=expires_at)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Founders plan grant (internal only)
 # ─────────────────────────────────────────────────────────────────────────────
 

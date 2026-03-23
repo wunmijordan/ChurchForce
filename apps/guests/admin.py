@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin import ChurchAdmin, ChurchTabularInline
 from guests.models import (
     GuestEntry,
     FollowUpReport,
@@ -11,7 +12,7 @@ from guests.models import (
 )
 
 
-class SocialMediaEntryInline(admin.TabularInline):
+class SocialMediaEntryInline(ChurchTabularInline):
     model   = SocialMediaEntry
     extra   = 1
     min_num = 0
@@ -19,7 +20,7 @@ class SocialMediaEntryInline(admin.TabularInline):
 
 
 @admin.register(GuestEntry)
-class GuestEntryAdmin(admin.ModelAdmin):
+class GuestEntryAdmin(ChurchAdmin):
     list_display  = (
         "full_name", "custom_id", "church", "date_of_visit",
         "service_attended", "status", "assigned_to",
@@ -62,7 +63,7 @@ class GuestEntryAdmin(admin.ModelAdmin):
 
 
 @admin.register(FollowUpReport)
-class FollowUpReportAdmin(admin.ModelAdmin):
+class FollowUpReportAdmin(ChurchAdmin):
     list_display  = (
         "guest", "church", "report_date", "assigned_to",
         "service_sunday", "service_midweek", "reviewed",
@@ -75,7 +76,7 @@ class FollowUpReportAdmin(admin.ModelAdmin):
 
 
 @admin.register(GuestStatus)
-class GuestStatusAdmin(admin.ModelAdmin):
+class GuestStatusAdmin(ChurchAdmin):
     list_display  = ("name", "slug", "church", "color", "is_default", "is_terminal", "order", "is_active")
     list_filter   = ("church", "is_default", "is_terminal", "is_active")
     search_fields = ("name", "slug", "church__name")
@@ -84,7 +85,7 @@ class GuestStatusAdmin(admin.ModelAdmin):
 
 
 @admin.register(VisitPurpose)
-class VisitPurposeAdmin(admin.ModelAdmin):
+class VisitPurposeAdmin(ChurchAdmin):
     list_display = ("name", "church", "order", "is_active")
     list_filter  = ("church", "is_active")
     search_fields = ("name", "church__name")
@@ -92,7 +93,7 @@ class VisitPurposeAdmin(admin.ModelAdmin):
 
 
 @admin.register(VisitChannel)
-class VisitChannelAdmin(admin.ModelAdmin):
+class VisitChannelAdmin(ChurchAdmin):
     list_display = ("name", "church", "order", "is_active")
     list_filter  = ("church", "is_active")
     search_fields = ("name", "church__name")
@@ -100,7 +101,7 @@ class VisitChannelAdmin(admin.ModelAdmin):
 
 
 @admin.register(ChurchService)
-class ChurchServiceAdmin(admin.ModelAdmin):
+class ChurchServiceAdmin(ChurchAdmin):
     list_display = ("name", "church", "order", "is_active")
     list_filter  = ("church", "is_active")
     search_fields = ("name", "church__name")
@@ -108,7 +109,7 @@ class ChurchServiceAdmin(admin.ModelAdmin):
 
 
 @admin.register(Review)
-class ReviewAdmin(admin.ModelAdmin):
+class ReviewAdmin(ChurchAdmin):
     list_display  = ("guest", "reviewer", "church", "is_read", "created_at")
     list_filter   = ("church", "is_read")
     search_fields = ("guest__full_name", "comment", "church__name")

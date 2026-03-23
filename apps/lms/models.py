@@ -98,6 +98,12 @@ class LMSCourse(ChurchOwnedModel):
 
     def __str__(self):
         return f"{self.title} [{self.get_course_type_display()}]"
+    
+
+class LMSCourseRequirement(ChurchOwnedModel):
+    course = models.ForeignKey("lms.LMSCourse", on_delete=models.CASCADE)
+    counts_for_promotion = models.BooleanField(default=True)
+    is_required = models.BooleanField(default=True)
 
 
 class LMSModule(OrderedChurchModel):

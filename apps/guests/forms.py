@@ -79,7 +79,12 @@ class GuestEntryForm(forms.ModelForm):
 
     class Meta:
         model = GuestEntry
-        exclude = ['custom_id', 'church', 'birthday_month', 'birthday_day']
+        exclude = ['custom_id', 'church', 'birthday_month',
+                   'birthday_day', 'status',
+                    'is_active', 'is_deleted', 'deleted_at', 'assigned_at', 
+                    'converted_to', 'first_thankyou_sent', 'second_thankyou_sent',
+                    'second_visit_date', 'first_contact_reminder_sent', 'in_contact_overdue_notified',
+                    ]
         widgets = {
             'picture': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'title': forms.Select(attrs={'class': 'form-select'}),
@@ -101,24 +106,25 @@ class GuestEntryForm(forms.ModelForm):
             'purpose_of_visit': forms.Select(attrs={'class': 'form-select'}),
             'channel_of_visit': forms.Select(attrs={'class': 'form-select'}),
             'service_attended': forms.Select(attrs={'class': 'form-select'}),
-            'status': forms.Select(attrs={'class': 'form-select'}),
             'assigned_to': forms.Select(attrs={'class': 'form-select'}),
         }
         labels = {
-            'title': 'Title',
-            'picture': 'Profile Picture',
-            'full_name': 'Full Name',
-            'phone_number': 'Phone Number',
-            'email': 'Email Address',
-            'date_of_birth': 'Date of Birth',
-            'marital_status': 'Marital Status',
-            'occupation': 'Occupation',
-            'date_of_visit': 'Date of Visit',
-            'purpose_of_visit': 'Purpose of Visit',
-            'channel_of_visit': 'Channel of Visit',
-            'service_attended': 'Service Attended',
-            'status': 'Status',
-            'assigned_to': 'Assign to Team Member',
+            "picture": "Guest Photo",
+            "title": "Title",
+            "full_name": "Full Name",
+            "gender": "Gender",
+            "phone_number": "Phone Number",
+            "email": "Email Address",
+            "date_of_birth": "Date of Birth",
+            "age_range": "Age Range",
+            "marital_status": "Marital Status",
+            "occupation": "Occupation",
+            "home_address": "Home Address",
+            "date_of_visit": "First Visit Date",
+            "purpose_of_visit": "Purpose of Visit",
+            "channel_of_visit": "How They Heard About Us",
+            "service_attended": "Service Attended",
+            "assigned_to": "Assigned Follow-Up Worker",
         }
         help_texts = {
             'title': 'Title.',
@@ -136,6 +142,7 @@ class GuestEntryForm(forms.ModelForm):
             'purpose_of_visit': 'Purpose of Visit.',
             'channel_of_visit': 'How did the guest find out about us?',
             'service_attended': 'What service did the guest attend?',
+            'assigned_to': 'Assign this guest to a unit member for follow-up.',
         }
 
     def __init__(self, *args, **kwargs):
@@ -169,7 +176,6 @@ class GuestEntryForm(forms.ModelForm):
                     + (f" ({obj.unit.name})" if obj.unit else "")
                 )
             )
-            self.fields['status'].queryset = GuestStatus.raw_objects.filter(church=self.church, is_active=True).order_by('order')
             self.fields['purpose_of_visit'].queryset = VisitPurpose.raw_objects.filter(church=self.church, is_active=True).order_by('order')
             self.fields['channel_of_visit'].queryset = VisitChannel.raw_objects.filter(church=self.church, is_active=True).order_by('order')
             self.fields['service_attended'].queryset = ChurchService.raw_objects.filter(church=self.church, is_active=True).order_by('order')
@@ -241,6 +247,11 @@ class GuestEntryForm(forms.ModelForm):
             return dob_parsed.strftime("%B %d")
         except ValueError:
             raise forms.ValidationError("Enter date in format: January 01")
+
+
+
+
+
 
 
 class FollowUpReportForm(forms.ModelForm):
@@ -334,3 +345,12 @@ class FollowUpReportForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+
+
+
+
+
+
+

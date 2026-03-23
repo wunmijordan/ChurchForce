@@ -10,11 +10,11 @@ class Command(BaseCommand):
 
         guests = GuestEntry.objects.all().order_by('date_of_visit', 'id')
 
-        prefix = "GNG"
+        prefix = "GST"  # default prefix
         with transaction.atomic():
             current_custom_id = 1
             for guest in guests:
-                # Format as GNG000001, GNG000002, ...
+                # Format as GST000001, GST000002, ...
                 guest.custom_id = f"{prefix}{current_custom_id:06d}"
                 guest.save(update_fields=['custom_id'])
                 self.stdout.write(f"Assigned custom_id={guest.custom_id} to guest id={guest.id} (date_of_visit={guest.date_of_visit})")

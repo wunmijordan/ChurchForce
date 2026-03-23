@@ -1,0 +1,93 @@
+{% extends "base.html" %} {% block title %}Youth{% endblock %} {% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+    <div>
+      <h2 class="mb-1 fw-bold">Youth Module</h2>
+      <div class="text-secondary">Impact - {{ focus }}</div>
+    </div>
+    <div class="d-flex gap-2">
+      {% if permissions|can:"youth.manage" or request.user.is_superuser %}
+      <a class="btn btn-outline-secondary" href="{% url 'youth:project_create' %}">Add Project</a>
+      <a class="btn btn-outline-secondary" href="{% url 'youth:goal_create' %}">Add Goal</a>
+      <a class="btn btn-primary" href="{% url 'youth:youth_create' %}">Add Youth</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card bg-dark border-secondary">
+        <div class="card-header">
+          <h5 class="mb-0">Youth Members</h5>
+        </div>
+        <div class="card-body">
+          {% if youth_members %}
+          <div class="table-responsive">
+            <table class="table table-sm table-vcenter">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Unit</th>
+                  <th>Career Interest</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for youth in youth_members %}
+                <tr>
+                  <td>{{ youth.full_name }}</td>
+                  <td>{{ youth.unit.name|default:"-" }}</td>
+                  <td>{{ youth.career_interest|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-secondary">No youth profiles yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card bg-dark border-secondary">
+        <div class="card-header">
+          <h5 class="mb-0">Impact Projects</h5>
+        </div>
+        <div class="card-body">
+          {% if projects %}
+            <ul class="list-unstyled mb-0">
+              {% for project in projects %}
+              <li class="mb-2">
+                <div class="fw-semibold">{{ project.title }}</div>
+                <div class="text-secondary small">{{ project.status|title }}</div>
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="text-secondary">No projects yet.</div>
+          {% endif %}
+        </div>
+      </div>      <div class="card bg-dark border-secondary mt-3">
+        <div class="card-header">
+          <h5 class="mb-0">Career Goals</h5>
+        </div>
+        <div class="card-body">
+          {% if goals %}
+            <ul class="list-unstyled mb-0">
+              {% for goal in goals %}
+              <li class="mb-2">
+                <div class="fw-semibold">{{ goal.title }}</div>
+                <div class="text-secondary small">{{ goal.status|title }}</div>
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="text-secondary">No goals yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

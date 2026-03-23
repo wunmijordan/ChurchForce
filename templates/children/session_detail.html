@@ -1,0 +1,64 @@
+﻿{% extends "base.html" %} {% load dict_extras %} {% block title %}Check-In Session{% endblock %} {% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+    <div>
+      <h2 class="mb-1 fw-bold">{{ session.title }}</h2>
+      <div class="text-secondary">{{ session.session_date }}</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'children:index' %}">Back</a>
+  </div>
+
+  <div class="card bg-dark border-secondary">
+    <div class="card-header">
+      <h5 class="mb-0">Check-In List</h5>
+    </div>
+    <div class="card-body">
+      {% if children %}
+      <div class="table-responsive">
+        <table class="table table-sm table-vcenter">
+          <thead>
+            <tr>
+              <th>Child</th>
+              <th>Status</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for child in children %}
+            {% with record=records|dict_get:child.id %}
+            <tr>
+              <td>{{ child.first_name }} {{ child.last_name }}</td>
+              <td>
+                {% if record %}
+                  {{ record.get_status_display }}
+                {% else %}
+                  Not checked in
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <form method="post" action="{% url 'children:update_checkin' session.id %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="child_id" value="{{ child.id }}">
+                  {% if record and record.status == "checked_in" %}
+                    <input type="hidden" name="action" value="check_out">
+                    <button type="submit" class="btn btn-sm btn-outline-warning">Check Out</button>
+                  {% else %}
+                    <input type="hidden" name="action" value="check_in">
+                    <button type="submit" class="btn btn-sm btn-outline-success">Check In</button>
+                  {% endif %}
+                </form>
+              </td>
+            </tr>
+            {% endwith %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="text-secondary">No children found.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+

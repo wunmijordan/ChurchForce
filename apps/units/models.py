@@ -61,6 +61,31 @@ class ChurchUnit(ChurchOwnedModel):
         max_length=10, choices=UNIT_TYPE_CHOICES, default="unit", db_index=True,
         help_text="'Unit' for departments; 'Group' for cross-unit cohorts.",
     )
+    guest_management = models.BooleanField(
+        default=False,
+        help_text="Enable guest management features for this unit.",
+    )
+    music_module = models.BooleanField(
+        default=False,
+        help_text="Enable music module features for this unit.",
+    )
+    media_module = models.BooleanField(
+        default=False,
+        help_text="Enable media module features for this unit.",
+    )
+    children_module = models.BooleanField(
+        default=False,
+        help_text="Enable children ministry features for this unit.",
+    )
+    youth_module = models.BooleanField(
+        default=False,
+        help_text="Enable youth ministry features for this unit.",
+    )
+    teenagers_module = models.BooleanField(
+        default=False,
+        help_text="Enable teenagers ministry features for this unit.",
+    )
+
     is_default  = models.BooleanField(
         default=False,
         help_text="New members are automatically assigned to default units.",
@@ -466,8 +491,10 @@ class Campus(ChurchOwnedModel):
         max_digits=9, decimal_places=6, null=True, blank=True,
     )
     growth_stage = models.CharField(
-        max_length=20, choices=GROWTH_STAGE_CHOICES, blank=True, db_index=True,
-        help_text="Optional hierarchy label (depends on church structure).",
+        max_length=50,
+        blank=True,
+        db_index=True,
+        help_text="Optional campus growth stage label (configurable per church).",
     )
     report_to    = models.ForeignKey(
         "self",
@@ -550,3 +577,6 @@ class CampusMembership(ChurchOwnedModel):
 
     def __str__(self):
         return f"{self.member} @ {self.campus}"
+
+
+

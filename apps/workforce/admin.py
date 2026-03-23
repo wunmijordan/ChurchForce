@@ -1,6 +1,5 @@
 from django.contrib import admin
-from django.utils.html import format_html
-
+from core.admin import ChurchAdmin
 from workforce.models import (
     WorkforceStage,
     WorkforceRole,
@@ -14,7 +13,7 @@ from workforce.models import (
 
 
 @admin.register(WorkforceStage)
-class WorkforceStageAdmin(admin.ModelAdmin):
+class WorkforceStageAdmin(ChurchAdmin):
     list_display  = ("name", "church", "order", "is_active")
     list_filter   = ("church", "is_active")
     search_fields = ("name", "church__name")
@@ -22,7 +21,7 @@ class WorkforceStageAdmin(admin.ModelAdmin):
 
 
 @admin.register(WorkforceRole)
-class WorkforceRoleAdmin(admin.ModelAdmin):
+class WorkforceRoleAdmin(ChurchAdmin):
     list_display  = ("name", "church", "is_leadership", "order", "is_active")
     list_filter   = ("church", "is_leadership", "is_active")
     search_fields = ("name", "church__name")
@@ -30,7 +29,7 @@ class WorkforceRoleAdmin(admin.ModelAdmin):
 
 
 @admin.register(WorkforceMember)
-class WorkforceMemberAdmin(admin.ModelAdmin):
+class WorkforceMemberAdmin(ChurchAdmin):
     list_display  = ("member", "church", "stage", "joined_at", "is_active")
     list_filter   = ("church", "stage", "is_active")
     search_fields = (
@@ -43,7 +42,7 @@ class WorkforceMemberAdmin(admin.ModelAdmin):
 
 
 @admin.register(WorkforceMembershipRole)
-class WorkforceMembershipRoleAdmin(admin.ModelAdmin):
+class WorkforceMembershipRoleAdmin(ChurchAdmin):
     list_display  = ("workforce_member", "role", "church", "assigned_at")
     list_filter   = ("church", "role")
     search_fields = (
@@ -56,7 +55,7 @@ class WorkforceMembershipRoleAdmin(admin.ModelAdmin):
 
 
 @admin.register(AttendanceRecord)
-class AttendanceRecordAdmin(admin.ModelAdmin):
+class AttendanceRecordAdmin(ChurchAdmin):
     list_display  = ("user", "event", "date", "status", "church")
     list_filter   = ("church", "status", "date")
     search_fields = (
@@ -69,7 +68,7 @@ class AttendanceRecordAdmin(admin.ModelAdmin):
 
 
 @admin.register(ClockRecord)
-class ClockRecordAdmin(admin.ModelAdmin):
+class ClockRecordAdmin(ChurchAdmin):
     list_display  = ("user", "event", "date", "clock_in", "clock_out", "church")
     list_filter   = ("church", "date")
     search_fields = (
@@ -81,7 +80,7 @@ class ClockRecordAdmin(admin.ModelAdmin):
 
 
 @admin.register(PersonalReminder)
-class PersonalReminderAdmin(admin.ModelAdmin):
+class PersonalReminderAdmin(ChurchAdmin):
     list_display  = ("user", "title", "date", "is_done", "church")
     list_filter   = ("church", "is_done", "date")
     search_fields = ("title", "user__member__user__full_name", "church__name")
@@ -89,7 +88,7 @@ class PersonalReminderAdmin(admin.ModelAdmin):
 
 
 @admin.register(UserActivity)
-class UserActivityAdmin(admin.ModelAdmin):
+class UserActivityAdmin(ChurchAdmin):
     list_display  = ("user", "activity_type", "church", "created_at")
     list_filter   = ("church", "activity_type")
     search_fields = ("user__user__full_name", "description", "church__name")

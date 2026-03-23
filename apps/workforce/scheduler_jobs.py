@@ -33,7 +33,7 @@ def fire_event_broadcast(event_id, church_id):
     Silently skips if the event was cancelled or deactivated since scheduling.
     """
     try:
-        from workforce.models import Event
+        from services.models import Event
         from workforce.broadcast import broadcast_event
 
         event = Event.raw_objects.filter(
@@ -105,7 +105,7 @@ def schedule_event_notifications():
 
     print("🟡 [Scheduler] schedule_event_notifications() called")
     try:
-        from workforce.models import Event
+        from services.models import Event
         from tenants.models import Church
 
         for job in scheduler.get_jobs():
@@ -209,3 +209,16 @@ def register_workforce_jobs(scheduler):
         replace_existing=True,
     )
     print("✅ [Scheduler] Workforce jobs registered.")
+
+
+def evaluate_all_trainees(church):
+    from workforce.models import WorkforceTraineeProfile
+    from workforce.services.evaluator import evaluate_trainee_progress
+
+    trainees = WorkforceTraineeProfile.raw_objects.filter(
+        church=church,
+        is_active=True,
+    )
+
+    for trainee in trainees:
+        evaluate_trainee_progress(trainee)

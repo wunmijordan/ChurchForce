@@ -1,0 +1,93 @@
+﻿{% extends "base.html" %} {% block title %}Teenagers{% endblock %} {% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+    <div>
+      <h2 class="mb-1 fw-bold">Teenagers Module</h2>
+      <div class="text-secondary">Pulse - {{ focus }}</div>
+    </div>
+    <div class="d-flex gap-2">
+      {% if permissions|can:"teenagers.manage" or request.user.is_superuser %}
+      <a class="btn btn-outline-secondary" href="{% url 'teenagers:mentor_create' %}">Assign Mentor</a>
+      <a class="btn btn-outline-secondary" href="{% url 'teenagers:pulse_create' %}">Add Trend</a>
+      <a class="btn btn-primary" href="{% url 'teenagers:teen_create' %}">Add Teen</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card bg-dark border-secondary">
+        <div class="card-header">
+          <h5 class="mb-0">Teens</h5>
+        </div>
+        <div class="card-body">
+          {% if teens %}
+          <div class="table-responsive">
+            <table class="table table-sm table-vcenter">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Unit</th>
+                  <th>School</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for teen in teens %}
+                <tr>
+                  <td>{{ teen.full_name }}</td>
+                  <td>{{ teen.unit.name|default:"-" }}</td>
+                  <td>{{ teen.school|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-secondary">No teen profiles yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card bg-dark border-secondary mb-3">
+        <div class="card-header">
+          <h5 class="mb-0">Mentorship Pairings</h5>
+        </div>
+        <div class="card-body">
+          {% if assignments %}
+            <ul class="list-unstyled mb-0">
+              {% for assignment in assignments %}
+              <li class="mb-2">
+                <div class="fw-semibold">{{ assignment.teen.full_name }}</div>
+                <div class="text-secondary small">Mentor: {{ assignment.mentor.user.full_name|default:"-" }}</div>
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="text-secondary">No mentor pairings yet.</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card bg-dark border-secondary">
+        <div class="card-header">
+          <h5 class="mb-0">Trend Pulse</h5>
+        </div>
+        <div class="card-body">
+          {% if pulses %}
+            <ul class="list-unstyled mb-0">
+              {% for pulse in pulses %}
+              <li class="mb-2">
+                <div class="fw-semibold">{{ pulse.topic }}</div>
+                <div class="text-secondary small">{{ pulse.summary|truncatechars:120 }}</div>
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="text-secondary">No pulses yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

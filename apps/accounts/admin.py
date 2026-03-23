@@ -4,6 +4,7 @@ from django.utils.html import format_html
 
 from accounts.models import CustomUser, ChurchMember
 from accounts.forms import CustomUserCreationForm, CustomUserChangeForm
+from core.admin import ChurchAdmin
 
 
 @admin.register(CustomUser)
@@ -13,11 +14,11 @@ class CustomUserAdmin(BaseUserAdmin):
 
     list_display = (
         "username", "full_name", "email",
-        "is_staff", "is_active", "is_superuser", "image_display",
+        "is_active", "is_superuser", "image_display",
     )
     ordering = ("username",)
     readonly_fields = ("image_display",)
-    filter_horizontal = ("groups", "user_permissions")
+    filter_horizontal = ("user_permissions",)
 
     fieldsets = (
         (None, {"fields": ("username", "password")}),
@@ -30,7 +31,7 @@ class CustomUserAdmin(BaseUserAdmin):
         ("Permissions", {
             "fields": (
                 "is_active", "is_staff", "is_superuser",
-                "groups", "user_permissions",
+                "user_permissions",
             )
         }),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
@@ -42,8 +43,8 @@ class CustomUserAdmin(BaseUserAdmin):
             "fields": (
                 "username", "email", "full_name", "phone_number",
                 "image", "password1", "password2",
-                "is_active", "is_staff", "is_superuser",
-                "groups", "user_permissions",
+                "is_active", "is_superuser",
+                "user_permissions",
                 "title", "marital_status", "address", "date_of_birth",
             ),
         }),
@@ -86,9 +87,12 @@ class CustomUserAdmin(BaseUserAdmin):
     image_display.short_description = "Profile picture"
 
 
+
+
 @admin.register(ChurchMember)
-class ChurchMemberAdmin(admin.ModelAdmin):
-    list_display  = ("user", "church", "joined_at", "is_active")
-    list_filter   = ("church", "is_active")
-    search_fields = ("user__full_name", "user__username", "church__name")
+class ChurchMemberAdmin(ChurchAdmin): # Inherit from your new base class
+    fields = ("user", "church", "is_admin", "is_active")
+    list_display  = ("user", "church", "joined_at", "is_admin")
+    list_filter   = ("is_admin", "is_active") # No need to filter by 'church' usually
+    search_fields = ("user__full_name", "user__username")
     raw_id_fields = ("user",)

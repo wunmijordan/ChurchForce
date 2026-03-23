@@ -77,16 +77,20 @@ class PermissionQuerySet(models.QuerySet):
     
 
 class ChurchQuerySet(PermissionQuerySet):
-
     def auto_scope(self):
-
         user = get_current_user()
         church = get_current_church()
 
         if not user or not church:
-            return super().all()
+            return self.all()
+
+        # If it's an admin/staff in the Django Admin, just filter by Church
+        # This prevents the 'visible_to' logic from breaking Admin fields
+        if user.is_staff or user.is_superuser:
+            return self.for_church(church)
 
         return self.visible_to(user, church)
+
 
 class GuestQuerySet(ChurchQuerySet):
 

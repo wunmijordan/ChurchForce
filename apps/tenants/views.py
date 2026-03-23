@@ -1,94 +1,34 @@
-"""
+﻿"""
 tenants/views.py
 
 Public-facing tenant views:
-    signup                  — self-serve church registration (trial-first)
-    trial_expired           — wall shown when 14-day trial ends
-    subscription_inactive   — wall shown when a paid subscription lapses
+    signup                  â€” self-serve church registration (trial-first)
+    trial_expired           â€” wall shown when 14-day trial ends
+    subscription_inactive   â€” wall shown when a paid subscription lapses
 """
 
 from django.contrib import messages
 from django.contrib.auth import login
-from django.shortcuts import render, redirect
-from django.utils.text import slugify
-from django import forms
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.http import HttpResponseForbidden
+from django.shortcuts import redirect, render
 
+from .forms import ChurchSignupForm, ChurchSettingsForm
+from .models import ChurchSetting
+from units.forms import UnitQuickCreateForm
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Signup form
-# ─────────────────────────────────────────────────────────────────────────────
-
-class ChurchSignupForm(forms.Form):
-    """
-    Minimal self-serve signup form.
-    Plan selection happens AFTER signup on the billing/pricing page.
-    Coordinates are set by the admin via Django admin after signup.
-    """
-
-    # Organisation
-    church_name = forms.CharField(
-        max_length=255,
-        label="Organisation name",
-        widget=forms.TextInput(attrs={"placeholder": "e.g. Grace Chapel"}),
-    )
-    url_handle = forms.SlugField(
-        max_length=63,
-        label="URL handle",
-        help_text=(
-            "Letters, numbers and hyphens only. "
-            "This becomes your address: workforce.church/your-handle/"
-        ),
-        widget=forms.TextInput(attrs={"placeholder": "grace-chapel"}),
-    )
-
-    # Admin user
-    full_name = forms.CharField(
-        max_length=255,
-        label="Your full name",
-        widget=forms.TextInput(attrs={"placeholder": "John Doe"}),
-    )
-    email = forms.EmailField(
-        label="Email address",
-        widget=forms.EmailInput(attrs={"placeholder": "john@gracechapel.org"}),
-    )
-    password = forms.CharField(
-        label="Password",
-        min_length=8,
-        widget=forms.PasswordInput(),
-    )
-    password_confirm = forms.CharField(
-        label="Confirm password",
-        widget=forms.PasswordInput(),
-    )
-
-    def clean_url_handle(self):
-        value = slugify(self.cleaned_data.get("url_handle", ""))
-        if not value:
-            raise forms.ValidationError("Please enter a valid URL handle.")
-        return value
-
-    def clean(self):
-        cleaned = super().clean()
-        p1 = cleaned.get("password")
-        p2 = cleaned.get("password_confirm")
-        if p1 and p2 and p1 != p2:
-            self.add_error("password_confirm", "Passwords do not match.")
-        return cleaned
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Views
-# ─────────────────────────────────────────────────────────────────────────────
+from core.scheduler import get_scheduler
+from core.tasks import send_welcome_email  # Ensure you created this task
 
 def signup(request):
     """
-    Public self-serve signup. No login required.
-
-    Creates the church on the trial plan, creates the admin user,
-    and logs them in. The admin is then directed to the billing/pricing
-    page to choose a plan (or they can explore the app on trial first).
-
-    Template: tenants/signup.html
+    Public self-serve signup for ChurchForce on Trial Plan.
+    
+    1. Validates unique URL, email, and password strength via Form.
+    2. Provisions Church, Admin User, and Settings in an atomic transaction.
+    3. Schedules a background welcome email.
+    4. Logs the user in and redirects to pricing.
     """
     if request.user.is_authenticated:
         return redirect("post_login_redirect")
@@ -99,40 +39,54 @@ def signup(request):
         cd = form.cleaned_data
 
         try:
-            from tenants.onboarding import provision_church
+            # Wrap everything in a transaction so we don't get 'partial' signups
+            with transaction.atomic():
+                from tenants.onboarding import provision_church
 
-            church, user = provision_church(
-                church_name=cd["church_name"],
-                slug=cd["url_handle"],
-                admin_full_name=cd["full_name"],
-                admin_email=cd["email"],
-                admin_password=cd["password"],
+                church, user = provision_church(
+                    church_name=cd["church_name"],
+                    slug=cd["url_handle"],
+                    admin_full_name=cd["full_name"],
+                    admin_email=cd["email"],
+                    admin_password=cd["password"],
+                )
+
+                # Schedule the background email
+                # We use on_commit to ensure email only sends if DB save succeeds
+                scheduler = get_scheduler()
+                if scheduler:
+                    transaction.on_commit(lambda: scheduler.add_job(
+                        send_welcome_email,
+                        trigger='date',
+                        args=[user.email, church.name, user.full_name, church.domain],
+                        id=f"welcome_email_{user.id}",
+                        replace_existing=True
+                    ))
+
+            # Log the user in
+            login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+
+            messages.success(
+                request,
+                f"Welcome to ChurchForce, {church.name}! "
+                f"Your 14-day free trial has started."
             )
+
+            # Redirect to pricing to choose a plan
+            return redirect("billing:pricing")
 
         except ValueError as exc:
+            # Catches business logic errors (e.g. duplicate slug found in provision_church)
             messages.error(request, str(exc))
-            return render(request, "tenants/signup.html", {"form": form})
-
-        except Exception:
+        except Exception as e:
+            # Log the error here if you have logging set up
             messages.error(
                 request,
-                "Something went wrong while setting up your account. "
-                "Please try again or contact support if the problem persists.",
+                "An unexpected error occurred during setup. Please try again or contact support."
             )
-            return render(request, "tenants/signup.html", {"form": form})
-
-        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-
-        messages.success(
-            request,
-            f"Welcome to ChurchForce, {church.name}! "
-            f"Your 14-day free trial has started.",
-        )
-
-        # Nudge toward plan selection — not forced, they can explore first
-        return redirect("billing:pricing")
 
     return render(request, "tenants/signup.html", {"form": form})
+
 
 
 def trial_expired(request):
@@ -160,3 +114,64 @@ def subscription_inactive(request):
         "church": church,
         "portal_url": "billing:portal",
     })
+
+
+@login_required
+def church_settings(request):
+    """
+    Unified church settings page.
+    Combines Church profile fields and ChurchSetting preferences
+    into a single form, plus an inline unit-creation form.
+
+    Template: tenants/church_settings.html
+    """
+    church = getattr(request, "church", None)
+    if not church:
+        return HttpResponseForbidden("No church context.")
+
+    # Permission gate
+    perms    = getattr(request, "permissions", None)
+    is_admin = (
+        request.user.is_superuser
+        or (perms and perms.can("dashboard.admin"))
+    )
+    if not is_admin:
+        messages.error(request, "You do not have permission to manage church settings.")
+        return redirect("dashboard")
+
+    # Get or create ChurchSetting
+    church_setting, _ = ChurchSetting.objects.get_or_create(church=church)
+
+    if request.method == "POST":
+        if "create_unit" in request.POST:
+            unit_form = UnitQuickCreateForm(request.POST, church=church, settings=church_setting)
+            settings_form = ChurchSettingsForm(church=church, settings=church_setting)
+
+            if unit_form.is_valid():
+                unit = unit_form.save()
+                messages.success(request, f"'{unit.name}' created.")
+                return redirect("tenants:church_settings")
+
+            messages.error(request, "Please correct the unit form errors below.")
+        else:
+            settings_form = ChurchSettingsForm(request.POST, request.FILES, church=church, settings=church_setting)
+            unit_form = UnitQuickCreateForm(church=church, settings=church_setting)
+
+            if settings_form.is_valid():
+                settings_form.save()
+                messages.success(request, "Settings saved successfully.")
+                return redirect("tenants:church_settings")
+
+            messages.error(request, "Please correct the errors below.")
+    else:
+        settings_form = ChurchSettingsForm(church=church, settings=church_setting)
+        unit_form = UnitQuickCreateForm(church=church, settings=church_setting)
+
+    return render(request, "tenants/church_settings.html", {
+        "settings_form": settings_form,
+        "unit_form": unit_form,
+        "church": church,
+        "page_title": "Church Settings",
+    })
+
+

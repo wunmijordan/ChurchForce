@@ -1,9 +1,10 @@
 from django.contrib import admin
+from core.admin import ChurchAdmin
 from automation.models import AutomationLog
 
 
 @admin.register(AutomationLog)
-class AutomationLogAdmin(admin.ModelAdmin):
+class AutomationLogAdmin(ChurchAdmin):
     list_display   = (
         "event_type", "category", "status", "summary", "church", "created_at"
     )

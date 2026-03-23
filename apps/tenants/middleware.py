@@ -30,7 +30,6 @@ from core.request_context import set_current_request
 from tenants.models import Church
 from accounts.models import ChurchMember
 from billing.services import validate_white_label_access
-
 from django.middleware.csrf import CsrfViewMiddleware
 
 
@@ -188,7 +187,7 @@ class ChurchContextMiddleware:
     def _get_permissions(self, request):
         from permissions.services.resolver import PermissionResolver
         return PermissionResolver(request.user, request.church)
-
+    
 
 class DynamicCSRFMiddleware(CsrfViewMiddleware):
     """Approve CSRF for any origin that matches a church's custom_domain."""

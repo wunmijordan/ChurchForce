@@ -1,10 +1,10 @@
 from django.contrib import admin
-
+from core.admin import ChurchAdmin
 from notifications.models import Notification, UserSettings, PushSubscription
 
 
 @admin.register(Notification)
-class NotificationAdmin(admin.ModelAdmin):
+class NotificationAdmin(ChurchAdmin):
     list_display  = (
         "title", "member", "church", "is_read", "is_urgent",
         "is_success", "send_at", "created_at",
@@ -29,7 +29,7 @@ class NotificationAdmin(admin.ModelAdmin):
 
 
 @admin.register(UserSettings)
-class UserSettingsAdmin(admin.ModelAdmin):
+class UserSettingsAdmin(ChurchAdmin):
     list_display  = ("member", "church", "notification_sound", "vibration_enabled")
     list_filter   = ("church", "notification_sound", "vibration_enabled")
     search_fields = (
@@ -41,7 +41,7 @@ class UserSettingsAdmin(admin.ModelAdmin):
 
 
 @admin.register(PushSubscription)
-class PushSubscriptionAdmin(admin.ModelAdmin):
+class PushSubscriptionAdmin(ChurchAdmin):
     list_display  = ("member", "church", "created_at")
     list_filter   = ("church",)
     search_fields = (

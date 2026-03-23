@@ -1,112 +1,47 @@
-{# User avatar + dropdown menu. No old perm tags — role_label filter only. #} {%
-load access_tags %} {% load user_avatar_tags %}
+{# User avatar + dropdown menu. No old perm tags — role_label filter only. #}
+{% load access_tags %}
+{% load user_avatar_tags %}
 
 <div class="nav-item dropdown">
-  <a
-    href="#"
-    class="nav-link d-flex lh-1 p-0 px-2 ms-2 text-white"
-    data-bs-toggle="dropdown"
-    aria-label="User menu"
-  >
+  <a href="#" class="nav-link d-flex lh-1 p-0 px-2 ms-2 text-white" data-bs-toggle="dropdown" aria-label="User menu">
     {% render_user_avatar user "avatar-sm" %}
-    <div
-      class="ps-2 d-flex flex-column justify-content-center d-none d-xl-flex"
-    >
+    <div class="ps-2 d-flex flex-column justify-content-center d-none d-xl-flex">
       <div>{{ user.title|default:"" }} {{ user.full_name }}</div>
       <div class="text-secondary small">{{ user|role_label }}</div>
     </div>
   </a>
   <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow py-1">
     <a class="dropdown-item" href="{% url 'accounts:edit_profile' %}">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        class="me-2"
-      >
-        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-        <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0-8 0" />
-        <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-2">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+        <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0-8 0"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
       </svg>
       Profile
     </a>
-    <a
-      class="dropdown-item"
-      href="#"
-      data-bs-toggle="modal"
-      data-bs-target="#notifSettingsModal"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        class="me-2"
-      >
-        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-        <path
-          d="M12 17h-8a4 4 0 0 0 2-3v-3a7 7 0 0 1 4-6a2 2 0 1 1 4 0a7 7 0 0 1 4 6v.5"
-        />
-        <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0" />
-        <path d="M19.001 15.5v1.5" />
-        <path d="M19.001 21v1.5" />
-        <path d="M22.032 17.25l-1.299.75" />
-        <path d="M17.27 20l-1.3.75" />
-        <path d="M15.97 17.25l1.3.75" />
-        <path d="M20.733 20l1.3.75" />
-        <path d="M9 17v1a3 3 0 0 0 3 3" />
+    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#notifSettingsModal">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-2">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+        <path d="M12 17h-8a4 4 0 0 0 2-3v-3a7 7 0 0 1 4-6a2 2 0 1 1 4 0a7 7 0 0 1 4 6v.5"/>
+        <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/><path d="M19.001 15.5v1.5"/><path d="M19.001 21v1.5"/>
+        <path d="M22.032 17.25l-1.299.75"/><path d="M17.27 20l-1.3.75"/><path d="M15.97 17.25l1.3.75"/><path d="M20.733 20l1.3.75"/>
+        <path d="M9 17v1a3 3 0 0 0 3 3"/>
       </svg>
       Preferences
     </a>
-    <a
-      href="https://churchforce.io"
-      class="dropdown-item"
-      target="_blank"
-      rel="noreferrer"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        class="me-2"
-      >
-        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-        <path
-          d="M7.904 17.563a1.2 1.2 0 0 0 2.228.308l2.09-3.093l4.907 4.907a1.067 1.067 0 0 0 1.509 0l1.047-1.047a1.067 1.067 0 0 0 0-1.509l-4.907-4.907l3.113-2.09a1.2 1.2 0 0 0-.309-2.228l-13.582-3.904l3.904 13.563z"
-        />
+    <a href="https://churchforce.io" class="dropdown-item" target="_blank" rel="noreferrer">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-2">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+        <path d="M7.904 17.563a1.2 1.2 0 0 0 2.228.308l2.09-3.093l4.907 4.907a1.067 1.067 0 0 0 1.509 0l1.047-1.047a1.067 1.067 0 0 0 0-1.509l-4.907-4.907l3.113-2.09a1.2 1.2 0 0 0-.309-2.228l-13.582-3.904l3.904 13.563z"/>
       </svg>
       churchforce.io
       <span class="badge badge-sm bg-green-lt ms-auto">Home</span>
     </a>
     <div class="dropdown-divider"></div>
     <a href="{% url 'logout' %}" class="dropdown-item text-danger">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        class="me-2"
-      >
-        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-        <path
-          d="M14 8v-2a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2"
-        />
-        <path d="M9 12h12l-3-3" />
-        <path d="M18 15l3-3" />
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-2">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+        <path d="M14 8v-2a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2"/>
+        <path d="M9 12h12l-3-3"/><path d="M18 15l3-3"/>
       </svg>
       Logout
     </a>

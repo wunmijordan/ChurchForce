@@ -6,12 +6,12 @@ from guests.models import GuestEntry
 from core.utils.colors import resolve_color
 
 def get_user_color(user_id):
-    return resolve_color(f"user:{user_id}", variant="hex"), handle_file_upload
+    return resolve_color(f"user:{user_id}", variant="hex")
 from django.db.models.fields.files import FieldFile
 from django.core.files.storage import default_storage
 from django.utils import timezone
 from services.models import Event
-from .models import AttendanceRecord, PersonalReminder, UserActivity, ChatMessage, ClockRecord
+from .models import AttendanceRecord, PersonalReminder, UserActivity, ChatMessage, ClockRecord, WorkforceMember
 from django.db.models import Q
 from django.conf import settings
 from geopy.distance import distance
@@ -391,7 +391,8 @@ def get_calendar_items(user):
     end_of_year = date(today.year, 12, 31)
 
     events = get_available_events_for_user(user)
-    reminders = PersonalReminder.objects.filter(user=user, date__gte=today)
+    workforce_member = WorkforceMember.raw_objects.filter(member__user=user, is_active=True).first()
+    reminders = PersonalReminder.objects.filter(user=workforce_member, date__gte=today) if workforce_member else PersonalReminder.objects.none()
 
     calendar_items = []
 
@@ -504,7 +505,7 @@ def get_available_events_for_user(user):
     return available_events
 
 
-def get_available_teams_for_user(user):
+def get_available_units_for_user(user):
     """
     Returns active units the user can select in modals.
     """
@@ -515,7 +516,7 @@ def get_available_teams_for_user(user):
     perms = _get_permissions(user, church)
     qs = ChurchUnit.raw_objects.filter(church=church, is_active=True)
 
-    if _can(perms, "team.view_all"):
+    if _can(perms, "unit.view_all"):
         return qs.order_by("name")
 
     return qs.filter(memberships__workforce_member__member__user=user).distinct().order_by("name")
@@ -622,15 +623,19 @@ def expand_team_events(user, team_id):
 
 
 def get_visible_attendance_records(user, since_date=None):
-    """
-    Returns attendance records the user is allowed to see based on permissions.
-    """
     church = _get_church(user)
     if not church:
         return AttendanceRecord.objects.none()
 
+    # 1. Get Superuser IDs to avoid join errors
+    superuser_ids = CustomUser.objects.filter(is_superuser=True).values_list('id', flat=True)
+    superuser_filter = (
+        Q(user__workforce_member__member__user_id__in=superuser_ids) |
+        Q(user__trainee_profile__member__user_id__in=superuser_ids)
+    )
+
     base_qs = AttendanceRecord.objects.select_related(
-        "event", "user", "team", "event__unit"
+        "event", "user", "user__unit", "event__unit"
     ).filter(church=church).order_by("-date")
 
     if since_date:
@@ -638,8 +643,10 @@ def get_visible_attendance_records(user, since_date=None):
 
     perms = _get_permissions(user, church)
 
+    # 2. Exclude by targeting the User ID at the end of the chain
+    # Path: UnitMembership(user) -> ChurchMember(member) -> CustomUser(user_id)
     if user.is_superuser or _can(perms, "attendance.view_all"):
-        return base_qs.exclude(user__is_superuser=True)
+        return base_qs.exclude(superuser_filter)
 
     unit_ids = UnitMembership.objects.filter(
         workforce_member__member__user=user
@@ -647,28 +654,33 @@ def get_visible_attendance_records(user, since_date=None):
 
     records = base_qs.filter(
         Q(event__unit_id__in=unit_ids) | Q(team_id__in=unit_ids)
-    ).exclude(user__is_superuser=True)
+    ).exclude(superuser_filter)
 
     return records
 
 
 def get_visible_clock_records(user, since_date=None):
-    """
-    Returns clock records the user is allowed to see based on permissions.
-    """
     church = _get_church(user)
     if not church:
         return ClockRecord.objects.none()
 
-    base_qs = ClockRecord.objects.select_related("event", "user", "team").filter(church=church).order_by("-date")
+    # 1. Get Superuser IDs
+    superuser_ids = CustomUser.objects.filter(is_superuser=True).values_list('id', flat=True)
+    superuser_filter = (
+        Q(user__workforce_member__member__user_id__in=superuser_ids) |
+        Q(user__trainee_profile__member__user_id__in=superuser_ids)
+    )
+
+    base_qs = ClockRecord.objects.select_related("event", "user", "user__unit", "event__unit").filter(church=church).order_by("-date")
 
     if since_date:
         base_qs = base_qs.filter(date__gte=since_date)
 
     perms = _get_permissions(user, church)
 
+    # 2. Exclude using the same stable ID path
     if user.is_superuser or _can(perms, "attendance.view_all"):
-        return base_qs.exclude(user__is_superuser=True)
+        return base_qs.exclude(superuser_filter)
 
     unit_ids = UnitMembership.objects.filter(
         workforce_member__member__user=user
@@ -679,4 +691,4 @@ def get_visible_clock_records(user, since_date=None):
         Q(event__unit_id__in=unit_ids)
     )
 
-    return records.exclude(user__is_superuser=True)
+    return records.exclude(superuser_filter)

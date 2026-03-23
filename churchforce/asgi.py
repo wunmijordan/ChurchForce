@@ -1,7 +1,7 @@
 """
 churchforce/asgi.py
 
-ASGI application for ChurchForce.
+ASGI application for GForceApp.
 
 WebSocket routing:
     notifications   — per-user notification channel (user_{id})
@@ -10,6 +10,11 @@ WebSocket routing:
 """
 
 import os
+import sys
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE_DIR / "apps"))
 
 # Must come before any Django imports
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "churchforce.settings")

@@ -1,34 +1,22 @@
-{% extends "base.html" %} {% load static widget_tweaks %} {% block title %}Edit
-Profile{% endblock %} {% block content %}
+{% extends "base.html" %}
+{% load static widget_tweaks %}
+
+{% block title %}Edit Profile{% endblock %}
+
+{% block content %}
 <div class="container py-4">
   <div class="row justify-content-center">
     <div class="col-12 col-md-8 col-lg-6">
+
       <div class="d-flex align-items-center gap-3 mb-4">
         {% if request.user.image %}
-        <img
-          src="{{ request.user.image.url }}"
-          alt="Profile"
-          style="
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            object-fit: cover;
-          "
-        />
+          <img src="{{ request.user.image.url }}" alt="Profile"
+               style="width:64px;height:64px;border-radius:50%;object-fit:cover;">
         {% else %}
-        <span
-          class="d-inline-flex align-items-center justify-content-center fw-bold"
-          style="
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background: #2e303e;
-            font-size: 1.5rem;
-            color: #ff5e01;
-          "
-        >
-          {{ request.user.initials }}
-        </span>
+          <span class="d-inline-flex align-items-center justify-content-center fw-bold"
+                style="width:64px;height:64px;border-radius:50%;background:#2e303e;font-size:1.5rem;color:#ff5e01;">
+            {{ request.user.initials }}
+          </span>
         {% endif %}
         <div>
           <h2 class="mb-0 fw-bold">Edit Profile</h2>
@@ -36,19 +24,14 @@ Profile{% endblock %} {% block content %}
         </div>
       </div>
 
-      {% if messages %} {% for message in messages %}
-      <div
-        class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show py-2"
-        role="alert"
-      >
-        {{ message }}
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="alert"
-        ></button>
-      </div>
-      {% endfor %} {% endif %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show py-2" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
 
       <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
@@ -59,30 +42,26 @@ Profile{% endblock %} {% block content %}
           </div>
           <div class="card-body p-4">
             <div class="row g-3">
+
               <div class="col-md-3">
                 <label class="form-label">Title</label>
-                {% render_field form.title class="form-control"
-                placeholder="e.g. Mr, Dr, Pst" %}
+                {% render_field form.title class="form-control" placeholder="e.g. Mr, Dr, Pst" %}
               </div>
               <div class="col-md-9">
                 <label class="form-label">Full name</label>
-                {% render_field form.full_name class="form-control"
-                placeholder="Your full name" %} {% if form.full_name.errors %}
-                <div class="text-danger small mt-1">
-                  {{ form.full_name.errors.0 }}
-                </div>
+                {% render_field form.full_name class="form-control" placeholder="Your full name" %}
+                {% if form.full_name.errors %}
+                  <div class="text-danger small mt-1">{{ form.full_name.errors.0 }}</div>
                 {% endif %}
               </div>
 
               <div class="col-md-6">
                 <label class="form-label">Phone number</label>
-                {% render_field form.phone_number class="form-control"
-                placeholder="+2348012345678" %}
+                {% render_field form.phone_number class="form-control" placeholder="+2348012345678" %}
               </div>
               <div class="col-md-6">
                 <label class="form-label">Date of birth</label>
-                {% render_field form.date_of_birth class="form-control"
-                type="date" %}
+                {% render_field form.date_of_birth class="form-control" type="date" %}
               </div>
 
               <div class="col-md-6">
@@ -92,9 +71,9 @@ Profile{% endblock %} {% block content %}
 
               <div class="col-12">
                 <label class="form-label">Address</label>
-                {% render_field form.address class="form-control" rows="2"
-                placeholder="Your home address" %}
+                {% render_field form.address class="form-control" rows="2" placeholder="Your home address" %}
               </div>
+
             </div>
           </div>
         </div>
@@ -105,23 +84,20 @@ Profile{% endblock %} {% block content %}
           </div>
           <div class="card-body p-4">
             {% render_field form.image class="form-control" %}
-            <div class="form-text text-secondary">
-              Upload a clear photo. JPG or PNG, max 5 MB.
-            </div>
+            <div class="form-text text-secondary">Upload a clear photo. JPG or PNG, max 5 MB.</div>
           </div>
         </div>
 
         <div class="d-flex justify-content-end gap-3">
           <a href="/" class="btn btn-outline-secondary px-4">Cancel</a>
-          <button
-            type="submit"
-            class="btn fw-bold px-5"
-            style="background: #ff5e01; color: #fff; border: none"
-          >
+          <button type="submit" class="btn fw-bold px-5"
+                  style="background:#ff5e01;color:#fff;border:none;">
             Save profile
           </button>
         </div>
+
       </form>
+
     </div>
   </div>
 </div>

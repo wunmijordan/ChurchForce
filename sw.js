@@ -70,7 +70,7 @@ self.addEventListener("push", (event) => {
   if (data.sound) options.sound = `/static/sounds/${data.sound}.mp3`;
 
   event.waitUntil(
-    self.registration.showNotification(data.title || "ChurchForce", options)
+    self.registration.showNotification(data.title || "GForceApp", options)
   );
 });
 

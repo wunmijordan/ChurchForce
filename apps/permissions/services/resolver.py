@@ -69,6 +69,11 @@ class PermissionResolver:
             permission_map["*"] = {"global": True, "units": set()}
             return permission_map
 
+        # Church admin bypasses all permission checks (unit-agnostic)
+        if self.church_member and getattr(self.church_member, "is_admin", False):
+            permission_map["*"] = {"global": True, "units": set()}
+            return permission_map
+
         wf = self.workforce_member
         if not wf:
             return permission_map
@@ -159,3 +164,4 @@ class PermissionResolver:
                 .values_list("id", flat=True)
             )
         return data["units"]
+

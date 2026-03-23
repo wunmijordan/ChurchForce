@@ -16,4 +16,5 @@ urlpatterns = [
     path("api/events/", views.api_events, name="api_events"),
     path("log-user-activity/", views.log_user_activity, name="log_user_activity"),
     path("get_active_events/", views.get_active_events, name="get_active_events"),
+    path("settings/me/",      views.member_settings, name="member_settings"),
 ]

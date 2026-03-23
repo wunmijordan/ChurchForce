@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# ─────────────────────────────────────────────────────────────────────────────
-# ChurchForce — Local dev database reset
+# ChurchForce - Local dev database reset
 # Usage:  bash scripts/reset_dev_db.sh
 #
-# Reads ALL values directly from your .env file — no separate defaults.
-# Your .env must exist at the project root before running this.
-# ─────────────────────────────────────────────────────────────────────────────
+# Reads ALL values from your .env file.
+# Non-interactive mode (skip all prompts):
+#   SU_USERNAME=wunmi SU_EMAIL=me@church.io SU_PASS=secret bash scripts/reset_dev_db.sh
 
 set -euo pipefail
 
@@ -13,107 +12,126 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 ENV_FILE="$PROJECT_ROOT/.env"
 
-# ── Load .env ─────────────────────────────────────────────────────────────────
-if [[ ! -f "$ENV_FILE" ]]; then
-  echo "❌  .env not found at $ENV_FILE"
-  echo "    Run:  cp env.dev.txt .env  then edit it first."
+# --- Load .env ----------------------------------------------------------
+if [ ! -f "$ENV_FILE" ]; then
+  echo "ERROR: .env not found at $ENV_FILE"
+  echo "       Run:  cp env.dev.txt .env  then fill in your values."
   exit 1
 fi
 
-# Export every non-comment, non-blank line from .env
-set -a
-# shellcheck disable=SC1090
-source <(grep -v '^\s*#' "$ENV_FILE" | grep -v '^\s*$')
-set +a
+# Only export clean KEY=VALUE lines - skip comments, blanks, and anything malformed.
+# This prevents "command not found" errors from unquoted values with spaces.
+while IFS= read -r line; do
+  # Skip blank lines and comments
+  [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+  # Must contain = and key must be a valid identifier
+  [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] || continue
+  export "${line?}"
+done < "$ENV_FILE"
 
-# ── Resolve DB vars from .env ─────────────────────────────────────────────────
-# Your .env uses split DB_* vars in development (not DATABASE_URL)
+# --- Resolve DB vars from .env -----------------------------------------
 DB_NAME="${DB_NAME:?DB_NAME not set in .env}"
 DB_USER="${DB_USER:?DB_USER not set in .env}"
-DB_PASS="${DB_PASSWORD:?DB_PASSWORD not set in .env}"   # note: .env uses DB_PASSWORD
 DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-5432}"
 
-# ── Superuser — prompted interactively so you choose your own credentials ─────
-# We don't hardcode these. Django's createsuperuser handles it.
-# Pass SU_USERNAME / SU_EMAIL / SU_PASS as env vars to skip the prompts:
-#   SU_USERNAME=wunmi SU_EMAIL=me@church.io SU_PASS=secret bash scripts/reset_dev_db.sh
+# DB_PASSWORD is the key name in .env; expose as PGPASSWORD so psql picks it up
+export PGPASSWORD="${DB_PASSWORD:-}"
+
+# --- Superuser (optional) ----------------------------------------------
 SU_USERNAME="${SU_USERNAME:-}"
 SU_EMAIL="${SU_EMAIL:-}"
 SU_PASS="${SU_PASS:-}"
+CHURCH_NAME="${CHURCH_NAME:-My Church}"
 
-MANAGE="python manage.py"
+# Resolve Python - project-local venv always wins over $VIRTUAL_ENV
+# because $VIRTUAL_ENV may be stale (pointing to a different project).
+if [ -f "$PROJECT_ROOT/venv/bin/python" ]; then
+  PYTHON="$PROJECT_ROOT/venv/bin/python"
+elif [ -f "$PROJECT_ROOT/.venv/bin/python" ]; then
+  PYTHON="$PROJECT_ROOT/.venv/bin/python"
+elif [ -n "${VIRTUAL_ENV:-}" ] && [ -f "$VIRTUAL_ENV/bin/python" ]; then
+  PYTHON="$VIRTUAL_ENV/bin/python"
+else
+  echo "ERROR: No virtualenv found in $PROJECT_ROOT/venv/ or $PROJECT_ROOT/.venv/"
+  echo "       Create one first:  python3 -m venv venv && source venv/bin/activate"
+  echo "       Then install:      pip install -r requirements.txt"
+  exit 1
+fi
+
+MANAGE="$PYTHON manage.py"
+echo "Using Python: $PYTHON"
 
 echo ""
-echo "╔══════════════════════════════════════════════════════╗"
-echo "║     ChurchForce — Dev DB Reset                      ║"
-echo "╠══════════════════════════════════════════════════════╣"
-echo "║  DB:   $DB_NAME @ $DB_HOST:$DB_PORT (user: $DB_USER)"
-echo "╚══════════════════════════════════════════════════════╝"
+echo "=== ChurchForce - Dev DB Reset ==="
+echo "DB: $DB_NAME @ $DB_HOST:$DB_PORT (user: $DB_USER)"
 echo ""
 
-# ── 1. Drop + recreate the database ──────────────────────────────────────────
-# Uses DB_USER from .env (likely 'postgres' locally) — no new role created.
-echo "▶  Dropping $DB_NAME …"
+# --- 1. Drop and recreate -----------------------------------------------
+echo ">> Dropping $DB_NAME ..."
 psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" \
-  -c "DROP DATABASE IF EXISTS $DB_NAME;" 2>/dev/null || true
+  -c "DROP DATABASE IF EXISTS \"$DB_NAME\";" 2>/dev/null || true
 
-echo "▶  Creating $DB_NAME …"
+echo ">> Creating $DB_NAME ..."
 psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" \
-  -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
-echo "✓  Database ready"
+  -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\";"
+echo "   Done."
 
-# ── 2. Wipe migration files ───────────────────────────────────────────────────
-echo "▶  Wiping migration files…"
+# --- 2. Wipe migration files --------------------------------------------
+echo ""
+echo ">> Wiping migration files ..."
 find "$PROJECT_ROOT/apps" -path "*/migrations/0*.py" -delete
-echo "✓  Migration files deleted"
+echo "   Done."
 
-# ── 3. Make migrations ────────────────────────────────────────────────────────
-echo "▶  makemigrations…"
-cd "$PROJECT_ROOT"
-$MANAGE makemigrations \
-    tenants accounts units lms workforce guests \
-    notifications messaging billing services \
-    music media automation permissions dashboard core
-echo "✓  Migrations created"
-
-# ── 4. Migrate ────────────────────────────────────────────────────────────────
-echo "▶  migrate…"
-$MANAGE migrate --noinput
-echo "✓  Schema applied"
-
-# ── 5. Superuser ─────────────────────────────────────────────────────────────
+# --- 3. Make migrations -------------------------------------------------
 echo ""
-if [[ -n "$SU_USERNAME" && -n "$SU_EMAIL" && -n "$SU_PASS" ]]; then
-  # Non-interactive: all three passed as env vars
-  echo "▶  Creating superuser: $SU_USERNAME (non-interactive)"
+echo ">> Running makemigrations ..."
+cd "$PROJECT_ROOT"
+$MANAGE makemigrations
+echo "   Done."
+
+# --- 4. Migrate ---------------------------------------------------------
+echo ""
+echo ">> Running migrate ..."
+$MANAGE migrate --noinput
+echo "   Done."
+
+# --- 5. Superuser -------------------------------------------------------
+echo ""
+if [ -n "$SU_USERNAME" ] && [ -n "$SU_EMAIL" ] && [ -n "$SU_PASS" ]; then
+  echo ">> Creating superuser: $SU_USERNAME ..."
   DJANGO_SUPERUSER_PASSWORD="$SU_PASS" \
-  $MANAGE createsuperuser \
+    $MANAGE createsuperuser \
       --noinput \
       --username "$SU_USERNAME" \
       --email "$SU_EMAIL" 2>/dev/null \
-  && echo "✓  Superuser created: $SU_USERNAME / $SU_PASS" \
-  || echo "   (superuser already exists — skipped)"
+    && echo "   Created: $SU_USERNAME / $SU_PASS" \
+    || echo "   Already exists - skipped."
 else
-  # Interactive: Django prompts you
-  echo "▶  Creating superuser (you will be prompted)…"
+  echo ">> Creating superuser (you will be prompted) ..."
   $MANAGE createsuperuser
+  printf "\n   Enter the username you just created: "
+  read -r SU_USERNAME
 fi
 
-# ── 6. Bootstrap ─────────────────────────────────────────────────────────────
+# --- 6. Bootstrap -------------------------------------------------------
 echo ""
-echo "▶  Bootstrapping church, plan, member, units and chat rooms…"
+echo ">> Bootstrapping church: $CHURCH_NAME ..."
 
-# Read the superuser username back — either from env or ask
-if [[ -z "$SU_USERNAME" ]]; then
-  read -rp "   Enter the superuser username you just created: " SU_USERNAME
-fi
+# Pass values as environment variables so the heredoc can stay fully quoted.
+# A quoted heredoc delimiter ('PYEOF') prevents ALL shell expansion inside,
+# which avoids the "/dev/fd/63: command not found" bash parsing error.
+export CF_SU_USERNAME="$SU_USERNAME"
+export CF_CHURCH_NAME="$CHURCH_NAME"
 
-CHURCH_NAME="${CHURCH_NAME:-My Church}"
+$MANAGE shell << 'PYEOF'
+import os
 
-$MANAGE shell << PYEOF
+su_username  = os.environ["CF_SU_USERNAME"]
+church_name  = os.environ.get("CF_CHURCH_NAME", "My Church")
+
 from tenants.models import Church, ChurchSetting
-from billing.models import SubscriptionPlan
+from billing.services import grant_founders_plan
 from accounts.models import CustomUser, ChurchMember
 from units.models import ChurchUnit, ChatRoom
 
@@ -123,55 +141,43 @@ try:
 except ImportError:
     has_bootstrap = False
 
-user = CustomUser.objects.get(username='${SU_USERNAME}')
-
-plan, _ = SubscriptionPlan.objects.get_or_create(
-    name='Founders',
-    defaults=dict(price_ngn=0, price_usd=0, max_members=500,
-                  campus_limit=10, is_active=True),
-)
+user = CustomUser.objects.get(username=su_username)
 
 church, created = Church.objects.get_or_create(
-    subdomain='localhost',
+    subdomain="localhost",
     defaults=dict(
-        name='${CHURCH_NAME}',
-        slug='my-church',
-        admin=user,
-        plan=plan,
+        name=church_name,
+        slug="my-church",
         latitude=6.5244,
         longitude=3.3792,
-        timezone='Africa/Lagos',
+        timezone="Africa/Lagos",
     ),
 )
-print(f"  {'Church created' if created else 'Church already exists'}: {church}")
+print("  Church {}: {}".format("created" if created else "already exists", church))
+
+grant_founders_plan(church, "white_label")
+print("  Founders Plan (white_label) granted.")
 
 ChurchSetting.objects.get_or_create(church=church)
 
-if has_bootstrap:
-    seed_church(church)
-    print('  seed_church() ran OK')
-
 member, _ = ChurchMember.objects.get_or_create(
-    church=church, user=user,
+    church=church,
+    user=user,
     defaults=dict(is_active=True, is_admin=True),
 )
-print(f'  Member: {member}')
+print("  Member: {}".format(member))
 
-for unit in ChurchUnit.objects.filter(church=church):
-    room, c = ChatRoom.objects.get_or_create(
-        church=church, unit=unit,
-        defaults=dict(name=unit.name, is_default=True, is_active=True),
-    )
-    if c:
-        print(f'  ChatRoom created: {room.name}')
+if has_bootstrap:
+    seed_church(church, admin_user=user)
+    print("  ✓ ChurchForce Bootstrap OK (Units + ChatRooms created)")
 PYEOF
 
 echo ""
-echo "╔══════════════════════════════════════════════════════╗"
-echo "║  ✅  Reset complete!                                 ║"
-echo "║                                                      ║"
-echo "║  Start server:  python manage.py devserver           ║"
-echo "║  Admin:         http://localhost:8000/admin/         ║"
-echo "║  Login:         $SU_USERNAME                         "
-echo "╚══════════════════════════════════════════════════════╝"
+echo "==================================================="
+echo "  Reset complete!"
+echo ""
+echo "  Start:    python manage.py devserver"
+echo "  Admin:    http://localhost:8000/admin/"
+echo "  Login:    $SU_USERNAME"
+echo "==================================================="
 echo ""

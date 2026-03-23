@@ -1,9 +1,10 @@
 from django.contrib import admin
+from core.admin import ChurchAdmin
 from permissions.models import UnitRole, MembershipRole
 
 
 @admin.register(UnitRole)
-class UnitRoleAdmin(admin.ModelAdmin):
+class UnitRoleAdmin(ChurchAdmin):
     list_display   = ("name", "unit", "church", "is_leadership", "order", "is_active")
     list_filter    = ("church", "is_leadership", "is_active")
     search_fields  = ("name", "unit__name", "church__name")
@@ -12,7 +13,7 @@ class UnitRoleAdmin(admin.ModelAdmin):
 
 
 @admin.register(MembershipRole)
-class MembershipRoleAdmin(admin.ModelAdmin):
+class MembershipRoleAdmin(ChurchAdmin):
     list_display  = ("membership", "role", "church", "assigned_at")
     list_filter   = ("church",)
     search_fields = (

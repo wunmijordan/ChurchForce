@@ -1,4 +1,4 @@
-from dashboard import views as views_dashboard
+﻿from dashboard import views as views_dashboard
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -14,10 +14,10 @@ def health(request):
 urlpatterns = [
     path("admin/", admin.site.urls),
 
-    # Tenant public routes — signup, walls, settings
+    # Tenant public routes â€” signup, walls, settings
     path("tenants/",  include("tenants.urls",  namespace="tenants")),
 
-    # Billing — pricing, upgrade, portal, webhook
+    # Billing â€” pricing, upgrade, portal, webhook
     path("billing/",  include("billing.urls",  namespace="billing")),
 
     # Auth + accounts
@@ -25,19 +25,22 @@ urlpatterns = [
     path("accounts/", include("accounts.urls", namespace="accounts")),
 
     # Core workforce (root namespace)
-    path("",           include("workforce.urls",     namespace="workforce")),
+    path("workforce/",           include("workforce.urls",     namespace="workforce")),
 
     # Domain apps
     path("guests/",        include("guests.urls",     namespace="guests")),
+    path("music/",        include("music.urls",      namespace="music")),
+    path("media/",        include("media.urls",      namespace="media")),
+    path("children/",     include("children.urls",   namespace="children")),
+    path("youth/",        include("youth.urls",      namespace="youth")),
+    path("teenagers/",    include("teenagers.urls",  namespace="teenagers")),
     path("units/",         include("units.urls",         namespace="units")),
     path("lms/",           include("lms.urls",           namespace="lms")),
     path("notifications/", include("notifications.urls", namespace="notifications")),
     path("messaging/",     include("messaging.urls",     namespace="messaging")),
 
     # Dashboard routes + top-level alias for {% url "dashboard" %} in templates
-    path("dashboard/",    include("dashboard.urls", namespace="dashboard")),
-    path("d/",            views_dashboard.dashboard_view,  name="dashboard"),
-    path("admin-panel/",  views_dashboard.admin_dashboard, name="admin_dashboard_root"),
+    path("",    include("dashboard.urls", namespace="dashboard")),
 
     # Utility
     path("post-login/",  post_login_redirect, name="post_login_redirect"),
@@ -50,3 +53,4 @@ if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL,  document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]
+

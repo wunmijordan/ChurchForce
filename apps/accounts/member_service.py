@@ -15,7 +15,7 @@ What does NOT live here:
       full admin-driven member creation flow including credentials, ChurchMember,
       WorkforceMember, roles, and unit assignments. Use the form instead.
 
-The guest-to-workforce pipeline (magnet/pipeline.py) calls
+The guest-to-workforce pipeline (guests/pipeline.py) calls
 promote_guest_to_member() from induct_member() as its final step.
 """
 
@@ -67,7 +67,7 @@ def generate_username(full_name: str, church_slug: str = ""):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @transaction.atomic
-def promote_guest_to_member(
+def manual_promote_guest_to_member(
     *,
     guest_entry,
     church,
@@ -80,7 +80,7 @@ def promote_guest_to_member(
     """
     Convert a GuestEntry into a ChurchMember + WorkforceMember.
 
-    Used by the induction pipeline (magnet/pipeline.py:induct_member) as
+    Used by the induction pipeline (guests/pipeline.py:induct_member) as
     its final step. Can also be called directly for manual admin overrides
     when a guest skips the full induction process.
 

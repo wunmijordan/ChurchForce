@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to ChurchForce</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; color: #333;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+        <!-- Header / Hero -->
+        <tr>
+            <td style="padding: 40px 20px; text-align: center; background-color: #206bc4; color: #ffffff;">
+                <h1 style="margin: 0; font-size: 28px;">Welcome to ChurchForce!</h1>
+                <p style="margin: 10px 0 0; font-size: 16px; opacity: 0.9;">Empowering <strong>{{ church_name }}</strong> to grow and serve.</p>
+            </td>
+        </tr>
+
+        <!-- Main Body -->
+        <tr>
+            <td style="padding: 40px 30px;">
+                <p style="font-size: 18px; margin-top: 0;">Hi {{ admin_name }},</p>
+                <p style="line-height: 1.6; font-size: 16px;">
+                    We are thrilled to have you join the <strong>ChurchForce</strong> family. Your 14-day free trial has officially started, and your workspace for <strong>{{ church_name }}</strong> is ready for action.
+                </p>
+                
+                <p style="line-height: 1.6; font-size: 16px;">
+                    Our goal is to help you streamline your workforce, manage your units, and engage your guests more effectively so you can focus on what matters most—ministry.
+                </p>
+
+                <!-- CTA Button -->
+                <div style="text-align: center; margin: 40px 0;">
+                    <a href="{{ login_url }}" style="background-color: #ff5e01; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px; display: inline-block;">
+                        Enter Your Dashboard
+                    </a>
+                </div>
+
+                <p style="line-height: 1.6; font-size: 14px; color: #666;">
+                    <strong>Next Steps:</strong><br>
+                    • Complete your church profile.<br>
+                    • Invite your first team member.<br>
+                    • Check out the Workforce module to set up your units.
+                </p>
+            </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+            <td style="padding: 20px; text-align: center; background-color: #f8fafc; color: #999; font-size: 12px; border-top: 1px solid #eeeeee;">
+                <p style="margin: 0;">&copy; 2026 ChurchForce Inc. | Built for the Kingdom.</p>
+                <p style="margin: 5px 0 0;">If you have any questions, just reply to this email.</p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

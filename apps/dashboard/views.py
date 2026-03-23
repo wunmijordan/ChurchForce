@@ -35,6 +35,7 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from accounts.models import CustomUser, ChurchMember
+from tenants.models import Church
 from core.utils.colors import resolve_color
 from guests.models import GuestEntry, GuestStatus
 from units.models import ChurchUnit, UnitMembership
@@ -45,7 +46,7 @@ from workforce.utils import (
     get_visible_clock_records,
     get_available_events_for_user,
     expand_team_events,
-    get_available_teams_for_user,
+    get_available_units_for_user,
 )
 
 
@@ -381,7 +382,7 @@ def admin_dashboard(request):
         "calendar_items":         calendar_items,
         "available_events":       upcoming_events,
         "next_events_for_week":   weekly_events,
-        "available_teams":        get_available_teams_for_user(user),
+        "available_units":        get_available_units_for_user(user),
 
         # permissions
         "context_user_permissions": context_user_permissions,
@@ -394,7 +395,51 @@ def admin_dashboard(request):
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Member dashboard
+# ─────────────────────────────────────────────────────────────────────────────# ─────────────────────────────────────────────────────────────────────────────
+# Superuser church management
 # ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
+def superuser_dashboard(request):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Superuser access required.")
+
+    scope = request.GET.get("scope", "scoped")
+    status = request.GET.get("status", "active")
+    query = (request.GET.get("q") or "").strip()
+
+    if scope == "all":
+        qs = Church.raw_objects.all()
+    else:
+        qs = Church.objects.all()
+
+    if status == "active":
+        qs = qs.filter(is_active=True)
+    elif status == "inactive":
+        qs = qs.filter(is_active=False)
+
+    if query:
+        qs = qs.filter(
+            Q(name__icontains=query)
+            | Q(slug__icontains=query)
+            | Q(subdomain__icontains=query)
+            | Q(custom_domain__icontains=query)
+        )
+
+    churches = qs.order_by("name")
+
+    context = {
+        "page_title": "Church Management",
+        "scope": scope,
+        "status": status,
+        "query": query,
+        "churches": churches,
+        "total_count": churches.count(),
+    }
+
+    return render(request, "dashboard/superuser_dashboard.html", context)
+
+
 
 @login_required
 def dashboard_view(request):
@@ -603,7 +648,7 @@ def dashboard_view(request):
         "team_member_pairs": [
             (unit, [
                 {"user": m.workforce_member.member.user}
-                for m in unit_memberships
+                for m in other_memberships
                 if m.unit_id == unit.id and m.workforce_member and m.workforce_member.member
             ])
             for unit in user_units
@@ -636,3 +681,5 @@ def dashboard_view(request):
     }
 
     return render(request, "dashboard/dashboard.html", context)
+
+

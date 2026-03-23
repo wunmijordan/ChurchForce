@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin import ChurchAdmin
 from units.models import (
     ChurchUnit, UnitMembership, UnitAttendanceRecord,
     ChatRoom, PrivateChatRequest,
@@ -7,12 +8,15 @@ from units.models import (
 
 
 @admin.register(ChurchUnit)
-class ChurchUnitAdmin(admin.ModelAdmin):
+class ChurchUnitAdmin(ChurchAdmin):
     list_display   = (
         "name", "unit_type", "church", "report_to",
         "is_default", "member_count", "is_active",
+        "guest_management", "music_module", "media_module",
     )
-    list_filter    = ("church", "unit_type", "is_default", "is_active")
+    list_filter    = ("church", "unit_type", "is_default", "is_active",
+                   "guest_management", "music_module", "media_module",
+                   "children_module", "youth_module", "teenagers_module")
     search_fields  = ("name", "slug", "church__name")
     prepopulated_fields = {"slug": ("name",)}
     raw_id_fields  = ("report_to",)
@@ -24,7 +28,7 @@ class ChurchUnitAdmin(admin.ModelAdmin):
 
 
 @admin.register(UnitMembership)
-class UnitMembershipAdmin(admin.ModelAdmin):
+class UnitMembershipAdmin(ChurchAdmin):
     list_display  = (
         "__str__", "unit", "church", "is_probation",
         "is_unit_head", "consecutive_absences", "for_review", "is_active",
@@ -55,7 +59,7 @@ class UnitMembershipAdmin(admin.ModelAdmin):
 
 
 @admin.register(UnitAttendanceRecord)
-class UnitAttendanceRecordAdmin(admin.ModelAdmin):
+class UnitAttendanceRecordAdmin(ChurchAdmin):
     list_display  = ("membership", "unit", "date", "status", "session", "church")
     list_filter   = ("church", "unit", "status")
     search_fields = (
@@ -67,7 +71,7 @@ class UnitAttendanceRecordAdmin(admin.ModelAdmin):
 
 
 @admin.register(ChatRoom)
-class ChatRoomAdmin(admin.ModelAdmin):
+class ChatRoomAdmin(ChurchAdmin):
     list_display  = ("name", "room_type", "unit", "church", "is_default", "is_active")
     list_filter   = ("church", "room_type", "is_default", "is_active")
     search_fields = ("name", "unit__name", "church__name")
@@ -76,19 +80,19 @@ class ChatRoomAdmin(admin.ModelAdmin):
 
 
 @admin.register(PrivateChatRequest)
-class PrivateChatRequestAdmin(admin.ModelAdmin):
-    list_display  = ("requester", "recipient", "room", "status", "church", "created_at")
-    list_filter   = ("church", "status")
+class PrivateChatRequestAdmin(ChurchAdmin):
+    list_display  = ("requester", "recipient", "room", "church", "created_at")
+    list_filter   = ("church",)
     search_fields = (
         "requester__user__full_name", "recipient__user__full_name",
         "room__name", "church__name",
     )
-    raw_id_fields = ("room", "requester", "recipient", "reviewed_by")
+    raw_id_fields = ("room", "requester", "recipient")
     readonly_fields = ("created_at",)
 
 
 @admin.register(Campus)
-class CampusAdmin(admin.ModelAdmin):
+class CampusAdmin(ChurchAdmin):
     list_display  = (
         "name", "growth_stage", "church", "report_to",
         "campus_leader", "contributes_to_parent_metrics", "is_active",
@@ -101,7 +105,7 @@ class CampusAdmin(admin.ModelAdmin):
 
 
 @admin.register(CampusMembership)
-class CampusMembershipAdmin(admin.ModelAdmin):
+class CampusMembershipAdmin(ChurchAdmin):
     list_display  = ("member", "campus", "church", "is_primary", "joined_at", "is_active")
     list_filter   = ("church", "campus", "is_primary", "is_active")
     search_fields = (
@@ -109,3 +113,4 @@ class CampusMembershipAdmin(admin.ModelAdmin):
     )
     raw_id_fields  = ("member", "campus")
     readonly_fields = ("joined_at",)
+

@@ -2,71 +2,33 @@
 {% load access_tags %}
 
 <div class="nav-item dropdown d-flex align-items-center ms-2 me-0">
-  <a
-    href="#"
-    class="nav-link px-0 position-relative"
-    data-bs-toggle="dropdown"
-    aria-label="Notifications"
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#ff5e01ff"
-      stroke-width="2"
-    >
-      <path
-        d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2-3v-3a7 7 0 0 1 4-6"
-      />
-      <path d="M9 17v1a3 3 0 0 0 6 0v-1" />
+  <a href="#" class="nav-link px-0 position-relative" data-bs-toggle="dropdown" aria-label="Notifications">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff5e01ff" stroke-width="2">
+      <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2-3v-3a7 7 0 0 1 4-6"/>
+      <path d="M9 17v1a3 3 0 0 0 6 0v-1"/>
     </svg>
     {% if unread_count > 0 %}
-    <span
-      class="badge-lt text-red position-absolute"
-      style="
-        top: 0;
-        right: 0;
-        font-size: 0.6rem;
-        width: 18px;
-        height: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      "
-      id="notif-badge"
-      >{{ unread_count }}</span
-    >
+    <span class="badge-lt text-red position-absolute"
+          style="top:0;right:0;font-size:.6rem;width:18px;height:18px;display:flex;align-items:center;justify-content:center;"
+          id="notif-badge">{{ unread_count }}</span>
     {% endif %}
   </a>
 
-  <div
-    class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card notif-dropdown"
-  >
+  <div class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card notif-dropdown">
     <div class="card">
       <div class="card-header d-flex">
         <h3 class="card-title">Notifications</h3>
         <div class="btn-close ms-auto" data-bs-dismiss="dropdown"></div>
       </div>
-      <div
-        class="list-group list-group-flush list-group-hoverable"
-        id="notif-list"
-      >
+      <div class="list-group list-group-flush list-group-hoverable" id="notif-list">
         {% for notif in unread_notifications %}
         <div class="list-group-item notif-item" data-id="{{ notif.id }}">
           <div class="row align-items-center">
             <div class="col-auto">
-              <span
-                class="status-dot status-dot-animated {% if notif.is_urgent %}bg-red{% elif notif.is_success %}bg-green{% else %}bg-gray{% endif %} d-block"
-              ></span>
+              <span class="status-dot status-dot-animated {% if notif.is_urgent %}bg-red{% elif notif.is_success %}bg-green{% else %}bg-gray{% endif %} d-block"></span>
             </div>
             <div class="col">
-              <a
-                href="{{ notif.link }}"
-                class="text-body d-block notif-link text-truncate"
-                >{{ notif.title }}</a
-              >
+              <a href="{{ notif.link }}" class="text-body d-block notif-link text-truncate">{{ notif.title }}</a>
               <div class="d-block text-secondary mt-n1">
                 {{ notif.description|truncatechars:120 }}
               </div>
@@ -74,9 +36,7 @@
           </div>
         </div>
         {% empty %}
-        <div class="list-group-item text-muted small text-center py-3">
-          No new notifications
-        </div>
+        <div class="list-group-item text-muted small text-center py-3">No new notifications</div>
         {% endfor %}
       </div>
       <div class="card-body">

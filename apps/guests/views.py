@@ -1,4 +1,4 @@
-# ===========================
+﻿# ===========================
 # Multi-tenant refactor overrides
 # ===========================
 
@@ -54,6 +54,13 @@ def _get_church(request):
     return getattr(request, "church", None)
 
 
+def _module_enabled(request):
+    church = _get_church(request)
+    if not church:
+        return False
+    settings = getattr(church, "settings", None)
+    return bool(settings and settings.enable_guest_module)
+
 def _get_permissions(request):
     perms = getattr(request, "permissions", None)
     if perms:
@@ -67,6 +74,10 @@ def _get_permissions(request):
 
 
 def _can(request, permission, unit=None):
+    if not _module_enabled(request):
+        return False
+
+    
     if request.user.is_superuser:
         return True
 
@@ -518,7 +529,7 @@ def guest_list_view(request):
         'guest_unit': ({"id": guest_units.first().id, "name": guest_units.first().name} if guest_units.exists() else None),
         'guest_users': guest_users,
         'page_title': 'Guests',
-        # Permission booleans — resolved server-side so templates stay clean
+        # Permission booleans â€” resolved server-side so templates stay clean
         'can_report': _can(request, 'guests.report') or _can(request, 'guests.manage_all'),
         'can_update_status': _can(request, 'guests.manage_all') or _can(request, 'guests.update_status'),
         'guest_statuses': GuestStatus.raw_objects.filter(church=church, is_active=True).order_by('order'),
@@ -565,38 +576,63 @@ def create_guest(request):
         return HttpResponseForbidden("No church context")
 
     if not _can(request, "guests.manage_all"):
-        return HttpResponseForbidden("You do not have permission to create guests.")
+        return HttpResponseForbidden(
+            "You do not have permission to create guests."
+        )
+
+    # ⭐ create instance EARLY with church
+    guest_instance = GuestEntry(church=church)
 
     if request.method == 'POST':
-        form = GuestEntryForm(request.POST or None, request.FILES or None, user=request.user, church=church, permissions=request.permissions)
+        form = GuestEntryForm(
+            request.POST,
+            request.FILES,
+            instance=guest_instance,   # ✅ IMPORTANT
+            user=request.user,
+            church=church,
+            permissions=request.permissions,
+        )
+
         social_media_types = request.POST.getlist('social_media_type[]')
         social_media_handles = request.POST.getlist('social_media_handle[]')
+
         social_media_entries = []
         errors = []
 
-        for i, (platform, handle) in enumerate(zip(social_media_types, social_media_handles)):
+        for i, (platform, handle) in enumerate(
+            zip(social_media_types, social_media_handles)
+        ):
             platform = platform.strip()
             handle = handle.strip()
+
             if platform and handle:
                 if platform not in dict(SocialMediaEntry.SOCIAL_MEDIA_CHOICES):
                     errors.append(f"Invalid social media platform at entry {i+1}.")
                 elif len(handle) > 255:
                     errors.append(f"Handle too long at entry {i+1}.")
                 else:
-                    social_media_entries.append({'platform': platform, 'handle': handle})
+                    social_media_entries.append({
+                        'platform': platform,
+                        'handle': handle
+                    })
             elif platform or handle:
-                errors.append(f"Both platform and handle must be provided at entry {i+1}.")
+                errors.append(
+                    f"Both platform and handle must be provided at entry {i+1}."
+                )
 
         if form.is_valid() and not errors:
-            guest = form.save(commit=False)
-            guest.church = church
-            guest.save()
+            guest = form.save()   # ✅ church already set
 
             for entry in social_media_entries:
-                SocialMediaEntry.raw_objects.create(church=church, guest=guest, **entry)
+                SocialMediaEntry.raw_objects.create(
+                    church=church,
+                    guest=guest,
+                    **entry
+                )
 
             if 'save_add_another' in request.POST:
                 return redirect('guests:create_guest')
+
             return redirect('guests:guest_list')
 
         return render(request, 'guests/guest_form.html', {
@@ -605,7 +641,13 @@ def create_guest(request):
             'edit_mode': False,
         })
 
-    form = GuestEntryForm(user=request.user, church=church, permissions=request.permissions)
+    form = GuestEntryForm(
+        instance=guest_instance,
+        user=request.user,
+        church=church,
+        permissions=request.permissions,
+    )
+
     return render(request, 'guests/guest_form.html', {
         'form': form,
         'edit_mode': False,
@@ -613,6 +655,8 @@ def create_guest(request):
         'can_save': True,
         'social_platform_choices': SocialMediaEntry.SOCIAL_MEDIA_CHOICES,
     })
+
+
 @login_required
 def edit_guest(request, pk):
     church = _get_church(request)
@@ -1144,3 +1188,30 @@ def export_followup_reports_pdf(request, guest_id):
 @login_required
 def mark_attendance(request):
     return workforce_mark_attendance(request)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

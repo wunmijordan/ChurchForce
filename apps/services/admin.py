@@ -1,9 +1,10 @@
 from django.contrib import admin
+from core.admin import ChurchAdmin
 from services.models import Event
 
 
 @admin.register(Event)
-class EventAdmin(admin.ModelAdmin):
+class EventAdmin(ChurchAdmin):
     list_display  = (
         "name", "event_type", "attendance_mode", "church",
         "unit", "date", "day_of_week", "time",

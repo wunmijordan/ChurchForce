@@ -141,7 +141,13 @@ class GuestEntry(ChurchOwnedModel, SoftDeleteModel):
     purpose_of_visit  = models.ForeignKey(VisitPurpose, null=True, blank=True, on_delete=models.SET_NULL)
     channel_of_visit  = models.ForeignKey(VisitChannel, null=True, blank=True, on_delete=models.SET_NULL)
     service_attended  = models.ForeignKey(ChurchService, on_delete=models.PROTECT)
-    status            = models.ForeignKey(GuestStatus, on_delete=models.PROTECT)
+    status = models.ForeignKey(
+        GuestStatus,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        editable=False,   # ← IMPORTANT
+    )
 
     # Assignment
     assigned_to  = models.ForeignKey(
@@ -209,19 +215,44 @@ class GuestEntry(ChurchOwnedModel, SoftDeleteModel):
             )
         ]
 
+    def ensure_member_identity(self):
+        from guests.services.identity import ensure_member_identity
+        return ensure_member_identity(self)
+
     def clean(self):
-        for obj in [self.status, self.purpose_of_visit, self.channel_of_visit, self.service_attended]:
+        related = [
+            getattr(self, "status", None),
+            getattr(self, "purpose_of_visit", None),
+            getattr(self, "channel_of_visit", None),
+            getattr(self, "service_attended", None),
+        ]
+
+        for obj in related:
             if obj and obj.church_id != self.church_id:
-                raise ValidationError("Configuration must belong to the same church.")
+                raise ValidationError(
+                    "Configuration must belong to the same church."
+                )
 
     def save(self, *args, **kwargs):
+
+        if not self.status_id:
+            self.status = (
+                GuestStatus.objects
+                .filter(church=self.church, is_default=True)
+                .order_by("order")
+                .first()
+            )
+
+            if not self.status:
+                raise ValidationError(
+                    "No default GuestStatus configured for this church."
+                )
+
         if self.assigned_to and not self.assigned_at:
             self.assigned_at = now()
 
-        # Auto-populate birthday index fields from date_of_birth string
         self._sync_birthday_index()
 
-        # Auto-populate referred_by_name from member if not already set
         if self.referred_by_member and not self.referred_by_name:
             try:
                 user = self.referred_by_member.workforce_member.member.user
@@ -230,17 +261,16 @@ class GuestEntry(ChurchOwnedModel, SoftDeleteModel):
                 pass
 
         if not self.custom_id:
-            # Read prefix from ChurchSetting, falling back to GNG
-            try:
-                prefix = self.church.settings.guest_id_prefix or "GNG"
-            except Exception:
-                prefix = "GNG"
+            settings_obj = getattr(self.church, "settings", None)
+            prefix = getattr(settings_obj, "guest_id_prefix", None) or "GST"
+
             last = (
                 GuestEntry.raw_objects
                 .filter(church=self.church, custom_id__startswith=prefix)
                 .order_by("-custom_id")
                 .first()
             )
+
             last_num = int(re.sub(r"^\D+", "", last.custom_id)) if last and last.custom_id else 0
             self.custom_id = f"{prefix}{last_num + 1:06d}"
 
@@ -465,6 +495,28 @@ class Review(ChurchOwnedModel):
 # Continuation of the guest flow — committed → induction → member.
 # All configurable per church. No hardcoded unit or status names.
 # ─────────────────────────────────────────────────────────────────────────────
+class WorkforceInterest(ChurchOwnedModel):
+    """
+    Consent + workforce interest form.
+    """
+
+    guest = models.OneToOneField(
+        "guests.GuestEntry",
+        on_delete=models.CASCADE,
+        related_name="workforce_interest",
+    )
+
+    interested_in_workforce = models.BooleanField(default=True)
+
+    preferred_unit = models.ForeignKey(
+        "units.ChurchUnit",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
 
 class MembershipTrack(ChurchOwnedModel):
     """
@@ -490,12 +542,79 @@ class MembershipTrack(ChurchOwnedModel):
         return f"{self.church.name} — {self.name}"
 
 
+class StepRequirement(ChurchOwnedModel):
+    """
+    Defines HOW a step is completed.
+    Acts as a pluggable requirement provider.
+    """
+
+    TYPE_MANUAL = "manual"
+    TYPE_LMS = "lms_course"
+    TYPE_ATTENDANCE = "attendance"
+    TYPE_AUTO = "auto"
+
+    REQUIREMENT_TYPE_CHOICES = [
+        (TYPE_MANUAL, "Manual Approval"),
+        (TYPE_LMS, "LMS Course Completion"),
+        (TYPE_ATTENDANCE, "Attendance Based"),
+        (TYPE_AUTO, "Automatic"),
+    ]
+
+    requirement_type = models.CharField(
+        max_length=30,
+        choices=REQUIREMENT_TYPE_CHOICES,
+    )
+
+    # optional references depending on type
+    lms_course = models.ForeignKey(
+        "lms.LMSCourse",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="step_requirements",
+    )
+
+    attendance_count = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Required attendance count if attendance-based.",
+    )
+
+    auto_complete = models.BooleanField(
+        default=False,
+        help_text="Automatically complete when reached.",
+    )
+
+    name = models.CharField(max_length=150)
+
+    def __str__(self):
+        return f"{self.name} ({self.requirement_type})"
+
+
 class MembershipTrackStep(OrderedChurchModel):
-    """A single configurable step in a MembershipTrack."""
-    track       = models.ForeignKey(MembershipTrack, on_delete=models.CASCADE, related_name="steps")
-    name        = models.CharField(max_length=150)
+    """
+    A step within a membership track.
+    """
+
+    track = models.ForeignKey(
+        MembershipTrack,
+        on_delete=models.CASCADE,
+        related_name="steps",
+    )
+
+    name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
+
     is_required = models.BooleanField(default=True)
+
+    requirement = models.ForeignKey(
+        StepRequirement,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="track_steps",
+        help_text="How this step is completed.",
+    )
 
     class Meta:
         unique_together = ("church", "track", "name")
@@ -577,3 +696,11 @@ class ApplicationStepProgress(ChurchOwnedModel):
 
     def __str__(self):
         return f"{'✓' if self.completed else '○'} {self.step.name} — {self.application.guest}"
+    
+
+class TrackRequirement(ChurchOwnedModel):
+    track = models.ForeignKey("guests.MembershipTrack", on_delete=models.CASCADE)
+
+    require_lms = models.BooleanField(default=True)
+    require_steps = models.BooleanField(default=True)
+    require_approval = models.BooleanField(default=True)

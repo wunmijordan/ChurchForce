@@ -1,26 +1,20 @@
-{% extends 'base.html' %} {% load access_tags %} {% block title %}Follow-up
-History — {{ guest.full_name }}{% endblock %} {% block content %}
+{% extends 'base.html' %}
+{% load access_tags %}
+{% block title %}Follow-up History — {{ guest.full_name }}{% endblock %}
+
+{% block content %}
 <div class="page-wrapper">
   <div class="page-header d-print-none">
     <div class="container-xl">
       <div class="row g-2 align-items-center">
         <div class="col">
           <h3 class="page-title text-white">
-            Follow-up History —
-            <span class="text-warning">{{ guest.full_name }}</span>
+            Follow-up History — <span class="text-warning">{{ guest.full_name }}</span>
           </h3>
         </div>
         <div class="col-auto ms-auto">
-          <a
-            href="{% url 'guests:followup_pdf' guest.id %}"
-            class="btn btn-outline-secondary btn-sm"
-            >Export PDF</a
-          >
-          <a
-            href="{% url 'guests:guest_list' %}"
-            class="btn btn-outline-secondary btn-sm ms-2"
-            >← Back</a
-          >
+          <a href="{% url 'guests:followup_pdf' guest.id %}" class="btn btn-outline-secondary btn-sm">Export PDF</a>
+          <a href="{% url 'guests:guest_list' %}" class="btn btn-outline-secondary btn-sm ms-2">← Back</a>
         </div>
       </div>
     </div>
@@ -49,40 +43,27 @@ History — {{ guest.full_name }}{% endblock %} {% block content %}
                 <td class="text-secondary">{{ report.note }}</td>
                 <td>
                   {% if report.contact_answered %}
-                  <span class="badge bg-success-lt">Answered</span>
+                    <span class="badge bg-success-lt">Answered</span>
                   {% elif report.contact_attempted %}
-                  <span class="badge bg-warning-lt">Attempted</span>
+                    <span class="badge bg-warning-lt">Attempted</span>
                   {% else %}
-                  <span class="badge bg-secondary-lt">None</span>
+                    <span class="badge bg-secondary-lt">None</span>
                   {% endif %}
                 </td>
                 <td>
-                  {% if report.service_sunday %}<span class="badge bg-indigo-lt"
-                    >Sunday</span
-                  >{% endif %} {% if report.service_midweek %}<span
-                    class="badge bg-purple-lt"
-                    >Midweek</span
-                  >{% endif %} {% if report.service_others %}<span
-                    class="badge bg-pink-lt"
-                    >Others</span
-                  >{% endif %}
+                  {% if report.service_sunday %}<span class="badge bg-indigo-lt">Sunday</span>{% endif %}
+                  {% if report.service_midweek %}<span class="badge bg-purple-lt">Midweek</span>{% endif %}
+                  {% if report.service_others %}<span class="badge bg-pink-lt">Others</span>{% endif %}
                 </td>
                 {% if can_edit %}
                 <td>
-                  <a
-                    href="{% url 'guests:followup_report_page' guest.id %}?edit_report_id={{ report.id }}"
-                    class="btn btn-sm btn-outline-warning"
-                    >Edit</a
-                  >
+                  <a href="{% url 'guests:followup_report_page' guest.id %}?edit_report_id={{ report.id }}"
+                     class="btn btn-sm btn-outline-warning">Edit</a>
                 </td>
                 {% endif %}
               </tr>
               {% empty %}
-              <tr>
-                <td colspan="5" class="text-center text-muted py-4">
-                  No follow-up reports yet.
-                </td>
-              </tr>
+              <tr><td colspan="5" class="text-center text-muted py-4">No follow-up reports yet.</td></tr>
               {% endfor %}
             </tbody>
           </table>

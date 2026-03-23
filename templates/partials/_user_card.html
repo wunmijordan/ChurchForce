@@ -1,36 +1,22 @@
-{% load user_avatar_tags %} {% load access_tags %} {# Reusable member card.
-Expects: user, show_actions (bool), church #}
+{% load user_avatar_tags %}
+{% load access_tags %}
+
+{# Reusable member card. Expects: user, show_actions (bool), church #}
 
 <div class="card flex-fill h-100">
   <div class="card-header border-0 pb-0 d-flex align-items-center">
-    <span
-      class="badge {% if user.is_active %}bg-success-lt{% else %}bg-danger-lt{% endif %} me-auto"
-    >
+    <span class="badge {% if user.is_active %}bg-success-lt{% else %}bg-danger-lt{% endif %} me-auto">
       {% if user.is_active %}Active{% else %}Inactive{% endif %}
     </span>
     {% if show_actions and request|is_admin %}
     <div class="dropdown">
       <a href="#" class="text-purple" data-bs-toggle="dropdown">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <circle cx="12" cy="5" r="1" />
-          <circle cx="12" cy="12" r="1" />
-          <circle cx="12" cy="19" r="1" />
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
         </svg>
       </a>
       <div class="dropdown-menu dropdown-menu-end p-1">
-        <a
-          class="dropdown-item py-1"
-          href="{% url 'accounts:edit_user' user.id %}"
-          >Edit</a
-        >
+        <a class="dropdown-item py-1" href="{% url 'accounts:edit_user' user.id %}">Edit</a>
       </div>
     </div>
     {% endif %}
@@ -38,27 +24,18 @@ Expects: user, show_actions (bool), church #}
 
   <div class="card-body text-center">
     {% render_user_avatar user "avatar-xl" %}
-    <div class="mt-2 fw-bold text-warning small">
-      {{ user.title|default:"" }} {{ user.full_name }}
-    </div>
+    <div class="mt-2 fw-bold text-warning small">{{ user.title|default:"" }} {{ user.full_name }}</div>
     {% if user.is_online %}
-    <span class="badge bg-success-lt mt-1">● Online</span>
+      <span class="badge bg-success-lt mt-1">● Online</span>
     {% endif %}
   </div>
 
   <div class="d-flex w-100 mt-auto border-top">
     {% if user.phone_number %}
-    <a
-      href="tel:{{ user.phone_number }}"
-      class="card-btn text-success flex-fill text-center py-2 small"
-      >📞</a
-    >
-    {% endif %} {% if user.email %}
-    <a
-      href="mailto:{{ user.email }}"
-      class="card-btn text-primary flex-fill text-center py-2 small"
-      >✉</a
-    >
+    <a href="tel:{{ user.phone_number }}" class="card-btn text-success flex-fill text-center py-2 small">📞</a>
+    {% endif %}
+    {% if user.email %}
+    <a href="mailto:{{ user.email }}" class="card-btn text-primary flex-fill text-center py-2 small">✉</a>
     {% endif %}
   </div>
 </div>

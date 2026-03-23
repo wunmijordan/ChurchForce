@@ -108,6 +108,46 @@ def _get_guest_units(church):
 
 
 @login_required
+def member_settings(request):
+    """
+    Individual member notification and display preferences.
+    Every authenticated member can access this regardless of role.
+
+    Template: workforce/member_settings.html
+    """
+    member = getattr(request, "member", None)
+    church = getattr(request, "church", None)
+
+    if not member or not church:
+        return HttpResponseForbidden("No church context.")
+
+    from notifications.models import UserSettings
+    from notifications.forms import UserSettingsForm
+
+    user_settings, _ = UserSettings.raw_objects.get_or_create(
+        member=member,
+        defaults={"church": church},
+    )
+
+    if request.method == "POST":
+        form = UserSettingsForm(request.POST, instance=user_settings)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your preferences have been saved.")
+            return redirect("workforce:member_settings")
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = UserSettingsForm(instance=user_settings)
+
+    return render(request, "workforce/member_settings.html", {
+        "form":       form,
+        "church":     church,
+        "page_title": "My Settings",
+    })
+
+
+@login_required
 def chat_room(request):
     """
     Central chatroom page. Query param `unit_id` selects a room.
@@ -568,7 +608,6 @@ def mark_attendance(request):
     guest_activity_types = ["followup", "message", "guest_view", "call", "report", "other"]
 
     user_guest_activity = UserActivity.raw_objects.filter(church=church, 
-        church=church,
         user=request.user,
         activity_type__in=guest_activity_types,
         created_at__date__gte=week_start,
@@ -633,7 +672,6 @@ def mark_attendance(request):
                 status = "late"
 
         existing = AttendanceRecord.raw_objects.filter(church=church, 
-            church=church,
             user=request.user,
             event=event,
             date=today,
@@ -930,3 +968,7 @@ def get_active_events(request):
         })
 
     return JsonResponse(data, safe=False)
+
+
+
+

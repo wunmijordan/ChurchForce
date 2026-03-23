@@ -37,8 +37,13 @@ class Command(BaseCommand):
 
         scheduler = start()
 
+        # If start() returned None because it's already running, grab the existing instance
         if not scheduler:
-            self.stderr.write("Failed to start scheduler. Exiting.")
+            scheduler = get_scheduler()
+
+        # Now check if we actually have a valid scheduler object
+        if not scheduler:
+            self.stderr.write(self.style.ERROR("❌ Failed to start or retrieve scheduler. Exiting."))
             return
 
         self.stdout.write(self.style.SUCCESS("✅ Scheduler running. Press Ctrl+C to stop."))

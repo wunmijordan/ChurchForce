@@ -1,38 +1,23 @@
-import os
+﻿import os
 import sys
 from pathlib import Path
 import environ
 import cloudinary
 import dj_database_url
 
-# =========================
-# BASE DIRECTORY & ENV SETUP
-# =========================
-BASE_DIR = Path(__file__).resolve().parent.parent  # churchforce/settings.py → project root
-sys.path.insert(0, str(BASE_DIR / "apps"))
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(
     DEBUG=(bool, False),
-    DJANGO_ENV=(str, "development"),
 )
 
 environ.Env.read_env(BASE_DIR / ".env")
 
-# =========================
-# CORE SETTINGS
-# =========================
-SECRET_KEY  = env("SECRET_KEY", default="change-me-in-production")
-DEBUG       = env("DEBUG")
-ENVIRONMENT = env("DJANGO_ENV")
+ENVIRONMENT = env("ENVIRONMENT", default="development")
+DEBUG = env.bool("DEBUG", default=(ENVIRONMENT != "production"))
+SECRET_KEY = env("SECRET_KEY", default="django-insecure-placeholder-key")
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"] if DEBUG else [])
 
-ALLOWED_HOSTS = env.list(
-    "ALLOWED_HOSTS",
-    default=["localhost", "127.0.0.1"],
-)
-
-# =========================
-# INSTALLED APPS
-# =========================
 INSTALLED_APPS = [
     # Django default
     "django.contrib.admin",
@@ -50,18 +35,18 @@ INSTALLED_APPS = [
     "channels",
     "django_htmx",
 
-    # ── Foundation apps (no cross-app dependencies) ──────────────────
-    "bootstrap.apps.BootstrapConfig",   # ChurchTemplate — no app deps
-    "tenants.apps.TenantsConfig",       # Church — imports bootstrap only
-    "core.apps.CoreConfig",             # Base models — imports tenants
+    # Foundation apps (no cross-app dependencies)
+    "bootstrap.apps.BootstrapConfig",
+    "tenants.apps.TenantsConfig",
+    "core.apps.CoreConfig",
 
-    # ── Domain apps ───────────────────────────────────────────────────
+    # Domain apps
     "accounts.apps.AccountsConfig",
     "permissions.apps.PermissionsConfig",
     "units.apps.UnitsConfig",
     "services.apps.ServicesConfig",
 
-    # ── Feature apps ──────────────────────────────────────────────────
+    # Feature apps
     "workforce.apps.WorkforceConfig",
     "guests.apps.GuestsConfig",
     "notifications.apps.NotificationsConfig",
@@ -71,11 +56,14 @@ INSTALLED_APPS = [
     "dashboard.apps.DashboardConfig",
     "lms.apps.LMSConfig",
 
-    # ── Unit-specific feature apps ────────────────────────────────────
+    # Unit-specific feature apps
     "music.apps.MusicConfig",
     "media.apps.MediaConfig",          # NOTE: 'media' conflicts with Django's
-                                        # MEDIA_ROOT concept — ensure app is
+                                        # MEDIA_ROOT concept - ensure app is
                                         # registered as 'media' not 'django.media'
+    "children.apps.ChildrenConfig",
+    "youth.apps.YouthConfig",
+    "teenagers.apps.TeenagersConfig",
 ]
 
 if DEBUG:
@@ -96,7 +84,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
     "tenants.middleware.ChurchContextMiddleware",    # attaches member/permissions
-    # NOTE: notifications.middleware.CurrentUserMiddleware REMOVED —
+    # NOTE: notifications.middleware.CurrentUserMiddleware REMOVED â€”
     # ChurchContextMiddleware calls set_current_request() instead.
 ]
 
@@ -140,12 +128,12 @@ TEMPLATES = [
 # DATABASE
 # =========================
 # Hybrid multi-tenant strategy:
-#   'default'    → shared PostgreSQL for trial + SaaS tenants
-#   'wl_<slug>'  → dedicated PostgreSQL per white-label tenant
+#   'default'    â†’ shared PostgreSQL for trial + SaaS tenants
+#   'wl_<slug>'  â†’ dedicated PostgreSQL per white-label tenant
 #
 # White-label DBs: add WL_DB_URL_<SLUG_UPPERCASE> to .env
 # e.g. WL_DB_URL_GRACE_CHAPEL=postgres://...
-# Slug restored: GRACE_CHAPEL → grace-chapel → alias wl_grace-chapel
+# Slug restored: GRACE_CHAPEL â†’ grace-chapel â†’ alias wl_grace-chapel
 
 if ENVIRONMENT == "production":
     DATABASES = {
@@ -214,7 +202,7 @@ CACHES = {
         "LOCATION": REDIS_URL,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            # rediss:// (TLS) is used in hosted production Redis — disable
+            # rediss:// (TLS) is used in hosted production Redis â€” disable
             # strict cert checks so Railway/Upstash/Redis Cloud all work.
             **({"CONNECTION_POOL_KWARGS": {"ssl_cert_reqs": None}}
                if REDIS_URL.startswith("rediss://") else {}),
@@ -274,7 +262,7 @@ CONN_MAX_AGE         = 600
 # =========================
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
@@ -283,7 +271,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # LOCALISATION
 # =========================
 LANGUAGE_CODE = "en-us"
-TIME_ZONE     = "Africa/Lagos"   # server default — each church has its own timezone
+TIME_ZONE     = "Africa/Lagos"   # server default â€” each church has its own timezone
 USE_I18N      = True
 USE_TZ        = True
 
@@ -338,6 +326,30 @@ PAYSTACK_PUBLIC_KEY = env("PAYSTACK_PUBLIC_KEY", default="")
 SMS_PROVIDER       = env("SMS_PROVIDER", default="stub")
 TERMII_API_KEY     = env("TERMII_API_KEY",    default="")
 TERMII_SENDER_ID   = env("TERMII_SENDER_ID",  default="ChurchForce")
+
+# =========================
+# EMAIL (Termii for SMS-to-email in Nigeria, plus console backend for local dev)
+# =========================
+EMAIL_BACKEND = "churchforce.email_backends.TermiiEmailBackend" if SMS_PROVIDER == "termii" else "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST    = env("EMAIL_HOST", default="")
+EMAIL_PORT    = env("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+DEFAULT_FROM_EMAIL = "ChurchForce <hello@churchforce.io>"
+SERVER_EMAIL = "admin@churchforce.io" # For error reports
+
+
+if not DEBUG:
+    if SMS_PROVIDER == "termii":
+        EMAIL_BACKEND = "churchforce.email_backends.TermiiEmailBackend"
+    else:
+        # Allows you to set a custom production backend in .env (e.g. Anymail)
+        EMAIL_BACKEND = env.str("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+
 
 # =========================
 # MUSIC API INTEGRATIONS
@@ -402,3 +414,6 @@ LOGGING = {
         "automation":   {"handlers": ["console"], "level": "INFO", "propagate": False},
     },
 }
+
+
+

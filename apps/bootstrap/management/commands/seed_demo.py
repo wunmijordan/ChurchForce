@@ -32,7 +32,7 @@ from django.core.management.base import BaseCommand
 from django.utils.timezone import now
 
 from accounts.models import CustomUser, ChurchMember
-from billing.models import SubscriptionPlan
+from billing.services import grant_founders_plan
 from guests.models import GuestEntry, GuestStatus, FollowUpReport, VisitChannel, VisitPurpose, ChurchService
 from lms.models import LMSCourse, LMSModule, LMSEnrollment
 from notifications.models import Notification
@@ -114,13 +114,6 @@ class Command(BaseCommand):
 
         w(suc(f"\n🌱  ChurchForce demo seeder — subdomain: {subdomain}\n"))
 
-        # ── Plan ─────────────────────────────────────────────────────────────
-        plan, _ = SubscriptionPlan.objects.get_or_create(
-            name="Founders",
-            defaults=dict(price_ngn=0, price_usd=0, max_members=500,
-                          campus_limit=10, is_active=True),
-        )
-
         # ── Demo admin user ───────────────────────────────────────────────────
         admin_user, created = CustomUser.objects.get_or_create(
             username="demo_admin",
@@ -129,8 +122,7 @@ class Command(BaseCommand):
                 full_name="Demo Admin",
                 title="",
                 password=make_password("Demo@1234"),
-                is_active=True,
-                is_staff=False,
+                is_online=True,
                 is_superuser=False,
             ),
         )
@@ -147,8 +139,6 @@ class Command(BaseCommand):
             defaults=dict(
                 name="ChurchForce Demo",
                 slug=f"churchforce-demo-{subdomain}",
-                admin=admin_user,
-                plan=plan,
                 latitude=6.5244,
                 longitude=3.3792,   # Lagos coordinates
                 timezone="Africa/Lagos",
@@ -161,11 +151,19 @@ class Command(BaseCommand):
         else:
             w(war(f"  ↻ Church already exists: {church.name} — refreshing data"))
 
+        # ── Plan ─────────────────────────────────────────────────────────────
+        grant_founders_plan(church, "white_label")
+        w(suc("  ✓ Founders White-Label plan granted"))
+
+
         # ── Admin ChurchMember ────────────────────────────────────────────────
-        admin_member, _ = ChurchMember.objects.get_or_create(
+        admin_member, m_created = ChurchMember.objects.get_or_create(
             church=church, user=admin_user,
             defaults=dict(is_active=True, is_admin=True),
         )
+
+        if m_created:
+            w(suc(f"  ✓ {admin_user.full_name} linked as Church Admin"))
 
         # ── Campus ───────────────────────────────────────────────────────────
         campus, _ = Campus.objects.get_or_create(

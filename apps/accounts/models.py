@@ -1,3 +1,4 @@
+import re
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from cloudinary.models import CloudinaryField
@@ -106,17 +107,20 @@ class CustomUser(AbstractUser):
 
 class ChurchMember(ChurchOwnedModel):
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        CustomUser,
         on_delete=models.CASCADE,
         related_name="church_memberships"
+    )
+    is_admin = models.BooleanField(
+        default=False, 
+        help_text="Designates whether this member has administrative access to this church."
     )
     joined_at = models.DateField(auto_now_add=True)
 
     # Church-scoped member number, auto-generated on first save.
     # Format: <prefix><6-digit-number> e.g. MBR000001
-    # Prefix is currently hardcoded to "MBR".
-    # TODO: make configurable per church via ChurchSetting model
-    #       (same pattern as GuestEntry.custom_id prefix).
+    # Prefix is configurable per church via ChurchSetting (member_id_prefix).
+
     custom_id = models.CharField(
         max_length=20,
         blank=True,
@@ -144,12 +148,9 @@ class ChurchMember(ChurchOwnedModel):
 
     def save(self, *args, **kwargs):
         if not self.custom_id:
-            import re
             # Read prefix from ChurchSetting if available, default to MBR
-            try:
-                prefix = self.church.settings.member_id_prefix or "MBR"
-            except Exception:
-                prefix = "MBR"
+            settings_obj = getattr(self.church, "settings", None)
+            prefix = getattr(settings_obj, "member_id_prefix", None) or "MBR"
             last = (
                 ChurchMember.raw_objects
                 .filter(church=self.church, custom_id__startswith=prefix)
@@ -185,7 +186,7 @@ class ChurchMember(ChurchOwnedModel):
 
 class MemberInvitation(models.Model):
     """
-    An invitation to join the church on ChurchForce.
+    An invitation to join the church on GForceApp.
 
     Flow:
         1. Admin creates invitation → email sent with unique token URL

@@ -1,5 +1,4 @@
-{% extends "base.html" %} {% load static widget_tweaks %} {% block title
-%}Church Settings{% endblock %} {% block content %}
+﻿{% extends "base.html" %} {% load static widget_tweaks %} {% block title %}Church Settings{% endblock %} {% block content %}
 <div class="container py-4">
   <div class="row">
     <div class="col-12 col-lg-9">
@@ -14,16 +13,13 @@
         role="alert"
       >
         {{ message }}
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="alert"
-        ></button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       </div>
       {% endfor %} {% endif %}
 
       <form method="post" enctype="multipart/form-data">
-        {% csrf_token %} {# ── Church Profile ── #}
+        {% csrf_token %}
+
         <div class="card bg-dark border-secondary mb-4">
           <div class="card-header py-3">
             <h5 class="mb-0 fw-bold">Church Profile</h5>
@@ -32,70 +28,55 @@
             <div class="row g-3">
               <div class="col-md-8">
                 <label class="form-label">Organisation name</label>
-                {% render_field profile_form.name class="form-control" %} {% if
-                profile_form.name.errors %}
-                <div class="text-danger small mt-1">
-                  {{ profile_form.name.errors.0 }}
-                </div>
+                {% render_field settings_form.name class="form-control" %}
+                {% if settings_form.name.errors %}
+                <div class="text-danger small mt-1">{{ settings_form.name.errors.0 }}</div>
                 {% endif %}
               </div>
               <div class="col-md-4">
                 <label class="form-label">Brand colour</label>
-                {% render_field profile_form.primary_color class="form-control
-                form-control-color w-100" %}
+                {% render_field settings_form.primary_color class="form-control form-control-color w-100" %}
               </div>
               <div class="col-md-12">
                 <label class="form-label">Logo</label>
-                {% render_field profile_form.logo class="form-control" %}
+                {% render_field settings_form.logo class="form-control" %}
               </div>
               <div class="col-md-8">
                 <label class="form-label">Timezone</label>
-                {% render_field profile_form.timezone class="form-control" %}
-                <div class="form-text text-secondary">
-                  {{ profile_form.timezone.help_text }}
-                </div>
-                {% if profile_form.timezone.errors %}
-                <div class="text-danger small mt-1">
-                  {{ profile_form.timezone.errors.0 }}
-                </div>
+                {% render_field settings_form.timezone class="form-control" %}
+                <div class="form-text text-secondary">{{ settings_form.timezone.help_text }}</div>
+                {% if settings_form.timezone.errors %}
+                <div class="text-danger small mt-1">{{ settings_form.timezone.errors.0 }}</div>
                 {% endif %}
               </div>
             </div>
           </div>
         </div>
 
-        {# ── Venue & Attendance ── #}
         <div class="card bg-dark border-secondary mb-4">
           <div class="card-header py-3">
-            <h5 class="mb-0 fw-bold">Venue &amp; Attendance Geo-fencing</h5>
+            <h5 class="mb-0 fw-bold">Venue and Attendance Geo-fencing</h5>
           </div>
           <div class="card-body p-4">
             <div class="row g-3">
               <div class="col-md-5">
                 <label class="form-label">Latitude</label>
-                {% render_field profile_form.latitude class="form-control" %}
-                <div class="form-text text-secondary">
-                  {{ profile_form.latitude.help_text }}
-                </div>
-                {% if profile_form.latitude.errors %}
-                <div class="text-danger small mt-1">
-                  {{ profile_form.latitude.errors.0 }}
-                </div>
+                {% render_field settings_form.latitude class="form-control" %}
+                <div class="form-text text-secondary">{{ settings_form.latitude.help_text }}</div>
+                {% if settings_form.latitude.errors %}
+                <div class="text-danger small mt-1">{{ settings_form.latitude.errors.0 }}</div>
                 {% endif %}
               </div>
               <div class="col-md-5">
                 <label class="form-label">Longitude</label>
-                {% render_field profile_form.longitude class="form-control" %}
-                {% if profile_form.longitude.errors %}
-                <div class="text-danger small mt-1">
-                  {{ profile_form.longitude.errors.0 }}
-                </div>
+                {% render_field settings_form.longitude class="form-control" %}
+                {% if settings_form.longitude.errors %}
+                <div class="text-danger small mt-1">{{ settings_form.longitude.errors.0 }}</div>
                 {% endif %}
               </div>
               <div class="col-md-2">
                 <label class="form-label">Radius (km)</label>
-                {% render_field profile_form.attendance_radius_km
-                class="form-control" %}
+                {% render_field settings_form.attendance_radius_km class="form-control" %}
               </div>
               <div class="col-12">
                 <a
@@ -104,14 +85,13 @@
                   rel="noopener"
                   class="btn btn-outline-secondary btn-sm"
                 >
-                  Open Google Maps to find coordinates →
+                  Open Google Maps to find coordinates
                 </a>
               </div>
             </div>
           </div>
         </div>
 
-        {# ── Guest Pipeline ── #}
         <div class="card bg-dark border-secondary mb-4">
           <div class="card-header py-3">
             <h5 class="mb-0 fw-bold">Guest Pipeline</h5>
@@ -119,29 +99,19 @@
           <div class="card-body p-4">
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label"
-                  >Attendance threshold for Committed status</label
-                >
-                {% render_field settings_form.committed_attendance_threshold
-                class="form-control" %}
-                <div class="form-text text-secondary">
-                  {{ settings_form.committed_attendance_threshold.help_text }}
-                </div>
+                <label class="form-label">Attendance threshold for Committed status</label>
+                {% render_field settings_form.committed_attendance_threshold class="form-control" %}
+                <div class="form-text text-secondary">{{ settings_form.committed_attendance_threshold.help_text }}</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">Rolling window (weeks)</label>
-                {% render_field settings_form.committed_attendance_window_weeks
-                class="form-control" %}
-                <div class="form-text text-secondary">
-                  {{ settings_form.committed_attendance_window_weeks.help_text
-                  }}
-                </div>
+                {% render_field settings_form.committed_attendance_window_weeks class="form-control" %}
+                <div class="form-text text-secondary">{{ settings_form.committed_attendance_window_weeks.help_text }}</div>
               </div>
             </div>
           </div>
         </div>
 
-        {# ── Custom ID Prefixes ── #}
         <div class="card bg-dark border-secondary mb-4">
           <div class="card-header py-3">
             <h5 class="mb-0 fw-bold">Custom ID Prefixes</h5>
@@ -150,84 +120,262 @@
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label">Member ID prefix</label>
-                {% render_field settings_form.member_id_prefix
-                class="form-control text-uppercase" %}
-                <div class="form-text text-secondary">
-                  e.g. <code>MBR</code> → MBR000001
-                </div>
+                {% render_field settings_form.member_id_prefix class="form-control text-uppercase" %}
+                <div class="form-text text-secondary">e.g. <code>MBR</code> -> MBR000001</div>
                 {% if settings_form.member_id_prefix.errors %}
-                <div class="text-danger small mt-1">
-                  {{ settings_form.member_id_prefix.errors.0 }}
-                </div>
+                <div class="text-danger small mt-1">{{ settings_form.member_id_prefix.errors.0 }}</div>
                 {% endif %}
               </div>
               <div class="col-md-6">
                 <label class="form-label">Guest ID prefix</label>
-                {% render_field settings_form.guest_id_prefix
-                class="form-control text-uppercase" %}
-                <div class="form-text text-secondary">
-                  e.g. <code>GNG</code> → GNG000001
-                </div>
+                {% render_field settings_form.guest_id_prefix class="form-control text-uppercase" %}
+                <div class="form-text text-secondary">e.g. <code>GST</code> -> GST000001</div>
                 {% if settings_form.guest_id_prefix.errors %}
-                <div class="text-danger small mt-1">
-                  {{ settings_form.guest_id_prefix.errors.0 }}
-                </div>
+                <div class="text-danger small mt-1">{{ settings_form.guest_id_prefix.errors.0 }}</div>
                 {% endif %}
               </div>
               <div class="col-md-6">
                 <label class="form-label">Date display format</label>
-                {% render_field settings_form.date_format class="form-control"
-                %}
-                <div class="form-text text-secondary">
-                  Python strftime format. Default: <code>%d %b %Y</code>
+                {% render_field settings_form.date_format class="form-control" %}
+                <div class="form-text text-secondary">Python strftime format. Default: <code>%d %b %Y</code></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card bg-dark border-secondary mb-4">
+          <div class="card-header py-3">
+            <h5 class="mb-0 fw-bold">Campus Settings</h5>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">Campus growth stages</label>
+                {% render_field settings_form.campus_growth_stages class="form-control" %}
+                <div class="form-text text-secondary">{{ settings_form.campus_growth_stages.help_text }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card bg-dark border-secondary mb-4">
+          <div class="card-header py-3">
+            <h5 class="mb-0 fw-bold">Unit Modules</h5>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="form-check">
+                  {% render_field settings_form.enable_guest_module class="form-check-input" %}
+                  <label class="form-check-label" for="{{ settings_form.enable_guest_module.id_for_label }}">{{ settings_form.enable_guest_module.label }}</label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check">
+                  {% render_field settings_form.enable_music_module class="form-check-input" %}
+                  <label class="form-check-label" for="{{ settings_form.enable_music_module.id_for_label }}">{{ settings_form.enable_music_module.label }}</label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check">
+                  {% render_field settings_form.enable_media_module class="form-check-input" %}
+                  <label class="form-check-label" for="{{ settings_form.enable_media_module.id_for_label }}">{{ settings_form.enable_media_module.label }}</label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check">
+                  {% render_field settings_form.enable_children_module class="form-check-input" %}
+                  <label class="form-check-label" for="{{ settings_form.enable_children_module.id_for_label }}">{{ settings_form.enable_children_module.label }}</label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check">
+                  {% render_field settings_form.enable_youth_module class="form-check-input" %}
+                  <label class="form-check-label" for="{{ settings_form.enable_youth_module.id_for_label }}">{{ settings_form.enable_youth_module.label }}</label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check">
+                  {% render_field settings_form.enable_teenagers_module class="form-check-input" %}
+                  <label class="form-check-label" for="{{ settings_form.enable_teenagers_module.id_for_label }}">{{ settings_form.enable_teenagers_module.label }}</label>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {# ── Feature Flags ── #}
         <div class="card bg-dark border-secondary mb-4">
           <div class="card-header py-3">
-            <h5 class="mb-0 fw-bold">Features</h5>
+            <h5 class="mb-0 fw-bold">Notifications and UX</h5>
           </div>
           <div class="card-body p-4">
             <div class="row g-3">
-              {% for field in settings_form %} {% if "enable_" in
-              field.html_name %}
               <div class="col-md-6">
                 <div class="form-check">
-                  {% render_field field class="form-check-input" %}
-                  <label
-                    class="form-check-label"
-                    for="{{ field.id_for_label }}"
-                  >
-                    {{ field.label }}
-                  </label>
+                  {% render_field settings_form.enable_sms_birthday class="form-check-input" %}
+                  <label class="form-check-label" for="{{ settings_form.enable_sms_birthday.id_for_label }}">{{ settings_form.enable_sms_birthday.label }}</label>
                 </div>
               </div>
-              {% endif %} {% endfor %}
+              <div class="col-md-6">
+                <div class="form-check">
+                  {% render_field settings_form.enable_sms_bulk class="form-check-input" %}
+                  <label class="form-check-label" for="{{ settings_form.enable_sms_bulk.id_for_label }}">{{ settings_form.enable_sms_bulk.label }}</label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check">
+                  {% render_field settings_form.enable_welcome_screen class="form-check-input" %}
+                  <label class="form-check-label" for="{{ settings_form.enable_welcome_screen.id_for_label }}">{{ settings_form.enable_welcome_screen.label }}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card bg-dark border-secondary mb-4">
+          <div class="card-header py-3">
+            <h5 class="mb-0 fw-bold">Guest Messaging</h5>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="form-check">
+                  {% render_field settings_form.send_first_visit_thankyou class="form-check-input" %}
+                  <label class="form-check-label" for="{{ settings_form.send_first_visit_thankyou.id_for_label }}">{{ settings_form.send_first_visit_thankyou.label }}</label>
+                </div>
+                <div class="mt-2">
+                  {% render_field settings_form.thankyou_first_visit_message class="form-control" %}
+                  <div class="form-text text-secondary">{{ settings_form.thankyou_first_visit_message.help_text }}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check">
+                  {% render_field settings_form.send_second_visit_thankyou class="form-check-input" %}
+                  <label class="form-check-label" for="{{ settings_form.send_second_visit_thankyou.id_for_label }}">{{ settings_form.send_second_visit_thankyou.label }}</label>
+                </div>
+                <div class="mt-2">
+                  {% render_field settings_form.thankyou_second_visit_message class="form-control" %}
+                  <div class="form-text text-secondary">{{ settings_form.thankyou_second_visit_message.help_text }}</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <div class="d-flex justify-content-end gap-3">
-          <a
-            href="{% url 'accounts:admin_dashboard' %}"
-            class="btn btn-outline-secondary px-4"
-          >
-            Cancel
-          </a>
-          <button
-            type="submit"
-            class="btn fw-bold px-5"
-            style="background: #ff5e01; color: #fff; border: none"
-          >
-            Save settings
-          </button>
+          <a href="{% url 'dashboard:admin_dashboard' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+          <button type="submit" name="save_settings" class="btn fw-bold px-5" style="background: #ff5e01; color: #fff; border: none">Save settings</button>
+        </div>
+      </form>
+
+      <form method="post" class="mt-5">
+        {% csrf_token %}
+        <div class="card bg-dark border-secondary mb-4">
+          <div class="card-header py-3">
+            <h5 class="mb-0 fw-bold">Create Unit or Group</h5>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label">Unit name</label>
+                {% render_field unit_form.name class="form-control" %}
+                {% if unit_form.name.errors %}
+                <div class="text-danger small mt-1">{{ unit_form.name.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Type</label>
+                {% render_field unit_form.unit_type class="form-select" %}
+              </div>
+              <div class="col-md-12">
+                <label class="form-label">Description</label>
+                {% render_field unit_form.description class="form-control" %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Reports to</label>
+                {% render_field unit_form.report_to class="form-select" %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Color</label>
+                {% render_field unit_form.color class="form-control" %}
+              </div>
+              <div class="col-md-3 d-flex align-items-end">
+                <div class="form-check">
+                  {% render_field unit_form.is_default class="form-check-input" %}
+                  <label class="form-check-label" for="{{ unit_form.is_default.id_for_label }}">{{ unit_form.is_default.label }}</label>
+                </div>
+              </div>
+            </div>
+
+            <hr class="border-secondary my-4" />
+            <div class="row g-3">
+              <div class="col-12">
+                <h6 class="mb-2">Unit Modules</h6>
+              </div>
+              <div class="col-md-4">
+                <div class="form-check">
+                  {% render_field unit_form.guest_management class="form-check-input" %}
+                  <label class="form-check-label" for="{{ unit_form.guest_management.id_for_label }}">{{ unit_form.guest_management.label }}</label>
+                  {% if unit_form.guest_management.errors %}
+                  <div class="text-danger small mt-1">{{ unit_form.guest_management.errors.0 }}</div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-check">
+                  {% render_field unit_form.music_module class="form-check-input" %}
+                  <label class="form-check-label" for="{{ unit_form.music_module.id_for_label }}">{{ unit_form.music_module.label }}</label>
+                  {% if unit_form.music_module.errors %}
+                  <div class="text-danger small mt-1">{{ unit_form.music_module.errors.0 }}</div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-check">
+                  {% render_field unit_form.media_module class="form-check-input" %}
+                  <label class="form-check-label" for="{{ unit_form.media_module.id_for_label }}">{{ unit_form.media_module.label }}</label>
+                  {% if unit_form.media_module.errors %}
+                  <div class="text-danger small mt-1">{{ unit_form.media_module.errors.0 }}</div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-check">
+                  {% render_field unit_form.children_module class="form-check-input" %}
+                  <label class="form-check-label" for="{{ unit_form.children_module.id_for_label }}">{{ unit_form.children_module.label }}</label>
+                  {% if unit_form.children_module.errors %}
+                  <div class="text-danger small mt-1">{{ unit_form.children_module.errors.0 }}</div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-check">
+                  {% render_field unit_form.youth_module class="form-check-input" %}
+                  <label class="form-check-label" for="{{ unit_form.youth_module.id_for_label }}">{{ unit_form.youth_module.label }}</label>
+                  {% if unit_form.youth_module.errors %}
+                  <div class="text-danger small mt-1">{{ unit_form.youth_module.errors.0 }}</div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-check">
+                  {% render_field unit_form.teenagers_module class="form-check-input" %}
+                  <label class="form-check-label" for="{{ unit_form.teenagers_module.id_for_label }}">{{ unit_form.teenagers_module.label }}</label>
+                  {% if unit_form.teenagers_module.errors %}
+                  <div class="text-danger small mt-1">{{ unit_form.teenagers_module.errors.0 }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-3">
+          <button type="submit" name="create_unit" class="btn fw-bold px-5" style="background: #2fb344; color: #fff; border: none">Create unit</button>
         </div>
       </form>
     </div>
   </div>
 </div>
 {% endblock %}
+
