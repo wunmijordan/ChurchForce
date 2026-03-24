@@ -240,14 +240,21 @@
                   <a class="dropdown-item py-1" href="{% url 'guests:edit_guest' guest.id %}">Edit Guest Info</a>
                   {% endif %}
 
-                  <!-- Status update sub-popover trigger -->
-                  <a href="#" class="dropdown-item py-1 d-flex justify-content-between align-items-center status-popover-trigger"
-                     data-bs-toggle="popover" data-bs-placement="left" data-bs-html="true"
-                     data-guest="{{ guest.id }}" onclick="return false;" title="Select Status"
-                     data-bs-content="{% if can_update_status %}<div>{% for status in guest_statuses %}<a class='dropdown-item fw-semibold text-{{ status.slug|status_color }} {% if status == guest.status %}active-status{% endif %}' href='{% url 'guests:update_guest_status' guest.id %}?status={{ status.id }}'>{{ status.name }}{% if status == guest.status %} ✓{% endif %}</a>{% endfor %}</div>{% else %}<span class='text-muted small'>Not authorised</span>{% endif %}">
-                    Update Status
-                    <i class="ti ti-chevron-left"></i>
-                  </a>
+                  {# Status — pipeline is automatic. Only "Not Planted" can be set manually. #}
+                  {% if can_update_status %}
+                    {% if guest.status.slug != "not-planted" and not guest.status.is_terminal %}
+                    <a href="#"
+                       class="dropdown-item py-1 text-danger mark-not-planted"
+                       data-guest-id="{{ guest.id }}"
+                       data-guest-name="{{ guest.full_name|escapejs }}">
+                      Mark as Not Planted
+                    </a>
+                    {% elif guest.status.is_terminal %}
+                    <span class="dropdown-item py-1 text-muted small disabled">
+                      Status: {{ guest.status.name }} (terminal)
+                    </span>
+                    {% endif %}
+                  {% endif %}
 
                   <div class="dropdown-divider"></div>
                   {% if permissions|can:"guests.review" %}
@@ -690,5 +697,41 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }, true);
 });
+
+  // ── Mark Not Planted (the only manual status change) ──────────────────────
+  document.querySelectorAll('.mark-not-planted').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      const guestId   = btn.dataset.guestId;
+      const guestName = btn.dataset.guestName;
+      if (!confirm(`Mark "${guestName}" as Not Planted? This stops all pipeline progression.`)) return;
+
+      fetch(`/guests/${guestId}/mark-not-planted/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '',
+          'Content-Type': 'application/json',
+        },
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          // Update badge in card and table row
+          const card = document.getElementById(`guest-card-${guestId}`);
+          card?.querySelectorAll('.badge, .ribbon').forEach(el => {
+            el.textContent = data.status_name;
+          });
+          // Disable the button — no further status change possible
+          btn.textContent = `Status: ${data.status_name} (terminal)`;
+          btn.classList.add('disabled', 'text-muted');
+          btn.classList.remove('text-danger');
+        } else {
+          alert(data.error || 'Could not update status.');
+        }
+      })
+      .catch(() => alert('Network error — please try again.'));
+    });
+  });
+
 </script>
 {% endblock %}

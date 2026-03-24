@@ -58,6 +58,8 @@ def provision_church(
         ValueError on slug/email uniqueness violations (human-readable).
     """
 
+    from django.conf import settings
+    from tenants.dev_utils import dev_adjust_email, dev_adjust_slug
     from tenants.models import Church
     from accounts.models import CustomUser, ChurchMember
     from billing.models import SubscriptionPlan, ChurchSubscription
@@ -71,6 +73,10 @@ def provision_church(
     slug = slugify(slug)
     if not slug:
         raise ValueError("Please enter a valid URL handle.")
+    
+    # DEV helpers
+    slug = dev_adjust_slug(slug)
+    admin_email = dev_adjust_email(admin_email)
 
     if Church.raw_objects.filter(slug=slug).exists():
         raise ValueError(

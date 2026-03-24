@@ -1,381 +1,965 @@
-﻿{% extends "base.html" %} {% load static widget_tweaks %} {% block title %}Church Settings{% endblock %} {% block content %}
-<div class="container py-4">
-  <div class="row">
-    <div class="col-12 col-lg-9">
-      <div class="d-flex align-items-center gap-3 mb-4">
-        <h2 class="mb-0 fw-bold">Church Settings</h2>
-        <span class="badge bg-blue-lt text-blue">Admin only</span>
+{% extends "base.html" %}
+{% load static widget_tweaks access_tags %}
+
+{% block title %}Church Settings — {{ church.name }}{% endblock %}
+
+{% block content %}
+<div class="container-xl py-4">
+
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <h2 class="mb-0 fw-bold">Church Settings</h2>
+    <span class="badge bg-blue-lt text-blue">Admin only</span>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show">
+      {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  {# ── Tab nav ───────────────────────────────────────────────────────────── #}
+  {% with t=active_tab %}
+  <ul class="nav nav-tabs mb-4" id="settingsTabs">
+    <li class="nav-item"><a class="nav-link {% if not t or t == 'general' %}active{% endif %}" href="?tab=general">General</a></li>
+    <li class="nav-item"><a class="nav-link {% if t == 'pipeline' %}active{% endif %}" href="?tab=pipeline">Guest Pipeline</a></li>
+    <li class="nav-item"><a class="nav-link {% if t == 'lms' %}active{% endif %}" href="?tab=lms">LMS &amp; Onboarding</a></li>
+    <li class="nav-item"><a class="nav-link {% if t == 'workforce' %}active{% endif %}" href="?tab=workforce">Workforce</a></li>
+    <li class="nav-item"><a class="nav-link {% if t == 'display' %}active{% endif %}" href="?tab=display">Display &amp; ID</a></li>
+    <li class="nav-item"><a class="nav-link {% if t == 'lookups' %}active{% endif %}" href="?tab=lookups">Lookup Tables</a></li>
+  </ul>
+  {% endwith %}
+
+  {# ════════════════════════════════════════════════════════════════════════ #}
+  {# TAB: General                                                             #}
+  {# ════════════════════════════════════════════════════════════════════════ #}
+  {% if active_tab == 'general' or not active_tab %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}<input type="hidden" name="tab" value="general">
+    {% with form=forms.general %}
+
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-header"><h5 class="mb-0 fw-bold">Church Profile</h5></div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label class="form-label">Organisation name</label>{{ form.name }}
+            {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Brand colour</label>{{ form.primary_color }}
+          </div>
+          <div class="col-12">
+            <label class="form-label">Logo</label>{{ form.logo }}
+            {% if church.logo %}<div class="mt-2"><img src="{{ church.logo.url }}" height="40" class="rounded"></div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Timezone</label>{{ form.timezone }}
+            <div class="form-text">{{ form.timezone.help_text }}</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Clock-in radius (km)</label>{{ form.attendance_radius_km }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Latitude</label>{{ form.latitude }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Longitude</label>{{ form.longitude }}
+            <div class="form-text">{{ form.latitude.help_text }}</div>
+          </div>
+        </div>
+
+        <hr class="my-4">
+        <h6 class="fw-semibold mb-3">White-label & Display</h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="form-check">{{ form.hide_platform_credit }}
+              <label class="form-check-label">{{ form.hide_platform_credit.label }}</label>
+              <div class="form-text">{{ form.hide_platform_credit.help_text }}</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-check">{{ form.enable_welcome_screen }}
+              <label class="form-check-label">{{ form.enable_welcome_screen.label }}</label>
+            </div>
+          </div>
+        </div>
       </div>
-
-      {% if messages %} {% for message in messages %}
-      <div
-        class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show"
-        role="alert"
-      >
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      <div class="card-footer text-end">
+        <button type="submit" class="btn btn-primary">Save General Settings</button>
       </div>
-      {% endfor %} {% endif %}
+    </div>
+    {% endwith %}
+  </form>
 
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-
-        <div class="card bg-dark border-secondary mb-4">
-          <div class="card-header py-3">
-            <h5 class="mb-0 fw-bold">Church Profile</h5>
+  {# Unit creation — always on General tab #}
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header"><h5 class="mb-0 fw-bold">Add Church Unit</h5></div>
+    <div class="card-body p-4">
+      <form method="post">
+        {% csrf_token %}<input type="hidden" name="tab" value="unit_create">
+        {% with form=unit_form %}
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label class="form-label">Unit name</label>{{ form.name }}
+            {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
           </div>
-          <div class="card-body p-4">
-            <div class="row g-3">
-              <div class="col-md-8">
-                <label class="form-label">Organisation name</label>
-                {% render_field settings_form.name class="form-control" %}
-                {% if settings_form.name.errors %}
-                <div class="text-danger small mt-1">{{ settings_form.name.errors.0 }}</div>
-                {% endif %}
+          <div class="col-md-3">
+            <label class="form-label">Type</label>{{ form.unit_type }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Reports to</label>{{ form.report_to }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Color</label>{{ form.color }}
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">Description</label>{{ form.description }}
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold d-block mb-2">Module access for this unit</label>
+            <div class="row g-2">
+              {% for f in "guest_management,music_module,media_module,children_module,youth_module,teenagers_module"|split:"," %}
+              <div class="col-md-4 col-6">
+                <div class="form-check">
+                  {% with fld=form|lookup:f %}{{ fld }}<label class="form-check-label">{{ fld.label }}</label>{% endwith %}
+                </div>
               </div>
-              <div class="col-md-4">
-                <label class="form-label">Brand colour</label>
-                {% render_field settings_form.primary_color class="form-control form-control-color w-100" %}
-              </div>
-              <div class="col-md-12">
-                <label class="form-label">Logo</label>
-                {% render_field settings_form.logo class="form-control" %}
-              </div>
-              <div class="col-md-8">
-                <label class="form-label">Timezone</label>
-                {% render_field settings_form.timezone class="form-control" %}
-                <div class="form-text text-secondary">{{ settings_form.timezone.help_text }}</div>
-                {% if settings_form.timezone.errors %}
-                <div class="text-danger small mt-1">{{ settings_form.timezone.errors.0 }}</div>
-                {% endif %}
-              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-check">{{ form.is_default }}
+              <label class="form-check-label">{{ form.is_default.label }}</label>
             </div>
           </div>
         </div>
-
-        <div class="card bg-dark border-secondary mb-4">
-          <div class="card-header py-3">
-            <h5 class="mb-0 fw-bold">Venue and Attendance Geo-fencing</h5>
-          </div>
-          <div class="card-body p-4">
-            <div class="row g-3">
-              <div class="col-md-5">
-                <label class="form-label">Latitude</label>
-                {% render_field settings_form.latitude class="form-control" %}
-                <div class="form-text text-secondary">{{ settings_form.latitude.help_text }}</div>
-                {% if settings_form.latitude.errors %}
-                <div class="text-danger small mt-1">{{ settings_form.latitude.errors.0 }}</div>
-                {% endif %}
-              </div>
-              <div class="col-md-5">
-                <label class="form-label">Longitude</label>
-                {% render_field settings_form.longitude class="form-control" %}
-                {% if settings_form.longitude.errors %}
-                <div class="text-danger small mt-1">{{ settings_form.longitude.errors.0 }}</div>
-                {% endif %}
-              </div>
-              <div class="col-md-2">
-                <label class="form-label">Radius (km)</label>
-                {% render_field settings_form.attendance_radius_km class="form-control" %}
-              </div>
-              <div class="col-12">
-                <a
-                  href="https://www.google.com/maps"
-                  target="_blank"
-                  rel="noopener"
-                  class="btn btn-outline-secondary btn-sm"
-                >
-                  Open Google Maps to find coordinates
-                </a>
-              </div>
-            </div>
-          </div>
+        <div class="mt-3">
+          <button type="submit" name="create_unit" class="btn btn-success">Create Unit</button>
         </div>
-
-        <div class="card bg-dark border-secondary mb-4">
-          <div class="card-header py-3">
-            <h5 class="mb-0 fw-bold">Guest Pipeline</h5>
-          </div>
-          <div class="card-body p-4">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Attendance threshold for Committed status</label>
-                {% render_field settings_form.committed_attendance_threshold class="form-control" %}
-                <div class="form-text text-secondary">{{ settings_form.committed_attendance_threshold.help_text }}</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Rolling window (weeks)</label>
-                {% render_field settings_form.committed_attendance_window_weeks class="form-control" %}
-                <div class="form-text text-secondary">{{ settings_form.committed_attendance_window_weeks.help_text }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card bg-dark border-secondary mb-4">
-          <div class="card-header py-3">
-            <h5 class="mb-0 fw-bold">Custom ID Prefixes</h5>
-          </div>
-          <div class="card-body p-4">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Member ID prefix</label>
-                {% render_field settings_form.member_id_prefix class="form-control text-uppercase" %}
-                <div class="form-text text-secondary">e.g. <code>MBR</code> -> MBR000001</div>
-                {% if settings_form.member_id_prefix.errors %}
-                <div class="text-danger small mt-1">{{ settings_form.member_id_prefix.errors.0 }}</div>
-                {% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Guest ID prefix</label>
-                {% render_field settings_form.guest_id_prefix class="form-control text-uppercase" %}
-                <div class="form-text text-secondary">e.g. <code>GST</code> -> GST000001</div>
-                {% if settings_form.guest_id_prefix.errors %}
-                <div class="text-danger small mt-1">{{ settings_form.guest_id_prefix.errors.0 }}</div>
-                {% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Date display format</label>
-                {% render_field settings_form.date_format class="form-control" %}
-                <div class="form-text text-secondary">Python strftime format. Default: <code>%d %b %Y</code></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card bg-dark border-secondary mb-4">
-          <div class="card-header py-3">
-            <h5 class="mb-0 fw-bold">Campus Settings</h5>
-          </div>
-          <div class="card-body p-4">
-            <div class="row g-3">
-              <div class="col-12">
-                <label class="form-label">Campus growth stages</label>
-                {% render_field settings_form.campus_growth_stages class="form-control" %}
-                <div class="form-text text-secondary">{{ settings_form.campus_growth_stages.help_text }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card bg-dark border-secondary mb-4">
-          <div class="card-header py-3">
-            <h5 class="mb-0 fw-bold">Unit Modules</h5>
-          </div>
-          <div class="card-body p-4">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <div class="form-check">
-                  {% render_field settings_form.enable_guest_module class="form-check-input" %}
-                  <label class="form-check-label" for="{{ settings_form.enable_guest_module.id_for_label }}">{{ settings_form.enable_guest_module.label }}</label>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-check">
-                  {% render_field settings_form.enable_music_module class="form-check-input" %}
-                  <label class="form-check-label" for="{{ settings_form.enable_music_module.id_for_label }}">{{ settings_form.enable_music_module.label }}</label>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-check">
-                  {% render_field settings_form.enable_media_module class="form-check-input" %}
-                  <label class="form-check-label" for="{{ settings_form.enable_media_module.id_for_label }}">{{ settings_form.enable_media_module.label }}</label>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-check">
-                  {% render_field settings_form.enable_children_module class="form-check-input" %}
-                  <label class="form-check-label" for="{{ settings_form.enable_children_module.id_for_label }}">{{ settings_form.enable_children_module.label }}</label>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-check">
-                  {% render_field settings_form.enable_youth_module class="form-check-input" %}
-                  <label class="form-check-label" for="{{ settings_form.enable_youth_module.id_for_label }}">{{ settings_form.enable_youth_module.label }}</label>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-check">
-                  {% render_field settings_form.enable_teenagers_module class="form-check-input" %}
-                  <label class="form-check-label" for="{{ settings_form.enable_teenagers_module.id_for_label }}">{{ settings_form.enable_teenagers_module.label }}</label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card bg-dark border-secondary mb-4">
-          <div class="card-header py-3">
-            <h5 class="mb-0 fw-bold">Notifications and UX</h5>
-          </div>
-          <div class="card-body p-4">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <div class="form-check">
-                  {% render_field settings_form.enable_sms_birthday class="form-check-input" %}
-                  <label class="form-check-label" for="{{ settings_form.enable_sms_birthday.id_for_label }}">{{ settings_form.enable_sms_birthday.label }}</label>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-check">
-                  {% render_field settings_form.enable_sms_bulk class="form-check-input" %}
-                  <label class="form-check-label" for="{{ settings_form.enable_sms_bulk.id_for_label }}">{{ settings_form.enable_sms_bulk.label }}</label>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-check">
-                  {% render_field settings_form.enable_welcome_screen class="form-check-input" %}
-                  <label class="form-check-label" for="{{ settings_form.enable_welcome_screen.id_for_label }}">{{ settings_form.enable_welcome_screen.label }}</label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card bg-dark border-secondary mb-4">
-          <div class="card-header py-3">
-            <h5 class="mb-0 fw-bold">Guest Messaging</h5>
-          </div>
-          <div class="card-body p-4">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <div class="form-check">
-                  {% render_field settings_form.send_first_visit_thankyou class="form-check-input" %}
-                  <label class="form-check-label" for="{{ settings_form.send_first_visit_thankyou.id_for_label }}">{{ settings_form.send_first_visit_thankyou.label }}</label>
-                </div>
-                <div class="mt-2">
-                  {% render_field settings_form.thankyou_first_visit_message class="form-control" %}
-                  <div class="form-text text-secondary">{{ settings_form.thankyou_first_visit_message.help_text }}</div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-check">
-                  {% render_field settings_form.send_second_visit_thankyou class="form-check-input" %}
-                  <label class="form-check-label" for="{{ settings_form.send_second_visit_thankyou.id_for_label }}">{{ settings_form.send_second_visit_thankyou.label }}</label>
-                </div>
-                <div class="mt-2">
-                  {% render_field settings_form.thankyou_second_visit_message class="form-control" %}
-                  <div class="form-text text-secondary">{{ settings_form.thankyou_second_visit_message.help_text }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="d-flex justify-content-end gap-3">
-          <a href="{% url 'dashboard:admin_dashboard' %}" class="btn btn-outline-secondary px-4">Cancel</a>
-          <button type="submit" name="save_settings" class="btn fw-bold px-5" style="background: #ff5e01; color: #fff; border: none">Save settings</button>
-        </div>
-      </form>
-
-      <form method="post" class="mt-5">
-        {% csrf_token %}
-        <div class="card bg-dark border-secondary mb-4">
-          <div class="card-header py-3">
-            <h5 class="mb-0 fw-bold">Create Unit or Group</h5>
-          </div>
-          <div class="card-body p-4">
-            <div class="row g-3">
-              <div class="col-md-8">
-                <label class="form-label">Unit name</label>
-                {% render_field unit_form.name class="form-control" %}
-                {% if unit_form.name.errors %}
-                <div class="text-danger small mt-1">{{ unit_form.name.errors.0 }}</div>
-                {% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Type</label>
-                {% render_field unit_form.unit_type class="form-select" %}
-              </div>
-              <div class="col-md-12">
-                <label class="form-label">Description</label>
-                {% render_field unit_form.description class="form-control" %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Reports to</label>
-                {% render_field unit_form.report_to class="form-select" %}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Color</label>
-                {% render_field unit_form.color class="form-control" %}
-              </div>
-              <div class="col-md-3 d-flex align-items-end">
-                <div class="form-check">
-                  {% render_field unit_form.is_default class="form-check-input" %}
-                  <label class="form-check-label" for="{{ unit_form.is_default.id_for_label }}">{{ unit_form.is_default.label }}</label>
-                </div>
-              </div>
-            </div>
-
-            <hr class="border-secondary my-4" />
-            <div class="row g-3">
-              <div class="col-12">
-                <h6 class="mb-2">Unit Modules</h6>
-              </div>
-              <div class="col-md-4">
-                <div class="form-check">
-                  {% render_field unit_form.guest_management class="form-check-input" %}
-                  <label class="form-check-label" for="{{ unit_form.guest_management.id_for_label }}">{{ unit_form.guest_management.label }}</label>
-                  {% if unit_form.guest_management.errors %}
-                  <div class="text-danger small mt-1">{{ unit_form.guest_management.errors.0 }}</div>
-                  {% endif %}
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="form-check">
-                  {% render_field unit_form.music_module class="form-check-input" %}
-                  <label class="form-check-label" for="{{ unit_form.music_module.id_for_label }}">{{ unit_form.music_module.label }}</label>
-                  {% if unit_form.music_module.errors %}
-                  <div class="text-danger small mt-1">{{ unit_form.music_module.errors.0 }}</div>
-                  {% endif %}
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="form-check">
-                  {% render_field unit_form.media_module class="form-check-input" %}
-                  <label class="form-check-label" for="{{ unit_form.media_module.id_for_label }}">{{ unit_form.media_module.label }}</label>
-                  {% if unit_form.media_module.errors %}
-                  <div class="text-danger small mt-1">{{ unit_form.media_module.errors.0 }}</div>
-                  {% endif %}
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="form-check">
-                  {% render_field unit_form.children_module class="form-check-input" %}
-                  <label class="form-check-label" for="{{ unit_form.children_module.id_for_label }}">{{ unit_form.children_module.label }}</label>
-                  {% if unit_form.children_module.errors %}
-                  <div class="text-danger small mt-1">{{ unit_form.children_module.errors.0 }}</div>
-                  {% endif %}
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="form-check">
-                  {% render_field unit_form.youth_module class="form-check-input" %}
-                  <label class="form-check-label" for="{{ unit_form.youth_module.id_for_label }}">{{ unit_form.youth_module.label }}</label>
-                  {% if unit_form.youth_module.errors %}
-                  <div class="text-danger small mt-1">{{ unit_form.youth_module.errors.0 }}</div>
-                  {% endif %}
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="form-check">
-                  {% render_field unit_form.teenagers_module class="form-check-input" %}
-                  <label class="form-check-label" for="{{ unit_form.teenagers_module.id_for_label }}">{{ unit_form.teenagers_module.label }}</label>
-                  {% if unit_form.teenagers_module.errors %}
-                  <div class="text-danger small mt-1">{{ unit_form.teenagers_module.errors.0 }}</div>
-                  {% endif %}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="d-flex justify-content-end gap-3">
-          <button type="submit" name="create_unit" class="btn fw-bold px-5" style="background: #2fb344; color: #fff; border: none">Create unit</button>
-        </div>
+        {% endwith %}
       </form>
     </div>
   </div>
-</div>
-{% endblock %}
 
+  {# Feature flags — on General tab. Posts tab=workforce to reuse WorkforceSettingsForm,
+     but redirect_tab=general keeps user on the General tab after save. #}
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="tab" value="workforce">
+    <input type="hidden" name="redirect_tab" value="general">
+    {% with form=forms.workforce %}
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-header"><h5 class="mb-0 fw-bold">Module Visibility</h5></div>
+      <div class="card-body p-4">
+        <p class="text-muted small mb-3">Toggle which modules are available church-wide. Disabling a module hides it from all units.</p>
+        <div class="row g-2">
+          {% for fname in "enable_guest_module,enable_music_module,enable_media_module,enable_children_module,enable_youth_module,enable_teenagers_module"|split:"," %}
+          <div class="col-md-4 col-6">
+            <div class="form-check">
+              {% with fld=form|lookup:fname %}{{ fld }}<label class="form-check-label">{{ fld.label }}</label>{% endwith %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="card-footer text-end">
+        <button type="submit" class="btn btn-secondary btn-sm">Save Module Flags</button>
+      </div>
+    </div>
+    {% endwith %}
+  </form>
+  {% endif %}
+
+  {# ════════════════════════════════════════════════════════════════════════ #}
+  {# TAB: Guest Pipeline                                                      #}
+  {# ════════════════════════════════════════════════════════════════════════ #}
+  {% if active_tab == 'pipeline' %}
+  <form method="post">
+    {% csrf_token %}<input type="hidden" name="tab" value="pipeline">
+    {% with form=forms.pipeline %}
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-header"><h5 class="mb-0 fw-bold">Pipeline Thresholds</h5></div>
+      <div class="card-body p-4">
+        <p class="text-muted small mb-3">
+          The pipeline advances automatically:
+          <strong>New Guest &rarr; In-Contact &rarr; Committed &rarr; Planted</strong>.
+          Only <strong>Not Planted</strong> can be set manually.
+        </p>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">{{ form.committed_attendance_threshold.label }}</label>
+            {{ form.committed_attendance_threshold }}
+            <div class="form-text">{{ form.committed_attendance_threshold.help_text }}</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.committed_attendance_window_weeks.label }}</label>
+            {{ form.committed_attendance_window_weeks }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.guest_id_prefix.label }}</label>
+            {{ form.guest_id_prefix }}
+          </div>
+        </div>
+        <hr class="my-4">
+        <h6 class="fw-semibold mb-3">Automated Thank-you SMS</h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="form-check mb-2">{{ form.send_first_visit_thankyou }}
+              <label class="form-check-label fw-semibold">{{ form.send_first_visit_thankyou.label }}</label>
+            </div>
+            {{ form.thankyou_first_visit_message }}
+            <div class="form-text">Use <code>{name}</code> for guest name.</div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-check mb-2">{{ form.send_second_visit_thankyou }}
+              <label class="form-check-label fw-semibold">{{ form.send_second_visit_thankyou.label }}</label>
+            </div>
+            {{ form.thankyou_second_visit_message }}
+          </div>
+          <div class="col-md-6">
+            <div class="form-check">{{ form.enable_sms_birthday }}
+              <label class="form-check-label">{{ form.enable_sms_birthday.label }}</label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-check">{{ form.enable_sms_bulk }}
+              <label class="form-check-label">{{ form.enable_sms_bulk.label }}</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer text-end">
+        <button type="submit" class="btn btn-primary">Save Pipeline Settings</button>
+      </div>
+    </div>
+    {% endwith %}
+  </form>
+
+  {# Membership Tracks #}
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0 fw-bold">Membership Tracks</h5>
+      <button type="button" class="btn btn-sm btn-outline-success" id="addTrackBtn">+ New Track</button>
+    </div>
+    <div id="addTrackForm" class="card-body border-bottom border-secondary d-none">
+      <div class="row g-3">
+        <div class="col-md-4"><label class="form-label">Name</label><input class="form-control" id="trackName" placeholder="e.g. Leadership Track"></div>
+        <div class="col-md-2"><label class="form-label">Attendance threshold</label><input class="form-control" id="trackThreshold" type="number" value="4" min="1"></div>
+        <div class="col-md-2"><label class="form-label">Window (weeks)</label><input class="form-control" id="trackWindow" type="number" value="6" min="1"></div>
+        <div class="col-md-4"><label class="form-label">Description</label><input class="form-control" id="trackDesc" placeholder="Optional"></div>
+        <div class="col-12">
+          <div class="form-check"><input class="form-check-input" type="checkbox" id="trackDefault"><label class="form-check-label">Set as default track</label></div>
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-success btn-sm" id="saveTrackBtn">Save Track</button>
+          <button class="btn btn-secondary btn-sm" id="cancelTrackBtn">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-dark table-hover mb-0">
+        <thead><tr><th>Name</th><th>Threshold</th><th>Window</th><th>Default</th></tr></thead>
+        <tbody>
+          {% for track in membership_tracks %}
+          <tr>
+            <td>{{ track.name }}{% if track.description %}<br><small class="text-muted">{{ track.description }}</small>{% endif %}</td>
+            <td>{{ track.attendance_threshold }} services</td>
+            <td>{{ track.attendance_window_weeks }} weeks</td>
+            <td>{% if track.is_default %}<span class="badge bg-green">Default</span>{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-muted text-center py-3">No custom tracks yet. The system default track is used.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ════════════════════════════════════════════════════════════════════════ #}
+  {# TAB: LMS & Onboarding                                                   #}
+  {# ════════════════════════════════════════════════════════════════════════ #}
+  {% if active_tab == 'lms' %}
+  <form method="post">
+    {% csrf_token %}<input type="hidden" name="tab" value="lms">
+    {% with form=forms.lms %}
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-header"><h5 class="mb-0 fw-bold">LMS & Induction Rules</h5></div>
+      <div class="card-body p-4">
+        <p class="text-muted small mb-3">
+          LMS is <strong>one criterion</strong> for passing induction — not the only one.
+          The induction flow is controlled by the pipeline and <em>StepRequirements</em> on each membership track.
+        </p>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">{{ form.induction_course_type.label }}</label>
+            {{ form.induction_course_type }}
+            <div class="form-text">{{ form.induction_course_type.help_text }}</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">{{ form.default_passing_score.label }}</label>
+            {{ form.default_passing_score }}
+            <div class="form-text">{{ form.default_passing_score.help_text }}</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">{{ form.promotion_mode.label }}</label>
+            {{ form.promotion_mode }}
+            <div class="form-text">{{ form.promotion_mode.help_text }}</div>
+          </div>
+          <div class="col-md-6" id="approval-role-wrap">
+            <label class="form-label">{{ form.promotion_approval_role.label }}</label>
+            {{ form.promotion_approval_role }}
+            <div class="form-text">{{ form.promotion_approval_role.help_text }}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-check">{{ form.allow_retakes_default }}
+              <label class="form-check-label">{{ form.allow_retakes_default.label }}</label>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">{{ form.max_retakes_default.label }}</label>
+            {{ form.max_retakes_default }}
+          </div>
+          <div class="col-md-3">
+            <div class="form-check">{{ form.notify_unit_head_on_completion }}
+              <label class="form-check-label">{{ form.notify_unit_head_on_completion.label }}</label>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-check">{{ form.notify_admin_on_completion }}
+              <label class="form-check-label">{{ form.notify_admin_on_completion.label }}</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer text-end">
+        <button type="submit" class="btn btn-primary">Save LMS Settings</button>
+      </div>
+    </div>
+    {% endwith %}
+  </form>
+
+  {# Course list + quick-create #}
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0 fw-bold">Courses</h5>
+      <button type="button" class="btn btn-sm btn-outline-success" id="addCourseBtn">+ New Course</button>
+    </div>
+    <div id="addCourseForm" class="card-body border-bottom border-secondary d-none">
+      <div class="row g-3">
+        <div class="col-md-5"><label class="form-label">Title</label><input class="form-control" id="courseTitle" placeholder="e.g. New Members Class"></div>
+        <div class="col-md-3">
+          <label class="form-label">Type</label>
+          <select class="form-select" id="courseType">
+            <option value="induction">Member Induction</option>
+            <option value="unit_training">Unit Training</option>
+            <option value="workforce">Workforce-wide Training</option>
+            <option value="disciplinary">Disciplinary Program</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Delivery</label>
+          <select class="form-select" id="courseDelivery">
+            <option value="physical">Physical</option>
+            <option value="virtual">Virtual</option>
+            <option value="hybrid">Hybrid</option>
+          </select>
+        </div>
+        <div class="col-md-2"><label class="form-label">Passing score (%)</label><input class="form-control" id="coursePassScore" type="number" value="70" min="0" max="100"></div>
+        <div class="col-md-2"><label class="form-label">Max retakes</label><input class="form-control" id="courseMaxRetakes" type="number" value="2" min="0"></div>
+        <div class="col-md-2">
+          <div class="form-check mt-4"><input class="form-check-input" type="checkbox" id="courseAllowRetake" checked><label class="form-check-label">Allow retakes</label></div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-check mt-4"><input class="form-check-input" type="checkbox" id="courseStrictSeq" checked><label class="form-check-label">Strict sequence</label></div>
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-success btn-sm" id="saveCourseBtn">Create Course</button>
+          <button class="btn btn-secondary btn-sm" id="cancelCourseBtn">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-dark table-hover mb-0" id="coursesTable">
+        <thead><tr><th>Title</th><th>Type</th><th>Delivery</th><th>Pass %</th><th>Retakes</th></tr></thead>
+        <tbody>
+          {% for course in all_courses %}
+          <tr>
+            <td>{{ course.title }}</td>
+            <td>{{ course.get_course_type_display }}</td>
+            <td>{{ course.get_delivery_mode_display }}</td>
+            <td>{{ course.passing_score }}%</td>
+            <td>{% if course.allow_retake %}{{ course.max_retakes }}{% else %}None{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-muted text-center py-3">No courses yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ════════════════════════════════════════════════════════════════════════ #}
+  {# TAB: Workforce                                                           #}
+  {# ════════════════════════════════════════════════════════════════════════ #}
+  {% if active_tab == 'workforce' %}
+  <form method="post">
+    {% csrf_token %}<input type="hidden" name="tab" value="workforce">
+    {% with form=forms.workforce %}
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-header"><h5 class="mb-0 fw-bold">Workforce Defaults</h5></div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">{{ form.member_id_prefix.label }}</label>{{ form.member_id_prefix }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.absence_flag_threshold.label }}</label>{{ form.absence_flag_threshold }}
+            <div class="form-text">{{ form.absence_flag_threshold.help_text }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer text-end">
+        <button type="submit" class="btn btn-primary">Save Workforce Settings</button>
+      </div>
+    </div>
+    {% endwith %}
+  </form>
+
+  {# Workforce Stages — inline edit, drag-to-reorder, Inductee locked #}
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-0 fw-bold">Workforce Stages</h5>
+        <small class="text-muted">Drag to reorder. <em>Inductee</em> is auto-assigned on promotion and cannot be removed.</small>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-dark table-hover mb-0">
+        <thead><tr><th style="width:30px;"></th><th>Stage</th><th>Description</th><th>Default</th><th></th></tr></thead>
+        <tbody id="stagesList" data-type="stage">
+          {% for stage in workforce_stages %}
+          <tr data-id="{{ stage.id }}" {% if not stage.is_locked %}draggable="true"{% endif %} class="wf-item-row">
+            <td class="text-muted drag-handle" style="cursor:{% if stage.is_locked %}default{% else %}grab{% endif %};">
+              {% if not stage.is_locked %}⠿{% endif %}
+            </td>
+            <td>
+              <span class="item-name">{{ stage.name }}</span>
+              {% if stage.is_locked %}<span class="badge bg-secondary ms-1" title="System stage — cannot be renamed or deleted">locked</span>{% endif %}
+              {% if not stage.is_locked %}
+              <input class="form-control form-control-sm item-edit-input d-none" value="{{ stage.name }}" style="width:160px;display:inline-block;">
+              {% endif %}
+            </td>
+            <td><small class="text-muted">{{ stage.description|default:"—" }}</small></td>
+            <td>{% if stage.is_default %}<span class="badge bg-green">Yes</span>{% endif %}</td>
+            <td class="text-end">
+              {% if not stage.is_locked %}
+              <button class="btn btn-xs btn-outline-secondary wf-rename-btn" data-id="{{ stage.id }}" data-type="stage">Edit</button>
+              <button class="btn btn-xs btn-outline-danger wf-delete-btn" data-id="{{ stage.id }}" data-type="stage">Remove</button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {# Inline add row #}
+    <div class="card-footer d-flex gap-2 align-items-center">
+      <input type="text" class="form-control form-control-sm" id="newStageName" placeholder="New stage name" style="max-width:220px;">
+      <button class="btn btn-sm btn-outline-success" id="addStageBtn">+ Add Stage</button>
+    </div>
+  </div>
+
+  {# Workforce Roles — same pattern #}
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-0 fw-bold">Workforce Roles</h5>
+        <small class="text-muted">Drag to reorder. <em>Member</em> is the default role and cannot be removed.</small>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-dark table-hover mb-0">
+        <thead><tr><th style="width:30px;"></th><th>Role</th><th>Leadership</th><th></th></tr></thead>
+        <tbody id="rolesList" data-type="role">
+          {% for role in workforce_roles %}
+          <tr data-id="{{ role.id }}" {% if not role.is_locked %}draggable="true"{% endif %} class="wf-item-row">
+            <td class="drag-handle text-muted" style="cursor:{% if role.is_locked %}default{% else %}grab{% endif %};">
+              {% if not role.is_locked %}⠿{% endif %}
+            </td>
+            <td>
+              <span class="item-name">{{ role.name }}</span>
+              {% if role.is_locked %}<span class="badge bg-secondary ms-1">locked</span>{% endif %}
+              {% if not role.is_locked %}
+              <input class="form-control form-control-sm item-edit-input d-none" value="{{ role.name }}" style="width:160px;display:inline-block;">
+              {% endif %}
+            </td>
+            <td>
+              <button class="btn btn-xs {% if role.is_leadership %}btn-warning{% else %}btn-outline-secondary{% endif %} role-leadership-btn"
+                      data-id="{{ role.id }}" title="Toggle leadership">
+                {% if role.is_leadership %}Leadership{% else %}Member{% endif %}
+              </button>
+            </td>
+            <td class="text-end">
+              {% if not role.is_locked %}
+              <button class="btn btn-xs btn-outline-secondary wf-rename-btn" data-id="{{ role.id }}" data-type="role">Edit</button>
+              <button class="btn btn-xs btn-outline-danger wf-delete-btn" data-id="{{ role.id }}" data-type="role">Remove</button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer d-flex gap-2 align-items-center">
+      <input type="text" class="form-control form-control-sm" id="newRoleName" placeholder="New role name" style="max-width:220px;">
+      <div class="form-check me-2">
+        <input class="form-check-input" type="checkbox" id="newRoleLeadership">
+        <label class="form-check-label small">Leadership</label>
+      </div>
+      <button class="btn btn-sm btn-outline-success" id="addRoleBtn">+ Add Role</button>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ════════════════════════════════════════════════════════════════════════ #}
+  {# TAB: Display & ID                                                        #}
+  {# ════════════════════════════════════════════════════════════════════════ #}
+  {% if active_tab == 'display' %}
+  <form method="post">
+    {% csrf_token %}<input type="hidden" name="tab" value="display">
+    {% with form=forms.display %}
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-header"><h5 class="mb-0 fw-bold">ID & Date Format</h5></div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">{{ form.date_format.label }}</label>{{ form.date_format }}
+            <div class="form-text">{{ form.date_format.help_text }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer text-end">
+        <button type="submit" class="btn btn-primary">Save Display Settings</button>
+      </div>
+    </div>
+    {% endwith %}
+  </form>
+
+  {# Campus Growth Stages — toggleable, Fellowship Center default, drag-to-reorder #}
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0 fw-bold">Campus Growth Stages</h5>
+      <div class="form-check form-switch mb-0">
+        <input class="form-check-input" type="checkbox" id="campusStagesEnabled"
+               {% if campus_stages_enabled %}checked{% endif %}>
+        <label class="form-check-label" for="campusStagesEnabled">Enabled</label>
+      </div>
+    </div>
+    <div class="card-body {% if not campus_stages_enabled %}d-none{% endif %}" id="campusStagesBody">
+      <p class="text-muted small mb-3">
+        Define your church's growth pathway. Drag to reorder. <em>Fellowship Center</em> is the base stage.
+        Add stages to represent satellite, daughter churches, etc.
+      </p>
+      <table class="table table-dark table-hover mb-3">
+        <thead><tr><th style="width:30px;"></th><th>Stage name</th><th>Description</th><th></th></tr></thead>
+        <tbody id="campusStagesList">
+          {% for stage in campus_stages_list %}
+          <tr draggable="true" class="campus-stage-row" data-order="{{ stage.order }}">
+            <td class="drag-handle text-muted" style="cursor:grab;">⠿</td>
+            <td><input class="form-control form-control-sm campus-stage-name" value="{{ stage.name }}"></td>
+            <td><input class="form-control form-control-sm campus-stage-desc" value="{{ stage.description|default:'' }}" placeholder="Describe this growth stage"></td>
+            <td><button type="button" class="btn btn-xs btn-outline-danger remove-campus-stage">✕</button></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="d-flex gap-2 align-items-center mb-3">
+        <input type="text" class="form-control form-control-sm" id="newCampusStageName" placeholder="Stage name" style="max-width:180px;">
+        <input type="text" class="form-control form-control-sm" id="newCampusStageDesc" placeholder="Description (optional)" style="max-width:260px;">
+        <button type="button" class="btn btn-sm btn-outline-success" id="addCampusStageBtn">+ Add Stage</button>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" id="saveCampusStagesBtn">Save Campus Stages</button>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ════════════════════════════════════════════════════════════════════════ #}
+  {# TAB: Lookup Tables                                                       #}
+  {# ════════════════════════════════════════════════════════════════════════ #}
+  {% if active_tab == 'lookups' %}
+  <p class="text-muted mb-4">Manage the dropdown options on the guest form. Drag rows to reorder.</p>
+
+  {% for lookup_type, label, items in lookup_tables %}
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header"><h5 class="mb-0 fw-bold">{{ label }}</h5></div>
+    <div class="card-body p-0">
+      <table class="table table-dark table-hover mb-0">
+        <thead><tr><th style="width:30px;"></th><th>Name</th><th>Status</th><th></th></tr></thead>
+        <tbody class="lookup-sortable" data-type="{{ lookup_type }}" id="lookup-{{ lookup_type }}">
+          {% for item in items %}
+          <tr draggable="true" class="lookup-row" data-id="{{ item.id }}">
+            <td class="drag-handle text-muted" style="cursor:grab;">⠿</td>
+            <td>
+              <span class="lookup-name">{{ item.name }}</span>
+              <input class="form-control form-control-sm lookup-edit d-none" value="{{ item.name }}" style="max-width:200px;">
+            </td>
+            <td>
+              <span class="badge {% if item.is_active %}bg-green{% else %}bg-secondary{% endif %}">
+                {% if item.is_active %}Active{% else %}Inactive{% endif %}
+              </span>
+            </td>
+            <td class="text-end">
+              <button class="btn btn-xs btn-outline-secondary lookup-rename-btn" data-id="{{ item.id }}" data-type="{{ lookup_type }}">Edit</button>
+              <button class="btn btn-xs btn-outline-warning lookup-toggle-btn" data-id="{{ item.id }}" data-type="{{ lookup_type }}">
+                {% if item.is_active %}Deactivate{% else %}Activate{% endif %}
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer d-flex gap-2 align-items-center">
+      <input type="text" class="form-control form-control-sm lookup-new-input" data-type="{{ lookup_type }}" placeholder="Add new {{ label|lower|cut:'s'|default:label }}" style="max-width:240px;">
+      <button class="btn btn-sm btn-outline-success lookup-add-btn" data-type="{{ lookup_type }}">+ Add</button>
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+</div>{# /container-xl #}
+
+<script>
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+function post(url, data) {
+  return fetch(url, {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: new URLSearchParams(data),
+  }).then(r => r.json());
+}
+
+// ── LMS: hide/show approval field ──────────────────────────────────────────
+const promoMode = document.getElementById('id_promotion_mode');
+const approvalWrap = document.getElementById('approval-role-wrap');
+if (promoMode && approvalWrap) {
+  const toggle = () => { approvalWrap.style.display = promoMode.value === 'manual' ? '' : 'none'; };
+  promoMode.addEventListener('change', toggle); toggle();
+}
+
+// ── Workforce stages & roles — inline add/rename/delete/reorder ─────────────
+
+function postWf(subpath, data) {
+  return post(`/tenants/settings/workforce/${subpath}`, data);
+}
+
+// Generic drag-to-reorder for workforce tables
+function setupDrag(tbodyId, itemType) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  let dragged = null;
+  tbody.addEventListener('dragstart', e => { dragged = e.target.closest('tr'); dragged.style.opacity = '0.4'; });
+  tbody.addEventListener('dragend',   e => { dragged.style.opacity = ''; dragged = null; });
+  tbody.addEventListener('dragover',  e => { e.preventDefault(); const over = e.target.closest('tr'); if (over && over !== dragged && !over.dataset.id?.startsWith?.('locked')) { tbody.insertBefore(dragged, over.nextSibling); } });
+  tbody.addEventListener('drop', e => {
+    e.preventDefault();
+    const ids = [...tbody.querySelectorAll('tr[data-id]')].map(r => r.dataset.id);
+    postWf(`${itemType}/reorder/`, {'ids[]': ids}).then(d => { if (!d.ok) alert(d.error); });
+  });
+}
+setupDrag('stagesList', 'stage');
+setupDrag('rolesList', 'role');
+
+// Add stage
+document.getElementById('addStageBtn')?.addEventListener('click', () => {
+  const name = document.getElementById('newStageName').value.trim();
+  if (!name) return;
+  postWf('stage/add/', {name}).then(d => {
+    if (!d.ok) { alert(d.error); return; }
+    const tbody = document.getElementById('stagesList');
+    const tr = document.createElement('tr');
+    tr.dataset.id = d.id; tr.draggable = true; tr.className = 'wf-item-row';
+    tr.innerHTML = `<td class="drag-handle text-muted" style="cursor:grab;">⠿</td>
+      <td><span class="item-name">${d.name}</span>
+          <input class="form-control form-control-sm item-edit-input d-none" value="${d.name}" style="width:160px;display:inline-block;"></td>
+      <td><small class="text-muted">—</small></td><td></td>
+      <td class="text-end">
+        <button class="btn btn-xs btn-outline-secondary wf-rename-btn" data-id="${d.id}" data-type="stage">Edit</button>
+        <button class="btn btn-xs btn-outline-danger wf-delete-btn" data-id="${d.id}" data-type="stage">Remove</button>
+      </td>`;
+    tbody.appendChild(tr);
+    document.getElementById('newStageName').value = '';
+    bindWfRow(tr);
+  });
+});
+
+// Add role
+document.getElementById('addRoleBtn')?.addEventListener('click', () => {
+  const name = document.getElementById('newRoleName').value.trim();
+  const is_leadership = document.getElementById('newRoleLeadership').checked;
+  if (!name) return;
+  postWf('role/add/', {name, is_leadership}).then(d => {
+    if (!d.ok) { alert(d.error); return; }
+    const tbody = document.getElementById('rolesList');
+    const tr = document.createElement('tr');
+    tr.dataset.id = d.id; tr.draggable = true; tr.className = 'wf-item-row';
+    tr.innerHTML = `<td class="drag-handle text-muted" style="cursor:grab;">⠿</td>
+      <td><span class="item-name">${d.name}</span>
+          <input class="form-control form-control-sm item-edit-input d-none" value="${d.name}" style="width:160px;display:inline-block;"></td>
+      <td><button class="btn btn-xs ${d.is_leadership ? 'btn-warning' : 'btn-outline-secondary'} role-leadership-btn" data-id="${d.id}">
+            ${d.is_leadership ? 'Leadership' : 'Member'}</button></td>
+      <td class="text-end">
+        <button class="btn btn-xs btn-outline-secondary wf-rename-btn" data-id="${d.id}" data-type="role">Edit</button>
+        <button class="btn btn-xs btn-outline-danger wf-delete-btn" data-id="${d.id}" data-type="role">Remove</button>
+      </td>`;
+    tbody.appendChild(tr);
+    document.getElementById('newRoleName').value = '';
+    document.getElementById('newRoleLeadership').checked = false;
+    bindWfRow(tr);
+  });
+});
+
+function bindWfRow(tr) {
+  // Rename
+  tr.querySelector('.wf-rename-btn')?.addEventListener('click', function() {
+    const nameSpan = tr.querySelector('.item-name');
+    const input    = tr.querySelector('.item-edit-input');
+    nameSpan.classList.add('d-none'); input.classList.remove('d-none'); input.focus();
+    input.addEventListener('blur', () => {
+      const newName = input.value.trim();
+      const type    = this.dataset.type;
+      const id      = this.dataset.id;
+      if (!newName || newName === nameSpan.textContent.trim()) {
+        nameSpan.classList.remove('d-none'); input.classList.add('d-none'); return;
+      }
+      postWf(`${type}/${id}/rename/`, {name: newName}).then(d => {
+        if (!d.ok) { alert(d.error); return; }
+        nameSpan.textContent = d.name;
+        nameSpan.classList.remove('d-none'); input.classList.add('d-none');
+      });
+    }, {once: true});
+  });
+  // Delete
+  tr.querySelector('.wf-delete-btn')?.addEventListener('click', function() {
+    const type = this.dataset.type; const id = this.dataset.id;
+    const name = tr.querySelector('.item-name').textContent.trim();
+    if (!confirm(`Remove ${type} "${name}"?`)) return;
+    postWf(`${type}/${id}/delete/`, {}).then(d => {
+      if (!d.ok) { alert(d.error); return; }
+      tr.remove();
+    });
+  });
+  // Leadership toggle (roles only)
+  tr.querySelector('.role-leadership-btn')?.addEventListener('click', function() {
+    post(`/tenants/settings/workforce/role/${this.dataset.id}/toggle-leadership/`, {}).then(d => {
+      if (!d.ok) { alert(d.error); return; }
+      this.textContent = d.is_leadership ? 'Leadership' : 'Member';
+      this.className = `btn btn-xs ${d.is_leadership ? 'btn-warning' : 'btn-outline-secondary'} role-leadership-btn`;
+    });
+  });
+}
+
+// Bind existing rows
+document.querySelectorAll('.wf-item-row').forEach(bindWfRow);
+
+// ── Campus growth stages ────────────────────────────────────────────────────
+const campusToggle = document.getElementById('campusStagesEnabled');
+const campusBody   = document.getElementById('campusStagesBody');
+campusToggle?.addEventListener('change', () => {
+  campusBody?.classList.toggle('d-none', !campusToggle.checked);
+});
+
+// Drag-to-reorder campus stages
+const campusList = document.getElementById('campusStagesList');
+if (campusList) {
+  let dragged = null;
+  campusList.addEventListener('dragstart', e => { dragged = e.target.closest('tr'); dragged.style.opacity='0.4'; });
+  campusList.addEventListener('dragend',   e => { dragged.style.opacity=''; dragged=null; });
+  campusList.addEventListener('dragover',  e => { e.preventDefault(); const over=e.target.closest('tr'); if(over&&over!==dragged) campusList.insertBefore(dragged,over.nextSibling); });
+}
+document.getElementById('addCampusStageBtn')?.addEventListener('click', () => {
+  const name = document.getElementById('newCampusStageName').value.trim();
+  const desc = document.getElementById('newCampusStageDesc').value.trim();
+  if (!name) return;
+  const tr = document.createElement('tr');
+  tr.draggable = true; tr.className = 'campus-stage-row';
+  tr.innerHTML = `<td class="drag-handle text-muted" style="cursor:grab;">⠿</td>
+    <td><input class="form-control form-control-sm campus-stage-name" value="${name}"></td>
+    <td><input class="form-control form-control-sm campus-stage-desc" value="${desc}" placeholder="Describe this growth stage"></td>
+    <td><button type="button" class="btn btn-xs btn-outline-danger remove-campus-stage">✕</button></td>`;
+  campusList.appendChild(tr);
+  tr.querySelector('.remove-campus-stage').addEventListener('click', () => tr.remove());
+  document.getElementById('newCampusStageName').value = '';
+  document.getElementById('newCampusStageDesc').value = '';
+});
+document.querySelectorAll('.remove-campus-stage').forEach(btn => btn.addEventListener('click', () => btn.closest('tr').remove()));
+
+document.getElementById('saveCampusStagesBtn')?.addEventListener('click', () => {
+  const enabled = campusToggle.checked;
+  const rows = [...campusList.querySelectorAll('tr.campus-stage-row')];
+  const stages = rows.map((r, i) => ({
+    name:        r.querySelector('.campus-stage-name').value.trim(),
+    description: r.querySelector('.campus-stage-desc').value.trim(),
+    order:       i + 1,
+  })).filter(s => s.name);
+  post('/tenants/settings/campus-stages/save/', {enabled, stages: JSON.stringify(stages)})
+    .then(d => { if (d.ok) { alert(`Saved ${d.count} campus stage(s).`); } else { alert(d.error); } });
+});
+
+// ── Lookup tables — add / rename / toggle / drag-reorder ───────────────────
+function postLookup(type, subpath, data) {
+  return post(`/tenants/settings/lookup/${type}/${subpath}`, data);
+}
+document.querySelectorAll('.lookup-add-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const type  = btn.dataset.type;
+    const input = document.querySelector(`.lookup-new-input[data-type="${type}"]`);
+    const name  = input.value.trim();
+    if (!name) return;
+    postLookup(type, 'add/', {name}).then(d => {
+      if (!d.ok) { alert(d.error); return; }
+      const tbody = document.getElementById(`lookup-${type}`);
+      const tr = document.createElement('tr');
+      tr.draggable = true; tr.className = 'lookup-row'; tr.dataset.id = d.id;
+      tr.innerHTML = `<td class="drag-handle text-muted" style="cursor:grab;">⠿</td>
+        <td><span class="lookup-name">${d.name}</span>
+            <input class="form-control form-control-sm lookup-edit d-none" value="${d.name}" style="max-width:200px;"></td>
+        <td><span class="badge bg-green">Active</span></td>
+        <td class="text-end">
+          <button class="btn btn-xs btn-outline-secondary lookup-rename-btn" data-id="${d.id}" data-type="${type}">Edit</button>
+          <button class="btn btn-xs btn-outline-warning lookup-toggle-btn" data-id="${d.id}" data-type="${type}">Deactivate</button>
+        </td>`;
+      tbody.appendChild(tr);
+      input.value = '';
+      bindLookupRow(tr);
+      setupLookupDrag(tbody);
+    });
+  });
+});
+
+function bindLookupRow(tr) {
+  const type = tr.closest('[data-type]')?.dataset.type
+            || tr.querySelector('[data-type]')?.dataset.type;
+  tr.querySelector('.lookup-rename-btn')?.addEventListener('click', function() {
+    const nameSpan = tr.querySelector('.lookup-name');
+    const input    = tr.querySelector('.lookup-edit');
+    nameSpan.classList.add('d-none'); input.classList.remove('d-none'); input.focus();
+    input.addEventListener('blur', () => {
+      const newName = input.value.trim();
+      const id      = this.dataset.id;
+      const t       = this.dataset.type;
+      if (!newName || newName === nameSpan.textContent.trim()) {
+        nameSpan.classList.remove('d-none'); input.classList.add('d-none'); return;
+      }
+      postLookup(t, `${id}/rename/`, {name: newName}).then(d => {
+        if (!d.ok) { alert(d.error); return; }
+        nameSpan.textContent = d.name;
+        nameSpan.classList.remove('d-none'); input.classList.add('d-none');
+      });
+    }, {once: true});
+  });
+  tr.querySelector('.lookup-toggle-btn')?.addEventListener('click', function() {
+    const id = this.dataset.id; const t = this.dataset.type;
+    postLookup(t, `${id}/toggle/`, {}).then(d => {
+      if (!d.ok) { alert(d.error); return; }
+      const badge = tr.querySelector('.badge');
+      badge.textContent = d.is_active ? 'Active' : 'Inactive';
+      badge.className   = `badge ${d.is_active ? 'bg-green' : 'bg-secondary'}`;
+      this.textContent  = d.is_active ? 'Deactivate' : 'Activate';
+    });
+  });
+}
+
+function setupLookupDrag(tbody) {
+  if (!tbody || tbody._dragBound) return;
+  tbody._dragBound = true;
+  let dragged = null;
+  tbody.addEventListener('dragstart', e => { dragged = e.target.closest('tr'); dragged.style.opacity='0.4'; });
+  tbody.addEventListener('dragend',   e => { dragged.style.opacity=''; dragged=null; });
+  tbody.addEventListener('dragover',  e => { e.preventDefault(); const over=e.target.closest('tr'); if(over&&over!==dragged) tbody.insertBefore(dragged,over.nextSibling); });
+  tbody.addEventListener('drop', e => {
+    e.preventDefault();
+    const type = tbody.dataset.type;
+    const ids  = [...tbody.querySelectorAll('tr.lookup-row')].map(r => r.dataset.id);
+    postLookup(type, 'reorder/', {'ids[]': ids});
+  });
+}
+
+document.querySelectorAll('.lookup-row').forEach(bindLookupRow);
+document.querySelectorAll('.lookup-sortable').forEach(setupLookupDrag);
+
+// ── LMS course quick-create ─────────────────────────────────────────────────
+document.getElementById('addCourseBtn')?.addEventListener('click', () => {
+  document.getElementById('addCourseForm').classList.toggle('d-none');
+});
+document.getElementById('cancelCourseBtn')?.addEventListener('click', () => {
+  document.getElementById('addCourseForm').classList.add('d-none');
+});
+document.getElementById('saveCourseBtn')?.addEventListener('click', () => {
+  const data = {
+    title:           document.getElementById('courseTitle').value.trim(),
+    course_type:     document.getElementById('courseType').value,
+    delivery_mode:   document.getElementById('courseDelivery').value,
+    passing_score:   document.getElementById('coursePassScore').value,
+    max_retakes:     document.getElementById('courseMaxRetakes').value,
+    allow_retake:    document.getElementById('courseAllowRetake').checked,
+    strict_sequence: document.getElementById('courseStrictSeq').checked,
+  };
+  if (!data.title) { alert('Title is required'); return; }
+  post('/tenants/settings/lms/course/create/', data).then(d => {
+    if (!d.ok) { alert(d.error); return; }
+    const tbody = document.querySelector('#coursesTable tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${d.title}</td><td>${d.course_type}</td><td>${d.delivery_mode}</td><td>${d.passing_score}%</td><td>—</td>`;
+    tbody.querySelector('tr td[colspan]')?.closest('tr').remove();
+    tbody.appendChild(tr);
+    document.getElementById('addCourseForm').classList.add('d-none');
+    document.getElementById('courseTitle').value = '';
+  });
+});
+
+// ── Membership track add ─────────────────────────────────────────────────────
+document.getElementById('addTrackBtn')?.addEventListener('click', () => {
+  document.getElementById('addTrackForm').classList.toggle('d-none');
+});
+document.getElementById('cancelTrackBtn')?.addEventListener('click', () => {
+  document.getElementById('addTrackForm').classList.add('d-none');
+});
+document.getElementById('saveTrackBtn')?.addEventListener('click', () => {
+  const data = {
+    name:                    document.getElementById('trackName').value.trim(),
+    description:             document.getElementById('trackDesc').value.trim(),
+    attendance_threshold:    document.getElementById('trackThreshold').value,
+    attendance_window_weeks: document.getElementById('trackWindow').value,
+    is_default:              document.getElementById('trackDefault').checked,
+  };
+  if (!data.name) { alert('Name is required'); return; }
+  post('/tenants/settings/track/save/', data).then(d => {
+    if (!d.ok) { alert(d.error); return; }
+    const tbody = document.querySelector('table tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${d.name}</td><td>${d.attendance_threshold} services</td><td>${d.attendance_window_weeks} weeks</td>
+      <td>${d.is_default ? '<span class="badge bg-green">Default</span>' : ''}</td>`;
+    tbody.querySelector('td[colspan]')?.closest('tr').remove();
+    tbody.appendChild(tr);
+    document.getElementById('addTrackForm').classList.add('d-none');
+    document.getElementById('trackName').value = '';
+  });
+});
+
+// ── Lookup table reorder AJAX (send ordered ids on drop) ────────────────────
+document.querySelectorAll('.lookup-sortable').forEach(tbody => {
+  tbody.addEventListener('drop', e => {
+    e.preventDefault();
+    const type = tbody.dataset.type;
+    const ids  = [...tbody.querySelectorAll('.lookup-row')].map(r => r.dataset.id);
+    postLookup(type, 'reorder/', {'ids[]': ids});
+  });
+});
+</script>
+{% endblock %}

@@ -41,21 +41,21 @@ def send_bulk_message(request):
     church = getattr(request, "church", None)
     if not church:
         messages.error(request, "No church context.")
-        return redirect("guest_list")
+        return redirect("guests:guest_list")
 
     if not _can(request, "messaging.send_bulk"):
         messages.error(request, "You do not have permission to send bulk messages.")
-        return redirect("guest_list")
+        return redirect("guests:guest_list")
 
     form = BulkMessageForm(request.POST, church=church)
     if not form.is_valid():
         messages.error(request, "Please correct the form errors.")
-        return redirect("guest_list")
+        return redirect("guests:guest_list")
 
     sender = _sender_membership(request, church)
     if not sender:
         messages.error(request, "Could not resolve your membership for this church.")
-        return redirect("guest_list")
+        return redirect("guests:guest_list")
 
     msg_obj = form.save(commit=False)
     msg_obj.church = church
@@ -99,7 +99,7 @@ def send_bulk_message(request):
         f"Message dispatched — {sent} sent, {failed} failed."
         + (" (SMS not configured — using stub provider)" if failed == 0 and sent == 0 else ""),
     )
-    return redirect("guest_list")
+    return redirect("guests:guest_list")
 
 
 @login_required
@@ -110,7 +110,7 @@ def send_guest_message(request, guest_id):
     """
     church = getattr(request, "church", None)
     if not church:
-        return redirect("guest_list")
+        return redirect("guests:guest_list")
 
     guest = get_object_or_404(
         GuestEntry.raw_objects.filter(church=church), id=guest_id
@@ -127,22 +127,22 @@ def send_guest_message(request, guest_id):
 
     if not (_can(request, "messaging.send") or is_assigned):
         messages.error(request, "You do not have permission to message this guest.")
-        return redirect("guest_list")
+        return redirect("guests:guest_list")
 
     if request.method != "POST":
-        return redirect("guest_list")
+        return redirect("guests:guest_list")
 
     body    = request.POST.get("body", "").strip()
     subject = request.POST.get("subject", "").strip() or "No Subject"
 
     if not body:
         messages.error(request, "Message body cannot be empty.")
-        return redirect("guest_list")
+        return redirect("guests:guest_list")
 
     sender = _sender_membership(request, church)
     if not sender:
         messages.error(request, "Could not resolve your membership.")
-        return redirect("guest_list")
+        return redirect("guests:guest_list")
 
     msg_obj = GuestMessage.raw_objects.create(
         church=church,
@@ -165,7 +165,7 @@ def send_guest_message(request, guest_id):
     msg_obj.send()
 
     messages.success(request, f"Message sent to {guest.full_name}.")
-    return redirect("guest_list")
+    return redirect("guests:guest_list")
 
 
 @login_required
@@ -207,11 +207,11 @@ def message_log(request):
     """
     church = getattr(request, "church", None)
     if not church:
-        return redirect("guest_list")
+        return redirect("guests:guest_list")
 
     if not _can(request, "messaging.view_log"):
         messages.error(request, "You do not have permission to view the message log.")
-        return redirect("guest_list")
+        return redirect("guests:guest_list")
 
     logs = MessageLog.raw_objects.filter(church=church).order_by("-created_at")[:200]
 

@@ -82,7 +82,7 @@ def notify_guest_creation_or_assignment(sender, instance, created, **kwargs):
     ts           = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
     guest_name   = guest_full_name(instance)
     custom_id    = getattr(instance, "custom_id", "N/A")
-    link         = reverse("guest_list")
+    link         = reverse("guests:guest_list")
     registrant   = get_current_user()
     creator_name = user_full_name(_member_for_user(registrant, church) if registrant else None)
     old_assigned = getattr(instance, "_old_assigned_to", None)
@@ -150,7 +150,7 @@ def notify_guest_deletion(sender, instance, **kwargs):
     deleter_name = user_full_name(_member_for_user(deleter, church) if deleter else None)
     custom_id    = getattr(instance, "custom_id", "N/A")
     guest_count  = sender.raw_objects.filter(church=church).count()
-    link         = reverse("guest_list")
+    link         = reverse("guests:guest_list")
 
     description = (
         f"{guest_name} ({custom_id})\n"
@@ -177,7 +177,7 @@ def notify_review_submission(sender, instance, created, **kwargs):
     guest      = instance.guest
     ts         = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
     guest_name = guest_full_name(guest)
-    link       = reverse("guest_list")
+    link       = reverse("guests:guest_list")
 
     admins = [a for a in get_admin_members(church) if a != reviewer]
 
@@ -504,19 +504,19 @@ def notify_team_on_event_create(sender, instance, created, **kwargs):
             except AttributeError:
                 continue
 
-        notify_members(recipients, f"{unit_name} Event", msg, church, reverse("dashboard"), is_success=True)
+        notify_members(recipients, f"{unit_name} Event", msg, church, reverse("dashboard:dashboard"), is_success=True)
     else:
         # Church-wide event — notify all active members
         from accounts.models import ChurchMember
         all_members = ChurchMember.raw_objects.filter(
             church=church, is_active=True
         ).exclude(user__is_superuser=True)
-        notify_members(list(all_members), f"{unit_name} Event", msg, church, reverse("dashboard"), is_success=True)
+        notify_members(list(all_members), f"{unit_name} Event", msg, church, reverse("dashboard:dashboard"), is_success=True)
         notified_pks.update(m.pk for m in all_members)
 
     # Notify admins
     admin_recipients = [a for a in get_admin_members(church) if a.pk not in notified_pks]
-    notify_members(admin_recipients, f"{unit_name} Event", msg, church, reverse("accounts:admin_dashboard"), is_success=True)
+    notify_members(admin_recipients, f"{unit_name} Event", msg, church, reverse("dashboard:admin_dashboard"), is_success=True)
     notified_pks.update(a.pk for a in admin_recipients)
 
     # Creator confirmation
@@ -524,5 +524,5 @@ def notify_team_on_event_create(sender, instance, created, **kwargs):
         notify_members(
             [creator_member], f"{unit_name} Event",
             f"I created a new event: {instance.name} ({instance.attendance_mode} {instance.event_type}) on {ts}.",
-            church, reverse("dashboard"), is_success=True,
+            church, reverse("dashboard:dashboard"), is_success=True,
         )

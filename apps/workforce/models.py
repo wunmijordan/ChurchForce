@@ -15,6 +15,17 @@ from core.models import ChurchOwnedModel, OrderedChurchModel, SoftDeleteModel
 
 class WorkforceStage(OrderedChurchModel):
     name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    # is_default: auto-assigned to newly promoted trainees
+    is_default = models.BooleanField(
+        default=False,
+        help_text="New workforce members land here on promotion. Only one stage can be default.",
+    )
+    # is_locked: system stages (Inductee) cannot be renamed or deleted
+    is_locked = models.BooleanField(
+        default=False,
+        help_text="System stages cannot be renamed or deleted.",
+    )
 
     class Meta:
         unique_together = ("church", "name")
@@ -27,6 +38,16 @@ class WorkforceRole(OrderedChurchModel):
     name = models.CharField(max_length=100)
     permissions = models.JSONField(default=dict, blank=True)
     is_leadership = models.BooleanField(default=False)
+    # is_default: the base role for all workforce members
+    is_default = models.BooleanField(
+        default=False,
+        help_text="Default role assigned to all workforce members.",
+    )
+    # is_locked: system roles (Member) cannot be deleted
+    is_locked = models.BooleanField(
+        default=False,
+        help_text="System roles cannot be deleted.",
+    )
 
     class Meta:
         unique_together = ("church", "name")

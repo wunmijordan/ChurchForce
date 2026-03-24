@@ -532,10 +532,13 @@ def guest_list_view(request):
         # Permission booleans â€” resolved server-side so templates stay clean
         'can_report': _can(request, 'guests.report') or _can(request, 'guests.manage_all'),
         'can_update_status': _can(request, 'guests.manage_all') or _can(request, 'guests.update_status'),
-        'guest_statuses': GuestStatus.raw_objects.filter(church=church, is_active=True).order_by('order'),
+        # Only Not-Planted is manually selectable — all other statuses are pipeline-managed.
+        'not_planted_status': GuestStatus.raw_objects.filter(
+            church=church, slug=GuestStatus.SLUG_NOT_PLANTED, is_active=True
+        ).first(),
         'assignable_members': _get_guest_memberships(church),
         # Chat room ID for attach-to-chat (first guests unit room)
-        'GUESTS_ROOM_ID': (guest_units.first().chatroom_set.filter(is_default=True).values_list('id', flat=True).first() if guest_units.exists() else None),
+        'GUESTS_ROOM_ID': (guest_units.first().chat_rooms.filter(is_default=True).values_list('id', flat=True).first() if guest_units.exists() else None),
     }
     return render(request, 'guests/guest_list.html', context)
 
@@ -621,7 +624,13 @@ def create_guest(request):
                 )
 
         if form.is_valid() and not errors:
-            guest = form.save()   # ✅ church already set
+            guest = form.save(commit=False)
+            # Auto-set to the church's default status (New Guest) on creation.
+            # Status is NEVER set by the form — it is pipeline-managed.
+            if not guest.status_id:
+                guest.status = _default_status(church)
+            guest.church = church
+            guest.save()
 
             for entry in social_media_entries:
                 SocialMediaEntry.raw_objects.create(
@@ -772,6 +781,124 @@ def reassign_guest(request, guest_id):
 
     return redirect('guests:guest_list')
 @login_required
+
+@login_required
+@require_POST
+def mark_not_planted(request, guest_id):
+    """
+    The ONLY manual status change allowed. All other statuses advance
+    automatically through the pipeline. Admins/officers can mark a guest
+    as Not Planted to terminate their pipeline progression.
+    """
+    church = _get_church(request)
+    if not church:
+        return JsonResponse({"ok": False, "error": "No church context"}, status=400)
+
+    if not (_can(request, "guests.manage_all") or _can(request, "guests.update_status")):
+        return JsonResponse({"ok": False, "error": "Not authorised"}, status=403)
+
+    guest = get_object_or_404(
+        GuestEntry.raw_objects, id=guest_id, church=church
+    )
+
+    if guest.status and guest.status.is_terminal:
+        return JsonResponse(
+            {"ok": False, "error": f"Status is already terminal: {guest.status.name}"},
+            status=400,
+        )
+
+    not_planted = GuestStatus.raw_objects.filter(
+        church=church,
+        slug=GuestStatus.SLUG_NOT_PLANTED,
+        is_active=True,
+    ).first()
+
+    if not not_planted:
+        return JsonResponse(
+            {"ok": False, "error": "Not Planted status not configured for this church."},
+            status=400,
+        )
+
+    guest.status = not_planted
+    guest.save(update_fields=["status", "updated_at"])
+
+    return JsonResponse({
+        "ok": True,
+        "status_name": not_planted.name,
+        "status_color": not_planted.color,
+    })
+
+
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from .models import Review
+from notifications.utils import user_full_name
+
+@login_required
+@require_POST
+def submit_review(request, guest_id, role):
+    """
+    Submit a review for a guest.
+    Signals handle notifications automatically.
+    Redirects back to guest list.
+    """
+    guest = get_object_or_404(GuestEntry, id=guest_id)
+    parent_id = request.POST.get("parent_id")
+    parent = Review.objects.filter(id=parent_id).first() if parent_id else None
+
+    Review.objects.create(
+        guest=guest,
+        reviewer=request.user,
+        role=role,
+        comment=request.POST.get("comment"),
+        parent=parent
+    )
+
+    return redirect("guests:guest_list")
+
+
+
+
+
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from .models import Review
+from guests.models import GuestEntry
+from notifications.models import Notification
+
+@login_required
+def mark_reviews_read(request, guest_id):
+    """
+    Mark all unread reviews for the current user on a given guest as read,
+    and also mark the related notifications as read.
+    Returns JSON with counts for updating UI dynamically.
+    """
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "Invalid request method"}, status=400)
+
+    guest = get_object_or_404(GuestEntry, id=guest_id)
+
+    # Only unread reviews for this user, optionally excluding self-authored reviews
+    unread_reviews = guest.reviews.filter(is_read=False).exclude(reviewer=request.user)
+    reviews_marked = unread_reviews.update(is_read=True)
+
+    # Mark notifications corresponding to these reviews as read
+    notif_qs = Notification.objects.filter(
+        user=request.user,
+        link__icontains=f"guest/{guest_id}/review",  # adjust to match your review URL pattern
+        is_read=False
+    )
+    notifs_marked = notif_qs.update(is_read=True)
+
+    return JsonResponse({
+        "status": "success",
+        "reviews_marked": reviews_marked,
+        "notifications_marked": notifs_marked
+    })
+
+
 def import_guests_csv(request):
     church = _get_church(request)
     if not church:

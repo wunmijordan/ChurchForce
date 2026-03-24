@@ -159,13 +159,17 @@ class Church(TenantBaseModel):
 
 
 def default_campus_growth_stages():
-    return [
-        "cell",
-        "satellite",
-        "daughter",
-        "regional",
-        "headquarters",
-    ]
+    """
+    Structured campus growth config.
+    enabled: whether the feature is shown in the UI.
+    stages: ordered list of {name, description} dicts.
+    """
+    return {
+        "enabled": True,
+        "stages": [
+            {"name": "Fellowship Center", "description": "The base local congregation.", "order": 1},
+        ],
+    }
 
 class ChurchSetting(models.Model):
     """
@@ -292,6 +296,32 @@ class ChurchSetting(models.Model):
     enable_welcome_screen = models.BooleanField(
         default=True,
         help_text="Show the welcome/quote screen after login before entering the dashboard."
+    )
+
+    # -- LMS & onboarding config (Tab 3) ------------------------------------
+    # Stored as JSON so new keys can be added without migrations.
+    # Keys mirror LMSSettingsForm.LMS_CONFIG_FIELDS.
+    lms_config = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            "LMS pipeline integration settings. "
+            "Keys: induction_course_type, default_passing_score, "
+            "promotion_mode, promotion_approval_role, "
+            "allow_retakes_default, max_retakes_default, "
+            "notify_unit_head_on_completion, notify_admin_on_completion."
+        ),
+    )
+
+    # -- Workforce config (Tab 4) --------------------------------------------
+    # Keys mirror WorkforceSettingsForm.WORKFORCE_CONFIG_FIELDS.
+    workforce_config = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            "Workforce pipeline settings. "
+            "Keys: default_workforce_stage, absence_flag_threshold."
+        ),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

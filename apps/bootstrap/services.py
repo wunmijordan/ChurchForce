@@ -261,14 +261,41 @@ def apply_template_to_church(template, church, *, admin_user=None, admin_member=
         unit_map[unit.name] = obj
 
     # ── Workforce stages ──────────────────────────────────────────────
+    # "Inductee" is always seeded as the locked default stage.
+    # It is auto-assigned when a trainee is promoted to WorkforceMember.
+    # Church admins cannot rename or delete it, but can add stages above it.
+    WorkforceStage.raw_objects.get_or_create(
+        church=church,
+        name="Inductee",
+        defaults={
+            "order": 0,
+            "is_default": True,
+            "is_locked": True,
+            "description": "Auto-assigned on promotion from Trainee. Church admin can add stages above this.",
+            "is_active": True,
+        },
+    )
     for stage in template.workforce_stages.all():
         WorkforceStage.raw_objects.get_or_create(
             church=church,
             name=stage.name,
-            defaults={"order": stage.order, "is_active": True},
+            defaults={"order": stage.order + 1, "is_active": True},
         )
 
     # ── Workforce roles ───────────────────────────────────────────────
+    # "Member" is always seeded as the locked default role.
+    # Every WorkforceMember has this role. Admins can add more.
+    WorkforceRole.raw_objects.get_or_create(
+        church=church,
+        name="Member",
+        defaults={
+            "order": 0,
+            "is_default": True,
+            "is_locked": True,
+            "is_leadership": False,
+            "is_active": True,
+        },
+    )
     for role in template.workforce_roles.all():
         WorkforceRole.raw_objects.get_or_create(
             church=church,
@@ -276,7 +303,7 @@ def apply_template_to_church(template, church, *, admin_user=None, admin_member=
             defaults={
                 "permissions": role.permissions,
                 "is_leadership": role.is_leadership,
-                "order": role.order,
+                "order": role.order + 1,
                 "is_active": True,
             },
         )
@@ -464,6 +491,8 @@ def apply_template_to_church(template, church, *, admin_user=None, admin_member=
                 workforce_member=wf_member,
                 defaults={"is_active": True},
             )
+
+            
 def seed_church(church, *, admin_user=None):
     """
     Wrapper for the reset script to apply the default template 

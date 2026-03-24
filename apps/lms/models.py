@@ -32,6 +32,7 @@ class LMSCourse(ChurchOwnedModel):
     COURSE_TYPE_CHOICES = [
         ("induction",     "Member Induction"),
         ("unit_training", "Unit Training"),
+        ("workforce",     "Workforce-wide Training"),
         ("disciplinary",  "Disciplinary Program"),
     ]
     DELIVERY_MODE_CHOICES = [

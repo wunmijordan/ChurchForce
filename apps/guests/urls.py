@@ -11,13 +11,13 @@ urlpatterns = [
     path("<int:guest_id>/detail/",            views.guest_detail_api,    name="guest_detail_api"),
 
     # ── Status & assignment ───────────────────────────────────────────
-    #path("status/<int:pk>/",                  views.update_guest_status, name="update_guest_status"),
-    #path("<int:guest_id>/status/<str:status_key>/", views.update_status_view, name="update_status"),
+    # Pipeline advances automatically. Only Not-Planted can be set manually.
+    path("<int:guest_id>/mark-not-planted/",  views.mark_not_planted,    name="mark_not_planted"),
     path("<int:guest_id>/reassign/",          views.reassign_guest,      name="reassign_guest"),
 
     # ── Reviews ───────────────────────────────────────────────────────
-    #path("reviews/<int:guest_id>/<str:role>/", views.submit_review,     name="submit_review"),
-    #path("<int:guest_id>/reviews/read/",      views.mark_reviews_read,  name="mark_reviews_read"),
+    path("reviews/<int:guest_id>/<str:role>/", views.submit_review,     name="submit_review"),
+    path("<int:guest_id>/reviews/read/",      views.mark_reviews_read,  name="mark_reviews_read"),
 
     # ── Follow-up reports ─────────────────────────────────────────────
     path("<int:guest_id>/report/",            views.followup_report_page, name="followup_report_page"),

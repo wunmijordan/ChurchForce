@@ -1,37 +1,33 @@
+import json
 from django import forms
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 
 from accounts.models import CustomUser, ChurchMember
-from units.models import ChurchUnit, UnitMembership
-from workforce.models import WorkforceMember, WorkforceRole, WorkforceMembershipRole
+from workforce.models import (
+    WorkforceRole,
+    WorkforceMember,
+    WorkforceMembershipRole,
+    WorkforceStage,
+)
+from units.models import (
+    ChurchUnit,
+    UnitMembership,
+)
 from permissions.models import UnitRole, MembershipRole
+from .member_service import generate_temp_password
 
-from accounts.member_service import generate_temp_password
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Shared __init__ mixin
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+# Church Form Mixin
+# ─────────────────────────────────────────────────────────────
 
 class ChurchFormMixin:
     """
-    Shared initialisation for forms that need church-scoped querysets.
-
-    Subclasses must call super().__init__(*args, **kwargs) after popping
-    church and current_user from kwargs, which this mixin handles.
-
-    Provides:
-        self.church         — Church instance
-        self.current_user   — the logged-in admin performing the action
+    Provides church-scoped querysets and template data.
     """
 
     def _init_church_fields(self):
-        """
-        Scope workforce_roles, unit_roles, and units querysets to self.church.
-        Uses raw_objects so this works correctly outside of a request context
-        (management commands, tests) as well as during normal requests.
-        """
         if not self.church:
             return
 
@@ -41,143 +37,144 @@ class ChurchFormMixin:
             .order_by("order", "name")
         )
 
-        self.fields["unit_roles"].queryset = (
+        # exposed to template JS
+        self.available_units = (
+            ChurchUnit.raw_objects
+            .filter(church=self.church, is_active=True)
+            .order_by("name")
+        )
+
+        self.available_unit_roles = (
             UnitRole.raw_objects
             .filter(church=self.church, is_active=True)
             .select_related("unit")
             .order_by("unit__name", "order", "name")
         )
 
-        self.fields["units"].queryset = (
-            ChurchUnit.raw_objects
-            .filter(church=self.church, is_active=True)
-            .order_by("name")
-        )
 
-    def _normalise_select_fields(self, field_names):
-        """Ensure select fields have a blank first choice."""
-        for field_name in field_names:
-            if field_name not in self.fields:
-                continue
-            choices = list(self.fields[field_name].choices)
-            if choices and choices[0][0] != "":
-                self.fields[field_name].choices = [("", "")] + choices
-            elif choices:
-                choices[0] = ("", "")
-                self.fields[field_name].choices = choices
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Creation form
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+# Creation Form
+# ─────────────────────────────────────────────────────────────
 
 class CustomUserCreationForm(ChurchFormMixin, forms.ModelForm):
-    """
-    Admin-driven member creation form.
-
-    Password behaviour:
-        - If admin fills in password → used as-is (they share it verbally).
-        - If admin leaves password blank → system generates a temp password.
-        - Either way, the generated/entered password is stored on
-          self.generated_password after save() so the view can display it once.
-    """
 
     username = forms.CharField(
-        label="Username",
         required=False,
-        help_text="Leave blank to auto-generate from full name.",
-        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Auto-generated if blank"}),
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+        help_text="Leave blank to auto-generate.",
     )
+
     password = forms.CharField(
-        label="Password",
         required=False,
-        help_text="Leave blank to auto-generate a temporary password.",
-        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "Leave blank to auto-generate"}),
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
     )
+
     confirm_password = forms.CharField(
-        label="Confirm password",
         required=False,
-        widget=forms.PasswordInput(attrs={"class": "form-control", "placeholder": "Confirm password"}),
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
     )
+
     workforce_roles = forms.ModelMultipleChoiceField(
         queryset=WorkforceRole.objects.none(),
         required=False,
         widget=forms.SelectMultiple(attrs={"class": "form-select"}),
-        label="Workforce roles",
     )
-    unit_roles = forms.ModelMultipleChoiceField(
-        queryset=UnitRole.objects.none(),
+
+    # JSON assignment payloads
+    unit_assignments = forms.CharField(
         required=False,
-        widget=forms.SelectMultiple(attrs={"class": "form-select"}),
-        label="Unit roles",
+        widget=forms.HiddenInput(),
     )
-    units = forms.ModelMultipleChoiceField(
-        queryset=ChurchUnit.objects.none(),
-        required=False,
-        widget=forms.SelectMultiple(attrs={"class": "form-select"}),
-        label="Unit memberships",
-    )
-    is_active = forms.BooleanField(required=False, label="Active")
-    is_superuser = forms.BooleanField(required=False, label="Superuser")
+
+    is_active = forms.BooleanField(required=False, initial=True)
+    is_probation = forms.BooleanField(required=False)
+    is_superuser = forms.BooleanField(required=False)
 
     class Meta:
         model = CustomUser
         fields = [
-            "image", "title", "full_name", "email", "username",
-            "password", "confirm_password", "phone_number", "date_of_birth",
-            "address", "marital_status",
-            "workforce_roles", "units", "unit_roles",
-            "is_active", "is_superuser",
+            "image",
+            "title",
+            "full_name",
+            "email",
+            "username",
+            "password",
+            "confirm_password",
+            "phone_number",
+            "date_of_birth",
+            "address",
+            "marital_status",
+            "workforce_roles",
+            "unit_assignments",
+            "is_active",
+            "is_probation",
+            "is_superuser",
         ]
+
         widgets = {
-            "image":          forms.ClearableFileInput(attrs={"class": "form-control"}),
-            "title":          forms.Select(attrs={"class": "form-select"}),
-            "full_name":      forms.TextInput(attrs={"class": "form-control", "placeholder": "John Doe"}),
-            "email":          forms.EmailInput(attrs={"class": "form-control", "placeholder": "john@example.com"}),
-            "phone_number":   forms.TextInput(attrs={"class": "form-control", "placeholder": "08012345678"}),
-            "date_of_birth":  forms.DateInput(attrs={
-                "type": "text", "class": "form-control",
-                "placeholder": "January 01", "autocomplete": "off",
-            }),
+            "title": forms.Select(attrs={"class": "form-select"}),
+            "full_name": forms.TextInput(attrs={"class": "form-control"}),
+            "email": forms.EmailInput(attrs={"class": "form-control"}),
+            "phone_number": forms.TextInput(attrs={"class": "form-control"}),
             "marital_status": forms.Select(attrs={"class": "form-select"}),
-            "address":        forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "address": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
         }
+
+    # ─────────────────────────────────────────────────────────
 
     def __init__(self, *args, **kwargs):
         self.current_user = kwargs.pop("current_user", None)
         self.church = kwargs.pop("church", None)
+
         super().__init__(*args, **kwargs)
 
         self._init_church_fields()
-        self._normalise_select_fields(["title", "marital_status"])
 
-        if self.current_user and not self.current_user.is_superuser:
+        # hide superuser toggle
+        if not (self.current_user and self.current_user.is_superuser):
             self.fields.pop("is_superuser", None)
+
+    # ─────────────────────────────────────────────────────────
 
     def clean(self):
         cleaned = super().clean()
+
         p1 = cleaned.get("password")
         p2 = cleaned.get("confirm_password")
 
-        # Only validate if admin explicitly entered a password
         if p1 or p2:
             if p1 != p2:
                 self.add_error("confirm_password", "Passwords do not match.")
 
+        # parse assignments JSON
+        try:
+            cleaned["unit_assignments"] = json.loads(
+                cleaned.get("unit_assignments") or "[]"
+            )
+        except Exception:
+            raise ValidationError("Invalid unit assignment data.")
+
         return cleaned
 
+    # ─────────────────────────────────────────────────────────
+
     def save(self, commit=True):
+
         user = super().save(commit=False)
 
-        # ── Resolve password ──────────────────────────────────────────
+        # password
         password = self.cleaned_data.get("password") or generate_temp_password()
-        self.generated_password = password      # expose to view for one-time display
+        self.generated_password = password
         user.password = make_password(password)
 
-        # ── Resolve username ──────────────────────────────────────────
+        # username
         if not user.username:
             from accounts.member_service import generate_username
-            user.username = generate_username(user.full_name or "member", self.church.slug)
+            user.username = generate_username(
+                user.full_name or "member",
+                self.church.slug,
+            )
+
         self.generated_username = user.username
 
         if not commit:
@@ -185,63 +182,69 @@ class CustomUserCreationForm(ChurchFormMixin, forms.ModelForm):
 
         user.save()
 
-        if not self.church:
-            return user
-
-        # ── ChurchMember ──────────────────────────────────────────────
+        # ───────────────── ChurchMember
         church_member, _ = ChurchMember.raw_objects.get_or_create(
             church=self.church,
             user=user,
             defaults={"is_active": True},
         )
 
-        # ── WorkforceMember ───────────────────────────────────────────
-        # Requires a stage — fall back to the first available one
-        from workforce.models import WorkforceStage
+        # ───────────────── WorkforceMember
         stage = WorkforceStage.raw_objects.filter(
             church=self.church,
             is_active=True,
         ).order_by("order").first()
 
-        if stage:
-            wf, _ = WorkforceMember.raw_objects.get_or_create(
-                church=self.church,
-                member=church_member,
-                defaults={"stage": stage, "is_active": True},
-            )
-            # Ensure stage is set even if record already existed without one
-            if not wf.stage_id:
-                wf.stage = stage
-                wf.save(update_fields=["stage"])
+        wf, _ = WorkforceMember.raw_objects.get_or_create(
+            church=self.church,
+            member=church_member,
+            defaults={"stage": stage, "is_active": True},
+        )
 
-            # ── Workforce roles ───────────────────────────────────────
-            wf.roles.all().delete()
-            for role in self.cleaned_data.get("workforce_roles", []):
-                WorkforceMembershipRole.raw_objects.create(
+        if stage and not wf.stage_id:
+            wf.stage = stage
+            wf.save(update_fields=["stage"])
+
+        # workforce roles
+        wf.roles.all().delete()
+
+        for role in self.cleaned_data.get("workforce_roles", []):
+            WorkforceMembershipRole.raw_objects.create(
+                church=self.church,
+                workforce_member=wf,
+                role=role,
+            )
+
+        # ───────────────── Unit Assignments
+        wf.unit_memberships.all().delete()
+
+        assignments = self.cleaned_data.get("unit_assignments", [])
+
+        for row in assignments:
+            unit_id = row.get("unit")
+            role_ids = row.get("roles", [])
+
+            if not unit_id:
+                continue
+
+            membership = UnitMembership.raw_objects.create(
+                church=self.church,
+                workforce_member=wf,
+                unit_id=unit_id,
+            )
+
+            roles = UnitRole.raw_objects.filter(
+                id__in=role_ids,
+                unit_id=unit_id,
+                church=self.church,
+            )
+
+            for role in roles:
+                MembershipRole.raw_objects.create(
                     church=self.church,
-                    workforce_member=wf,
+                    membership=membership,
                     role=role,
                 )
-
-            # ── Unit memberships ──────────────────────────────────────
-            wf.unit_memberships.all().delete()
-            units = self.cleaned_data.get("units", [])
-            selected_unit_roles = self.cleaned_data.get("unit_roles", [])
-
-            for unit in units:
-                membership = UnitMembership.raw_objects.create(
-                    church=self.church,
-                    workforce_member=wf,
-                    unit=unit,
-                )
-                # Attach only unit roles that belong to this specific unit
-                for role in selected_unit_roles:
-                    if role.unit_id == unit.id:
-                        MembershipRole.raw_objects.create(
-                            church=self.church,
-                            membership=membership,
-                            role=role,
-                        )
 
         return user
 

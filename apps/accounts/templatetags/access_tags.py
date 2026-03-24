@@ -80,3 +80,35 @@ def online_badge(user):
     if getattr(user, "is_online", False):
         return format_html('<span class="badge bg-success-lt">● Online</span>')
     return format_html('<span class="badge bg-secondary-lt text-muted">○ Offline</span>')
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Generic utility filters used in settings templates
+# ─────────────────────────────────────────────────────────────────────────────
+
+@register.filter(name="lookup")
+def lookup(obj, key):
+    """
+    Get a key from a dict or attribute from an object.
+    Used in church_settings.html to access form fields by name dynamically.
+    Usage: {% with fld=form|lookup:"field_name" %}{{ fld }}{% endwith %}
+    """
+    if obj is None:
+        return None
+    if hasattr(obj, '__getitem__'):
+        try:
+            return obj[key]
+        except (KeyError, TypeError):
+            pass
+    return getattr(obj, key, None)
+
+
+@register.filter(name="split")
+def split(value, delimiter=","):
+    """
+    Split a string by a delimiter.
+    Usage: {% for item in "a,b,c"|split:"," %}
+    """
+    if not value:
+        return []
+    return [v.strip() for v in str(value).split(delimiter) if v.strip()]
