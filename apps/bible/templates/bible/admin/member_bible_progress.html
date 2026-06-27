@@ -1,0 +1,133 @@
+{% extends base_template %}
+{% load static %}
+{% block title %}{{ page_title }} — {{ church.name }}{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+  <div class="page-header d-print-none">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'bible:dashboard' %}">Bible</a></li>
+            <li class="breadcrumb-item active">Member Progress</li>
+          </ol>
+          <h2 class="page-title">📖 {{ page_title }}</h2>
+        </div>
+        <div class="col-auto ms-auto">
+          <a href="{% url 'bible:dashboard' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:12px;">← Bible Dashboard</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <div class="container-xl">
+
+      {# ── Member identity card ── #}
+      <div class="card mb-4" style="border-radius:24px;background:linear-gradient(135deg,#1e293b,#0f172a);box-shadow:0 4px 8px #000000d2;">
+        <div class="card-body p-4 d-flex align-items-center gap-4">
+          {% if target_member.photo %}
+          <img src="{{ target_member.photo.url }}" class="rounded-circle" width="64" height="64" style="object-fit:cover;box-shadow:0 2px 8px #000c;">
+          {% else %}
+          <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white" style="width:64px;height:64px;background:#334155;font-size:1.4rem;">
+            {{ target_member.user.first_name.0|default:"?" }}
+          </div>
+          {% endif %}
+          <div>
+            <div class="fw-bold text-white fs-4">{{ target_member }}</div>
+            <div class="text-muted small">{{ target_member.user.email }}</div>
+            {% if target_member.unit %}<div class="text-muted small">{{ target_member.unit.name }}</div>{% endif %}
+          </div>
+          <div class="ms-auto d-flex flex-wrap gap-3">
+            <div class="text-center">
+              <div class="fw-bold text-warning fs-3">{{ stats.total_readings }}</div>
+              <div class="text-muted small">Readings</div>
+            </div>
+            <div class="text-center">
+              <div class="fw-bold fs-3" style="color:#f97316;">{{ stats.current_streak }}🔥</div>
+              <div class="text-muted small">Streak</div>
+            </div>
+            <div class="text-center">
+              <div class="fw-bold text-info fs-3">{{ stats.memory_verses_completed }}</div>
+              <div class="text-muted small">Verses Memorised</div>
+            </div>
+            <div class="text-center">
+              <div class="fw-bold fs-3" style="color:#14b8a6;">{{ stats.studies_completed }}</div>
+              <div class="text-muted small">Studies Done</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+
+        {# ── Per-plan progress ── #}
+        <div class="col-12 col-lg-8">
+          <div class="card" style="border-radius:24px;box-shadow:0 4px 8px #000000d2;">
+            <div class="card-header py-3">
+              <h3 class="card-title mb-0">📅 Reading Plan Progress</h3>
+            </div>
+            <div class="card-body p-0">
+              {% for pp in plan_progress %}
+              <div class="p-4 {% if not forloop.last %}border-bottom{% endif %}" style="border-color:#1e293b !important;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <div>
+                    <div class="fw-semibold text-white">{{ pp.plan.title }}</div>
+                    <div class="text-muted small">{{ pp.plan.get_frequency_display }} · {{ pp.plan.translation }}</div>
+                  </div>
+                  <span class="badge {% if pp.pct == 100 %}bg-success{% elif pp.pct >= 50 %}bg-blue-lt{% else %}bg-secondary-lt{% endif %} fs-6">
+                    {{ pp.pct }}%
+                  </span>
+                </div>
+                <div class="progress mb-2" style="height:8px;border-radius:8px;background:#1e293b;">
+                  <div class="progress-bar {% if pp.pct == 100 %}bg-success{% else %}bg-warning{% endif %}"
+                       style="width:{{ pp.pct }}%;border-radius:8px;"></div>
+                </div>
+                <div class="d-flex gap-4 text-muted small">
+                  <span>{{ pp.done }} / {{ pp.total }} readings completed</span>
+                  {% if pp.streak %}
+                  <span>🔥 Current streak: <strong class="text-warning">{{ pp.streak }}</strong></span>
+                  <span>🏆 Best: <strong class="text-info">{{ pp.longest }}</strong></span>
+                  {% endif %}
+                </div>
+                {% if pp.pct == 100 %}
+                <span class="badge bg-success-lt mt-2">✓ Plan Complete</span>
+                {% endif %}
+              </div>
+              {% empty %}
+              <div class="p-4 text-muted text-center">No active reading plans assigned.</div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        {# ── Badge awards ── #}
+        <div class="col-12 col-lg-4">
+          <div class="card" style="border-radius:24px;box-shadow:0 4px 8px #000000d2;">
+            <div class="card-header py-3">
+              <h3 class="card-title mb-0">🏅 Earned Badges</h3>
+            </div>
+            <div class="card-body">
+              {% if badges %}
+              <div class="d-flex flex-wrap gap-2">
+                {% for award in badges %}
+                <div class="d-flex flex-column align-items-center text-center p-2 rounded" style="background:{{ award.badge.color_hex }}18;border:1px solid {{ award.badge.color_hex }}44;min-width:80px;">
+                  <span style="font-size:1.8rem;">{{ award.badge.icon_emoji }}</span>
+                  <div class="fw-semibold text-white" style="font-size:.75rem;margin-top:4px;">{{ award.badge.name }}</div>
+                  <div class="text-muted" style="font-size:.65rem;">{{ award.awarded_at|date:"d M Y" }}</div>
+                </div>
+                {% endfor %}
+              </div>
+              {% else %}
+              <div class="text-muted text-center py-3">No badges earned yet.</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{# Evangelism Research Widget — Guest Management Unit Heads/Admins only #}
+{% if evangelism_report %}
+<div class="card bg-dark border-secondary mb-4" style="border-radius:14px;">
+  <div class="card-header border-secondary d-flex align-items-center gap-2">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <span class="fw-semibold small">🗺️ Evangelism Research Brief</span>
+    <span class="ms-auto badge" style="background:#22c55e22;color:#4ade80;font-size:.6rem;">AI · Missionary Intelligence</span>
+    <button class="btn btn-xs btn-ghost text-muted" data-bs-toggle="collapse" data-bs-target="#researchBody">Toggle</button>
+  </div>
+  <div class="collapse show" id="researchBody">
+    <div class="card-body" style="font-size:.84rem;line-height:1.7;white-space:pre-wrap;color:#cbd5e1;">{{ evangelism_report }}</div>
+  </div>
+</div>
+{% endif %}

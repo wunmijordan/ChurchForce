@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 # Birthday check functions
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def send_guest_birthday_notifications():
     """
     Find all guests across all active churches whose birthday is today
@@ -78,10 +79,15 @@ def send_guest_birthday_notifications():
             if guest.phone_number:
                 try:
                     from messaging.sms import send_sms
-                    guest_name = f"{guest.title} {guest.full_name}".strip() if guest.title else guest.full_name
+
+                    guest_name = (
+                        f"{guest.title} {guest.full_name}".strip()
+                        if guest.title
+                        else guest.full_name
+                    )
                     send_sms(
                         phone=guest.phone_number,
-                        message=f"Happy birthday, {guest_name}! 🎂 Wishing you a wonderful day.",
+                        message=_ai_guest_birthday_msg(guest, church),
                         church=church,
                         category="birthday",
                         recipient_name=guest.full_name,
@@ -136,7 +142,7 @@ def send_member_birthday_notifications():
                 title="🎂 Happy Birthday!",
                 description=(
                     f"Wishing you a wonderful birthday, {user.full_name or user.username}! "
-                    f"The team celebrates you today."
+                    f"We celebrate you today."
                 ),
                 is_active=True,
             )
@@ -146,10 +152,15 @@ def send_member_birthday_notifications():
             if user.phone_number:
                 try:
                     from messaging.sms import send_sms
-                    member_name = f"{user.title} {user.full_name}".strip() if user.title else (user.full_name or user.username)
+
+                    member_name = (
+                        f"{user.title} {user.full_name}".strip()
+                        if user.title
+                        else (user.full_name or user.username)
+                    )
                     send_sms(
                         phone=user.phone_number,
-                        message=f"Happy birthday, {member_name}! 🎂 The team celebrates you today.",
+                        message=f"Happy birthday, {member_name}! 🎂 We celebrate you today.",
                         church=church,
                         category="birthday",
                         recipient_name=user.full_name or user.username,
@@ -163,11 +174,12 @@ def send_member_birthday_notifications():
 
 def run_birthday_notifications():
     """Single entry point called by the scheduler."""
-    guest_count  = send_guest_birthday_notifications()
+    guest_count = send_guest_birthday_notifications()
     member_count = send_member_birthday_notifications()
     logger.info(
         "Birthday notifications complete — guests: %d, members: %d",
-        guest_count, member_count,
+        guest_count,
+        member_count,
     )
     return guest_count + member_count
 
@@ -175,6 +187,7 @@ def run_birthday_notifications():
 # ─────────────────────────────────────────────────────────────────────────────
 # Job registration — called by core/scheduler.py:start()
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def register_birthday_jobs(scheduler):
     """Register birthday notification job into the shared scheduler."""
@@ -188,3 +201,66 @@ def register_birthday_jobs(scheduler):
         replace_existing=True,
     )
     print("✅ [Scheduler] Birthday jobs registered.")
+
+
+# ── AI birthday message helpers ───────────────────────────────────────────────
+
+
+def _church_values(church):
+    settings_obj = getattr(church, "settings", None)
+    return getattr(settings_obj, "core_values", []) or []
+
+
+def _recent_sermon_summary(church):
+    """Return a brief sermon theme summary from recent events, or ''."""
+    try:
+        from services.models import Event
+        from django.utils import timezone
+
+        cutoff = timezone.localdate() - timezone.timedelta(days=30)
+        events = list(
+            Event.raw_objects.filter(
+                church=church,
+                event_type__in=["Service", "Training"],
+                date__gte=cutoff,
+            )
+            .order_by("-date")
+            .values("name", "date", "unit__name")[:5]
+        )
+        if not events:
+            return ""
+        from core.ai_skills import sermon_summary_for_period
+
+        return sermon_summary_for_period(events) or ""
+    except Exception:
+        return ""
+
+
+def _ai_guest_birthday_msg(guest, church):
+    try:
+        from core.ai_skills import birthday_message_guest
+
+        status_slug = guest.status.slug if guest.status else "new-guest"
+        return birthday_message_guest(
+            guest_name=guest.full_name,
+            guest_status=status_slug,
+            church_name=church.name,
+        )
+    except Exception:
+        return f"Happy birthday, {guest.full_name}! 🎂 Wishing you a wonderful day."
+
+
+def _ai_member_birthday_msg(member, church, unit_name=""):
+    try:
+        from core.ai_skills import birthday_message_workforce
+
+        return birthday_message_workforce(
+            member_name=member.user.get_full_name() or member.user.username,
+            unit_name=unit_name or "your unit",
+            church_name=church.name,
+            church_values=_church_values(church),
+            sermon_summary=_recent_sermon_summary(church),
+        )
+    except Exception:
+        name = member.user.get_full_name() or member.user.username
+        return f"Happy birthday, {name}! 🎉 Thank you for your faithful service."

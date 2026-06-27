@@ -1,0 +1,36 @@
+{% extends base_template %}
+{% load static access_tags %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}<div class="container-xl py-4" style="max-width:600px;">
+  <h2 class="fw-bold mb-4">{{ page_title }}</h2>
+  <form method="post" class="card bg-dark border-secondary p-4" style="border-radius:12px;">
+    {% csrf_token %}
+    <div class="mb-3"><label class="form-label text-muted small">Title *</label>
+      <input name="title" class="form-control bg-dark border-secondary text-white" value="{{ pres.title|default:'' }}" required></div>
+    <div class="mb-3"><label class="form-label text-muted small">Event</label>
+      <select name="event_id" class="form-select bg-dark border-secondary text-white">
+        <option value="">— None —</option>
+        {% for e in events %}<option value="{{ e.pk }}" {% if pres and pres.event_id == e.pk %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+      </select></div>
+    <div class="mb-3"><label class="form-label text-muted small">Media Unit</label>
+      <select name="unit_id" class="form-select bg-dark border-secondary text-white">
+        <option value="">— None —</option>
+        {% for u in units %}<option value="{{ u.pk }}" {% if pres and pres.unit_id == u.pk %}selected{% endif %}>{{ u.name }}</option>{% endfor %}
+      </select></div>
+    <div class="mb-3"><label class="form-label text-muted small">Linked Setlist (auto-imports lyrics)</label>
+      <select name="setlist_id" class="form-select bg-dark border-secondary text-white">
+        <option value="">— None —</option>
+        {% for sl in setlists %}<option value="{{ sl.pk }}" {% if pres and pres.setlist_id == sl.pk %}selected{% endif %}>{{ sl.title }}</option>{% endfor %}
+      </select></div>
+    <div class="mb-4"><label class="form-label text-muted small">Default Slide Template</label>
+      <select name="template_id" class="form-select bg-dark border-secondary text-white">
+        <option value="">— None —</option>
+        {% for t in templates %}<option value="{{ t.pk }}" {% if pres and pres.default_template_id == t.pk %}selected{% endif %}>{{ t.name }}</option>{% endfor %}
+      </select></div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary">Save</button>
+      {% if pres %}<a href="{% url 'media:presentation_detail' uid=pres.uid %}" class="btn btn-outline-secondary">Cancel</a>
+      {% else %}<a href="{% url 'media:presentation_list' %}" class="btn btn-outline-secondary">Cancel</a>{% endif %}
+    </div>
+  </form>
+</div>{% endblock %}

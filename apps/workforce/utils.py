@@ -1,3 +1,5 @@
+from collections import Counter
+
 from django.contrib.auth.models import Group
 import requests, mimetypes, os, re, urllib.parse, urllib
 from bs4 import BeautifulSoup
@@ -5,13 +7,25 @@ from accounts.models import CustomUser, ChurchMember
 from guests.models import GuestEntry
 from core.utils.colors import resolve_color
 
+
 def get_user_color(user_id):
     return resolve_color(f"user:{user_id}", variant="hex")
+
+
 from django.db.models.fields.files import FieldFile
 from django.core.files.storage import default_storage
 from django.utils import timezone
 from services.models import Event
-from .models import AttendanceRecord, PersonalReminder, UserActivity, ChatMessage, ClockRecord, WorkforceMember
+from .models import (
+    AttendanceRecord,
+    PersonalReminder,
+    UserActivity,
+    ChatMessage,
+    ChatMessageReaction,
+    ClockRecord,
+    WorkforceMember,
+    WorkforceTraineeProfile,
+)
 from django.db.models import Q
 from django.conf import settings
 from geopy.distance import distance
@@ -19,6 +33,7 @@ from django.core.exceptions import ValidationError
 from cloudinary.utils import cloudinary_url
 from units.models import ChurchUnit, UnitMembership
 from permissions.services.resolver import PermissionResolver
+from tenants.time_utils import format_time_value
 
 
 import requests
@@ -31,7 +46,11 @@ YOUTUBE_OEMBED = "https://www.youtube.com/oembed?format=json&url="
 def _get_church(user):
     if not user or not user.is_authenticated:
         return None
-    membership = ChurchMember.raw_objects.filter(user=user, is_active=True).select_related("church").first()
+    membership = (
+        ChurchMember.raw_objects.filter(user=user, is_active=True)
+        .select_related("church")
+        .first()
+    )
     return membership.church if membership else None
 
 
@@ -46,6 +65,7 @@ def _can(perms, key, unit=None):
 
 
 # -------------------- Link Previews --------------------
+
 
 def is_youtube(url):
     host = urlparse(url).netloc.lower()
@@ -137,7 +157,9 @@ def get_link_preview(url):
         soup = BeautifulSoup(resp.text, "html.parser")
 
         title_tag = soup.find("meta", property="og:title") or soup.find("title")
-        desc_tag = soup.find("meta", property="og:description") or soup.find("meta", attrs={"name": "description"})
+        desc_tag = soup.find("meta", property="og:description") or soup.find(
+            "meta", attrs={"name": "description"}
+        )
         image_tag = soup.find("meta", property="og:image")
 
         title = (
@@ -149,8 +171,14 @@ def get_link_preview(url):
         return {
             "url": url,
             "title": title,
-            "description": desc_tag["content"] if desc_tag and desc_tag.has_attr("content") else "",
-            "image": image_tag["content"] if image_tag and image_tag.has_attr("content") else "",
+            "description": (
+                desc_tag["content"] if desc_tag and desc_tag.has_attr("content") else ""
+            ),
+            "image": (
+                image_tag["content"]
+                if image_tag and image_tag.has_attr("content")
+                else ""
+            ),
         }
 
     except:
@@ -164,17 +192,24 @@ def get_link_preview(url):
 
 # -------------------- Mentions & Chat Serialization --------------------
 
+
 def build_mention_helpers(church):
     """Precompute mention_map + regex for mentions, scoped by church."""
     if not church:
         return {}, None
 
-    users = list(CustomUser.objects.filter(church_memberships__church=church).distinct())
+    users = list(
+        CustomUser.objects.filter(church_memberships__church=church).distinct()
+    )
     mention_map = {}
     for u in users:
         display = f"@{ (u.title + ' ') if getattr(u, 'title', None) else '' }{ (u.full_name or u.username) }".strip()
         mention_map[display] = u
-    regex = re.compile(r"(" + "|".join(map(re.escape, mention_map.keys())) + r")") if mention_map else None
+    regex = (
+        re.compile(r"(" + "|".join(map(re.escape, mention_map.keys())) + r")")
+        if mention_map
+        else None
+    )
     return mention_map, regex
 
 
@@ -185,40 +220,111 @@ def cloudinary_url(public_id, resource_type):
     return f"https://res.cloudinary.com/{cloud}/{rtype}/upload/{public_id}"
 
 
+CHAT_REACTION_ALLOWED_KEYS = frozenset(
+    {
+        "like",
+        "love",
+        "fire",
+        "pray",
+        "clap",
+        "amen",
+        "bless",
+        "inspired",
+        "plugged",
+        "peace",
+        "thanks",
+        "joy",
+        "wow",
+        "blessed",
+        "bible",
+        "faith",
+        "hope",
+        "following",
+        "checkmate",
+    }
+)
 
-def serialize_message(m, mention_map=None, mention_regex=None):
-    """Unified serializer for both WebSocket + Views."""
+
+def build_chat_message_reaction_fields(message, viewer_member=None):
+    """reaction_summary (top 3 keys), total count, and current viewer's reaction."""
+    if hasattr(message, "_prefetched_objects_cache") and "reactions" in getattr(
+        message, "_prefetched_objects_cache", {}
+    ):
+        rows = list(message.reactions.all())
+    else:
+        rows = list(
+            ChatMessageReaction.raw_objects.filter(message=message).select_related(
+                "member"
+            )
+        )
+    counts = Counter(r.reaction for r in rows)
+    total = len(rows)
+    summary = dict(counts.most_common(3))
+    my = None
+    if viewer_member is not None:
+        vid = getattr(viewer_member, "id", None)
+        if vid is not None:
+            for r in rows:
+                if r.member_id == vid:
+                    my = r.reaction
+                    break
+    return summary, total, my
+
+
+def serialize_message(m, mention_map=None, mention_regex=None, viewer_member=None):
+    """Unified serializer for both WebSocket + Views.
+
+    ChatMessage.sender is now a ChurchMember FK, so we go
+    sender.user to reach the CustomUser — no more UnitMembership chain.
+    """
     mentions_payload = []
     if mention_regex and m.message:
         found = set(mention_regex.findall(m.message))
         for token in found:
             u = mention_map.get(token)
             if u:
-                mentions_payload.append({
-                    "id": u.id,
-                    "username": u.username,
-                    "title": getattr(u, "title", ""),
-                    "name": u.full_name or u.username,
-                    "color": get_user_color(u.id),
-                })
+                mentions_payload.append(
+                    {
+                        "id": u.id,
+                        "username": u.username,
+                        "title": getattr(u, "title", ""),
+                        "name": u.full_name or u.username,
+                        "color": get_user_color(u.id),
+                    }
+                )
 
     guest_payload = None
     if m.guest_card:
-        g = GuestEntry.objects.select_related("assigned_to").get(id=m.guest_card.id)
-        guest_payload = {
-            "id": g.id,
-            "name": g.full_name,
-            "custom_id": g.custom_id,
-            "image": g.picture.url if g.picture else None,
-            "title": g.title,
-            "date_of_visit": g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else "",
-            "assigned_user": {
-                "id": g.assigned_to.id,
-                "title": g.assigned_to.title,
-                "full_name": g.assigned_to.full_name,
-                "image": g.assigned_to.image.url if g.assigned_to.image else None,
-            } if g.assigned_to else None
-        }
+        g = (
+            GuestEntry.raw_objects.select_related("assigned_to", "status")
+            .filter(id=m.guest_card.id)
+            .first()
+        )
+        if g:
+            assigned = None
+            if g.assigned_to:
+                # assigned_to is a ChurchMember; reach user directly
+                au = getattr(g.assigned_to, "user", None)
+                assigned = {
+                    "id": g.assigned_to.id,
+                    "title": getattr(au, "title", "") if au else "",
+                    "full_name": au.full_name if au else "",
+                    "image": au.image.url if (au and au.image) else None,
+                }
+            guest_payload = {
+                "id": g.id,
+                "name": g.full_name,
+                "custom_id": g.custom_id,
+                "image": g.picture.url if g.picture else None,
+                "title": g.title or "",
+                "date_of_visit": (
+                    g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else ""
+                ),
+                "status_color": g.status_color,
+                "status": g.status.name if g.status else "",
+                "phone": g.phone_number or "",
+                "assigned_user": assigned,
+            }
 
     def build_file_payload(file_obj, message):
         """Return a safe, correct, fully self-contained file payload."""
@@ -228,9 +334,8 @@ def serialize_message(m, mention_map=None, mention_regex=None):
         try:
             file_path = str(file_obj).lstrip("/")
 
-            file_name = (
-                message.file_name or 
-                urllib.parse.unquote(os.path.basename(file_path))
+            file_name = message.file_name or urllib.parse.unquote(
+                os.path.basename(file_path)
             )
 
             guessed_mime, _ = mimetypes.guess_type(file_name)
@@ -260,33 +365,70 @@ def serialize_message(m, mention_map=None, mention_regex=None):
 
         except Exception as e:
             import logging
+
             logging.warning("build_file_payload error: %s", e)
+            return None
+
+    def _sender_user(church_member):
+        """ChurchMember → CustomUser, tolerating None gracefully."""
+        try:
+            return church_member.user
+        except Exception:
             return None
 
     parent_payload = None
     if m.parent:
         parent = m.parent
+        pu = _sender_user(parent.sender)
+        if pu:
+            _parent_sender_id = pu.id
+            _parent_sender_title = getattr(pu, "title", "")
+            _parent_sender_name = pu.full_name or pu.username
+        else:
+            _parent_sender_id = parent.sender_id  # ChurchMember pk
+            _parent_sender_title = ""
+            _parent_sender_name = "Unknown"
         parent_payload = {
             "id": parent.id,
-            "sender_id": parent.sender.id,
-            "sender_title": getattr(parent.sender, "title", ""),
-            "sender_name": parent.sender.full_name or parent.sender.username,
-            "sender_color": get_user_color(parent.sender.id),
-            "message": parent.message[:50] if parent.message else "(Attachment)" if parent.file else "(No content)",
-            "guest": {
-                "id": parent.guest_card.id,
-                "name": parent.guest_card.full_name,
-                "title": parent.guest_card.title,
-                "image": parent.guest_card.picture.url if parent.guest_card.picture else None,
-                "date_of_visit": parent.guest_card.date_of_visit.strftime("%Y-%m-%d") if parent.guest_card.date_of_visit else "",
-            } if parent.guest_card else None,
+            "sender_id": _parent_sender_id,
+            "sender_title": _parent_sender_title,
+            "sender_name": _parent_sender_name,
+            "sender_color": get_user_color(_parent_sender_id),
+            "message": (
+                parent.message[:50]
+                if parent.message
+                else "(Attachment)" if parent.file else "(No content)"
+            ),
+            "guest": (
+                {
+                    "id": parent.guest_card.id,
+                    "name": parent.guest_card.full_name,
+                    "title": parent.guest_card.title,
+                    "image": (
+                        parent.guest_card.picture.url
+                        if parent.guest_card.picture
+                        else None
+                    ),
+                    "date_of_visit": (
+                        parent.guest_card.date_of_visit.strftime("%Y-%m-%d")
+                        if parent.guest_card.date_of_visit
+                        else ""
+                    ),
+                }
+                if parent.guest_card
+                else None
+            ),
             "file": build_file_payload(parent.file, parent),
-            "link_preview": {
-                "url": parent.link_url,
-                "title": parent.link_title,
-                "description": parent.link_description,
-                "image": parent.link_image,
-            } if parent.link_url else None,
+            "link_preview": (
+                {
+                    "url": parent.link_url,
+                    "title": parent.link_title,
+                    "description": parent.link_description,
+                    "image": parent.link_image,
+                }
+                if parent.link_url
+                else None
+            ),
         }
 
     file_payload = build_file_payload(m.file, m)
@@ -300,22 +442,39 @@ def serialize_message(m, mention_map=None, mention_regex=None):
             "image": m.link_image,
         }
 
+    # pinned_by is now a ChurchMember FK — resolve via .user
     pinned_by_payload = None
     if getattr(m, "pinned_by", None):
-        pinned_by_payload = {
-            "id": m.pinned_by.id,
-            "name": m.pinned_by.full_name or m.pinned_by.username,
-            "title": getattr(m.pinned_by, "title", ""),
-        }
+        pb_user = _sender_user(m.pinned_by)
+        if pb_user:
+            pinned_by_payload = {
+                "id": pb_user.id,
+                "name": pb_user.full_name or pb_user.username,
+                "title": getattr(pb_user, "title", ""),
+            }
+
+    # sender is a ChurchMember; reach the user directly via sender.user
+    sender_user = _sender_user(m.sender)
+    sender_id_out = sender_user.id if sender_user else m.sender_id
+
+    rx_summary, rx_total, rx_mine = build_chat_message_reaction_fields(
+        m, viewer_member
+    )
 
     return {
         "id": m.id,
         "message": m.message,
-        "sender_id": m.sender.id,
-        "sender_title": getattr(m.sender, "title", ""),
-        "sender_name": m.sender.full_name or m.sender.username,
-        "sender_image": m.sender.image.url if m.sender.image else None,
-        "color": get_user_color(m.sender.id),
+        "sender_id": sender_id_out,
+        "sender_title": getattr(sender_user, "title", "") if sender_user else "",
+        "sender_name": (
+            (sender_user.full_name or sender_user.username)
+            if sender_user
+            else "Unknown"
+        ),
+        "sender_image": (
+            sender_user.image.url if (sender_user and sender_user.image) else None
+        ),
+        "color": get_user_color(sender_id_out),
         "created_at": m.created_at.isoformat(),
         "guest": guest_payload,
         "reply_to_id": m.parent.id if m.parent else None,
@@ -326,10 +485,50 @@ def serialize_message(m, mention_map=None, mention_regex=None):
         "pinned": getattr(m, "pinned", False),
         "pinned_at": m.pinned_at.isoformat() if getattr(m, "pinned_at", None) else None,
         "pinned_by": pinned_by_payload,
+        "is_deleted": getattr(m, "is_deleted", False),
+        "edited_at": m.edited_at.isoformat() if getattr(m, "edited_at", None) else None,
+        "forwarded_from": (
+            {
+                "id": m.forwarded_from.id,
+                "message": (m.forwarded_from.message or "")[:60],
+                "room_name": (
+                    m.forwarded_from.room.name
+                    if getattr(m.forwarded_from, "room", None)
+                    else "General Workforce"
+                ),
+            }
+            if getattr(m, "forwarded_from", None) and not m.forwarded_from.is_deleted
+            else None
+        ),
+        # Provide the source room info so the client can render "Forwarded from X"
+        "forwarded_from_room_id": (
+            m.forwarded_from.room_id
+            if getattr(m, "forwarded_from", None) and m.forwarded_from and m.forwarded_from.room_id
+            else None
+        ),
+        "forwarded_from_room_name": (
+            (
+                m.forwarded_from.room.name
+                if getattr(m.forwarded_from, "room", None)
+                else "General Workforce"
+            )
+            if getattr(m, "forwarded_from", None) and m.forwarded_from
+            else ""
+        ),
+        "was_forwarded": (
+            m.forwards.filter(is_deleted=False).exists()
+            if getattr(m, "pk", None)
+            else False
+        ),
+        "room_id": m.room_id if hasattr(m, "room_id") else None,
+        "reaction_summary": rx_summary,
+        "total_reactions": rx_total,
+        "my_reaction": rx_mine,
     }
 
 
 # -------------------- Attendance Helpers --------------------
+
 
 def generate_daily_attendance():
     today = timezone.localdate()
@@ -342,10 +541,7 @@ def generate_daily_attendance():
 
         for event in available_events:
             _, created = AttendanceRecord.objects.get_or_create(
-                user=user,
-                event=event,
-                date=today,
-                defaults={"status": "absent"}
+                user=user, event=event, date=today, defaults={"status": "absent"}
             )
             if created:
                 created_count += 1
@@ -353,8 +549,9 @@ def generate_daily_attendance():
     return created_count
 
 
-
-def validate_church_proximity(user_lat, user_lon, church_lat, church_lon, threshold_km=0.100):
+def validate_church_proximity(
+    user_lat, user_lon, church_lat, church_lon, threshold_km=0.100
+):
     """
     Ensure user is within threshold_km of the church venue.
 
@@ -366,10 +563,14 @@ def validate_church_proximity(user_lat, user_lon, church_lat, church_lon, thresh
         lat = float(user_lat)
         lon = float(user_lon)
     except (TypeError, ValueError):
-        raise ValidationError("Unable to determine your location. Please enable location access.")
+        raise ValidationError(
+            "Unable to determine your location. Please enable location access."
+        )
 
     if church_lat is None or church_lon is None:
-        raise ValidationError("Church location is not configured. Contact your administrator.")
+        raise ValidationError(
+            "Church location is not configured. Contact your administrator."
+        )
 
     user_distance = distance((float(church_lat), float(church_lon)), (lat, lon)).km
 
@@ -380,30 +581,70 @@ def validate_church_proximity(user_lat, user_lon, church_lat, church_lon, thresh
         )
 
 
+def classify_event_location(event, church, user_lat=None, user_lon=None):
+    """
+    Classify where the attendance was recorded from.
+
+    Returns one of: onsite, offsite, virtual, or "" when it cannot be
+    determined safely.
+    """
+    mode = (getattr(event, "attendance_mode", "") or "").lower()
+    if mode == "virtual":
+        return "virtual"
+
+    if mode not in ("physical", "hybrid"):
+        return ""
+
+    try:
+        if user_lat in (None, "") or user_lon in (None, ""):
+            return "offsite" if mode == "hybrid" else "onsite"
+        if church.latitude is None or church.longitude is None:
+            return "offsite" if mode == "hybrid" else "onsite"
+        user_distance = distance(
+            (float(church.latitude), float(church.longitude)),
+            (float(user_lat), float(user_lon)),
+        ).km
+    except Exception:
+        return "offsite" if mode == "hybrid" else "onsite"
+
+    if mode == "physical":
+        return "onsite"
+    return (
+        "onsite" if user_distance <= float(church.attendance_radius_km) else "offsite"
+    )
+
+
 # -------------------- Calendar + Events --------------------
 
 from datetime import timedelta, date, datetime
 
 
 def get_calendar_items(user):
+    church = _get_church(user)
     today = timezone.localdate()
     start_of_year = date(today.year, 1, 1)
     end_of_year = date(today.year, 12, 31)
 
     events = get_available_events_for_user(user)
-    workforce_member = WorkforceMember.raw_objects.filter(member__user=user, is_active=True).first()
-    reminders = PersonalReminder.objects.filter(user=workforce_member, date__gte=today) if workforce_member else PersonalReminder.objects.none()
+    workforce_member = WorkforceMember.raw_objects.filter(
+        member__user=user, is_active=True
+    ).first()
+    reminders = (
+        PersonalReminder.objects.filter(user=workforce_member, date__gte=today)
+        if workforce_member
+        else PersonalReminder.objects.none()
+    )
 
     calendar_items = []
 
     weekday_map = {
-        'sunday': 6,
-        'monday': 0,
-        'tuesday': 1,
-        'wednesday': 2,
-        'thursday': 3,
-        'friday': 4,
-        'saturday': 5,
+        "sunday": 6,
+        "monday": 0,
+        "tuesday": 1,
+        "wednesday": 2,
+        "thursday": 3,
+        "friday": 4,
+        "saturday": 5,
     }
 
     color_map = {
@@ -430,10 +671,14 @@ def get_calendar_items(user):
             "mode": getattr(e, "mode", ""),
             "color": color,
             "description": getattr(e, "description", ""),
-            "time": e.time.strftime("%H:%M") if e.time else None,
+            "time": format_time_value(e.time, church) if e.time else None,
             "duration_days": getattr(e, "duration_days", 1),
-            "team": getattr(e.unit, "name", None),
-            "team_color": getattr(e.unit, "color_class", "bg-gray-800") if getattr(e, "unit", None) else None,
+            "unit": getattr(e.unit, "name", None),
+            "unit_color": (
+                getattr(e.unit, "color_class", "bg-gray-800")
+                if getattr(e, "unit", None)
+                else None
+            ),
         }
 
         if e.date and e.duration_days > 1:
@@ -442,30 +687,36 @@ def get_calendar_items(user):
             calendar_items.append({**base_event, "start": start, "end": end})
 
         elif e.date:
-            calendar_items.append({**base_event, "start": build_datetime(e.date, e.time)})
+            calendar_items.append(
+                {**base_event, "start": build_datetime(e.date, e.time)}
+            )
 
         elif e.is_recurring_weekly and e.day_of_week:
             current = start_of_year
             weekday = weekday_map.get(e.day_of_week.lower())
             while current <= end_of_year:
                 if current.weekday() == weekday:
-                    calendar_items.append({
-                        **base_event,
-                        "start": build_datetime(current, e.time),
-                    })
+                    calendar_items.append(
+                        {
+                            **base_event,
+                            "start": build_datetime(current, e.time),
+                        }
+                    )
                 current += timedelta(days=1)
 
     for r in reminders:
-        calendar_items.append({
-            "title": r.title,
-            "start": build_datetime(r.date, getattr(r, "time", None)),
-            "type": "reminder",
-            "mode": "personal",
-            "color": color_map["reminder"],
-            "description": getattr(r, "note", ""),
-            "team": None,
-            "team_color_class": None,
-        })
+        calendar_items.append(
+            {
+                "title": r.title,
+                "start": build_datetime(r.date, getattr(r, "time", None)),
+                "type": "reminder",
+                "mode": "personal",
+                "color": color_map["reminder"],
+                "description": getattr(r, "note", ""),
+                "unit": None,
+                "unit_color_class": None,
+            }
+        )
 
     return calendar_items
 
@@ -481,22 +732,44 @@ def get_available_events_for_user(user):
 
     perms = _get_permissions(user, church)
 
-    base_qs = Event.raw_objects.filter(church=church,
-        is_active=True
-    ).filter(
-        Q(date__isnull=False, date__lte=end_of_year) |
-        Q(is_recurring_weekly=True)
+    base_qs = Event.raw_objects.filter(church=church, is_active=True).filter(
+        Q(date__isnull=False, date__lte=end_of_year) | Q(is_recurring_weekly=True)
     )
 
     if _can(perms, "events.view_all"):
         events = base_qs
     else:
-        events = base_qs.filter(
-            Q(unit__isnull=True) | Q(unit__memberships__workforce_member__member__user=user)
+        # Detect pipeline trainees: have a WorkforceTraineeProfile but no
+        # WorkforceMember yet — ChurchMembers in the induction pipeline.
+        church_member = ChurchMember.raw_objects.filter(
+            church=church, user=user, is_active=True
+        ).first()
+
+        is_pipeline_trainee = bool(
+            church_member
+            and WorkforceTraineeProfile.raw_objects.filter(
+                church=church, member=church_member, reason="induction"
+            ).exists()
+            and not WorkforceMember.raw_objects.filter(
+                church=church, member=church_member
+            ).exists()
         )
+
+        if is_pipeline_trainee:
+            # Trainees only see events explicitly flagged for trainee access.
+            events = base_qs.filter(trainee_access=True).distinct()
+        else:
+            # Regular workforce members: church-wide events + their unit events.
+            events = base_qs.filter(
+                Q(unit__isnull=True)
+                | Q(unit__memberships__workforce_member__member__user=user)
+                | Q(unit__memberships__trainee_profile__member__user=user)
+            ).distinct()
 
     available_events = []
     for e in events:
+        if e.date and not e.attendance_is_open():
+            continue
         if e.date and start_of_year <= e.date <= end_of_year:
             available_events.append(e)
         elif e.is_recurring_weekly and e.day_of_week:
@@ -519,25 +792,36 @@ def get_available_units_for_user(user):
     if _can(perms, "unit.view_all"):
         return qs.order_by("name")
 
-    return qs.filter(memberships__workforce_member__member__user=user).distinct().order_by("name")
+    return (
+        qs.filter(memberships__workforce_member__member__user=user)
+        .distinct()
+        .order_by("name")
+    )
 
 
-def expand_team_events(user, team_id):
+def expand_unit_events(user, unit_id):
     today = timezone.localdate()
     events = get_available_events_for_user(user)
 
-    if team_id == "null" or team_id is None:
+    if unit_id == "null" or unit_id is None:
         filtered_events = [e for e in events if e.unit is None]
     else:
         try:
-            team_id_int = int(team_id)
-            filtered_events = [e for e in events if getattr(e.unit, "id", None) == team_id_int]
+            unit_id_int = int(unit_id)
+            filtered_events = [
+                e for e in events if getattr(e.unit, "id", None) == unit_id_int
+            ]
         except (ValueError, TypeError):
             filtered_events = []
 
     weekday_map = {
-        "monday": 0, "tuesday": 1, "wednesday": 2,
-        "thursday": 3, "friday": 4, "saturday": 5, "sunday": 6,
+        "monday": 0,
+        "tuesday": 1,
+        "wednesday": 2,
+        "thursday": 3,
+        "friday": 4,
+        "saturday": 5,
+        "sunday": 6,
     }
 
     first_day = today.replace(day=1)
@@ -565,25 +849,37 @@ def expand_team_events(user, team_id):
                         else:
                             tag = "Upcoming"
 
-                        data.append({
-                            "id": e.id,
-                            "name": e.name,
-                            "team_name": getattr(e.unit, "name", "ChurchForce") if e.unit else "ChurchForce",
-                            "event_type": e.event_type,
-                            "attendance_mode": e.attendance_mode,
-                            "time": e.time.isoformat() if e.time else None,
-                            "date": current,
-                            "event_image": e.event_image.url if e.event_image else None,
-                            "team_id": getattr(e.unit, "id", None),
-                            "team_color_class": getattr(e.unit, "color_class", "bg-warning-800"),
-                            "team_color_hex": getattr(e.unit, "color_hex", "#f59f00"),
-                            "is_recurring_weekly": True,
-                            "is_active": e.is_active,
-                            "registrable": bool(e.registration_link),
-                            "registration_link": e.registration_link,
-                            "postponed": e.postponed,
-                            "tag": tag,
-                        })
+                        data.append(
+                            {
+                                "id": e.id,
+                                "name": e.name,
+                                "unit_name": (
+                                    getattr(e.unit, "name", "ChurchForce")
+                                    if e.unit
+                                    else "ChurchForce"
+                                ),
+                                "event_type": e.event_type,
+                                "attendance_mode": e.attendance_mode,
+                                "time": e.time.isoformat() if e.time else None,
+                                "date": current,
+                                "event_image": (
+                                    e.event_image.url if e.event_image else None
+                                ),
+                                "unit_id": getattr(e.unit, "id", None),
+                                "unit_color_class": getattr(
+                                    e.unit, "color_class", "bg-warning-800"
+                                ),
+                                "unit_color_hex": getattr(
+                                    e.unit, "color_hex", "#f59f00"
+                                ),
+                                "is_recurring_weekly": True,
+                                "is_active": e.is_active,
+                                "registrable": bool(e.registration_link),
+                                "registration_link": e.registration_link,
+                                "postponed": e.postponed,
+                                "tag": tag,
+                            }
+                        )
                     current += timedelta(days=1)
 
         elif e.date:
@@ -599,86 +895,102 @@ def expand_team_events(user, team_id):
             else:
                 tag = "Upcoming"
 
-            data.append({
-                "id": e.id,
-                "name": e.name,
-                "team_name": getattr(e.unit, "name", "ChurchForce") if e.unit else "ChurchForce",
-                "event_type": e.event_type,
-                "attendance_mode": e.attendance_mode,
-                "time": e.time.isoformat() if e.time else None,
-                "date": e.date,
-                "event_image": e.event_image.url if e.event_image else None,
-                "team_id": getattr(e.unit, "id", None),
-                "team_color_class": getattr(e.unit, "color_class", "bg-warning-800"),
-                "team_color_hex": getattr(e.unit, "color_hex", "#f59f00"),
-                "is_recurring_weekly": e.is_recurring_weekly,
-                "is_active": e.is_active,
-                "registrable": bool(e.registration_link),
-                "registration_link": e.registration_link,
-                "postponed": e.postponed,
-                "tag": tag,
-            })
+            data.append(
+                {
+                    "id": e.id,
+                    "name": e.name,
+                    "unit_name": (
+                        getattr(e.unit, "name", "ChurchForce")
+                        if e.unit
+                        else "ChurchForce"
+                    ),
+                    "event_type": e.event_type,
+                    "attendance_mode": e.attendance_mode,
+                    "time": e.time.isoformat() if e.time else None,
+                    "date": e.date,
+                    "event_image": e.event_image.url if e.event_image else None,
+                    "unit_id": getattr(e.unit, "id", None),
+                    "unit_color_class": getattr(
+                        e.unit, "color_class", "bg-warning-800"
+                    ),
+                    "unit_color_hex": getattr(e.unit, "color_hex", "#f59f00"),
+                    "is_recurring_weekly": e.is_recurring_weekly,
+                    "is_active": e.is_active,
+                    "registrable": bool(e.registration_link),
+                    "registration_link": e.registration_link,
+                    "postponed": e.postponed,
+                    "tag": tag,
+                }
+            )
 
     return data
 
 
 def get_visible_attendance_records(user, since_date=None):
+    """
+    Returns AttendanceRecord queryset visible to `user`.
+    user (AttendanceRecord.user) is now a ChurchMember FK, so the
+    superuser-exclusion path is simply user__user__is_superuser.
+    """
     church = _get_church(user)
     if not church:
         return AttendanceRecord.objects.none()
 
-    # 1. Get Superuser IDs to avoid join errors
-    superuser_ids = CustomUser.objects.filter(is_superuser=True).values_list('id', flat=True)
-    superuser_filter = (
-        Q(user__workforce_member__member__user_id__in=superuser_ids) |
-        Q(user__trainee_profile__member__user_id__in=superuser_ids)
-    )
+    superuser_filter = Q(user__user__is_superuser=True)
 
-    base_qs = AttendanceRecord.objects.select_related(
-        "event", "user", "user__unit", "event__unit"
-    ).filter(church=church).order_by("-date")
+    base_qs = (
+        AttendanceRecord.objects.select_related(
+            "event",
+            "event__unit",
+            "user",
+            "user__user",
+        )
+        .filter(church=church)
+        .order_by("-date")
+    )
 
     if since_date:
         base_qs = base_qs.filter(date__gte=since_date)
 
     perms = _get_permissions(user, church)
 
-    # 2. Exclude by targeting the User ID at the end of the chain
-    # Path: UnitMembership(user) -> ChurchMember(member) -> CustomUser(user_id)
     if user.is_superuser or _can(perms, "attendance.view_all"):
         return base_qs.exclude(superuser_filter)
 
+    # Non-admin: records for events in the user's units OR the user's own records
     unit_ids = UnitMembership.objects.filter(
         workforce_member__member__user=user
     ).values_list("unit_id", flat=True)
 
-    records = base_qs.filter(
-        Q(event__unit_id__in=unit_ids) | Q(team_id__in=unit_ids)
+    return base_qs.filter(
+        Q(event__unit_id__in=unit_ids)
+        | Q(event__unit__isnull=True)  # church-wide events
+        | Q(user__user=user)  # the user's own records
     ).exclude(superuser_filter)
-
-    return records
 
 
 def get_visible_clock_records(user, since_date=None):
+    """
+    Returns ClockRecord queryset visible to `user`.
+    user (ClockRecord.user) is now a ChurchMember FK.
+    """
     church = _get_church(user)
     if not church:
         return ClockRecord.objects.none()
 
-    # 1. Get Superuser IDs
-    superuser_ids = CustomUser.objects.filter(is_superuser=True).values_list('id', flat=True)
-    superuser_filter = (
-        Q(user__workforce_member__member__user_id__in=superuser_ids) |
-        Q(user__trainee_profile__member__user_id__in=superuser_ids)
-    )
+    superuser_filter = Q(user__user__is_superuser=True)
 
-    base_qs = ClockRecord.objects.select_related("event", "user", "user__unit", "event__unit").filter(church=church).order_by("-date")
+    base_qs = (
+        ClockRecord.objects.select_related("event", "event__unit", "user", "user__user")
+        .filter(church=church)
+        .order_by("-date")
+    )
 
     if since_date:
         base_qs = base_qs.filter(date__gte=since_date)
 
     perms = _get_permissions(user, church)
 
-    # 2. Exclude using the same stable ID path
     if user.is_superuser or _can(perms, "attendance.view_all"):
         return base_qs.exclude(superuser_filter)
 
@@ -686,9 +998,8 @@ def get_visible_clock_records(user, since_date=None):
         workforce_member__member__user=user
     ).values_list("unit_id", flat=True)
 
-    records = base_qs.filter(
-        Q(team_id__in=unit_ids) |
+    return base_qs.filter(
         Q(event__unit_id__in=unit_ids)
-    )
-
-    return records.exclude(superuser_filter)
+        | Q(event__unit__isnull=True)
+        | Q(user__user=user)
+    ).exclude(superuser_filter)

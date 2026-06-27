@@ -1,0 +1,181 @@
+{% extends base_template %}{% load static access_tags %}{% block title %}{{ pres.title }}{% endblock %}
+{% block content %}
+<div class="container-xl py-4">
+  <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <a href="{% url 'media:presentation_list' %}" class="text-muted text-decoration-none small">← Presentations</a>
+    <h2 class="fw-bold mb-0">{{ pres.title }}</h2>
+    <div class="ms-auto d-flex gap-2">
+      {% if can_edit %}<a href="{% url 'media:presentation_edit' uid=pres.uid %}" class="btn btn-outline-secondary btn-sm">Edit</a>{% endif %}
+      <a href="{% url 'media:presenter_view' uid=pres.uid %}" class="btn btn-primary btn-sm">▶ Present</a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    {# Slide list #}
+    <div class="col-12 col-lg-8">
+      <div class="card bg-dark border-secondary" style="border-radius:12px;">
+        <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Slides ({{ slides|length }})</span>
+          {% if can_edit %}
+          <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addSlideModal">+ Add Slide</button>
+          {% endif %}
+        </div>
+        <div id="slideList">
+          {% for slide in slides %}
+          <div class="d-flex gap-3 p-3 border-bottom border-secondary slide-row" data-id="{{ slide.pk }}"
+               style="cursor:{% if can_edit %}grab{% else %}default{% endif %};">
+            {% if can_edit %}<span class="text-muted" style="cursor:grab;">⠿</span>{% endif %}
+            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded"
+                 style="width:80px;height:50px;background:{% if slide.template %}{{ slide.template.background_color }}{% else %}#1e293b{% endif %};font-size:.6rem;color:{% if slide.template %}{{ slide.template.text_color }}{% else %}#fff{% endif %};">
+              {{ slide.content|truncatechars:30 }}
+            </div>
+            <div class="flex-grow-1">
+              <span class="badge bg-secondary mb-1" style="font-size:.65rem;">{{ slide.get_slide_type_display }}</span>
+              <div class="small text-white">{{ slide.content|truncatechars:60 }}</div>
+              {% if slide.sub_content %}<div class="text-muted" style="font-size:.72rem;">{{ slide.sub_content }}</div>{% endif %}
+              {% if slide.is_auto %}<span class="badge bg-blue-lt" style="font-size:.6rem;">Auto</span>{% endif %}
+            </div>
+            {% if can_edit %}
+            <button class="btn btn-xs btn-ghost text-danger delete-slide-btn" data-id="{{ slide.pk }}">✕</button>
+            {% endif %}
+          </div>
+          {% empty %}
+          <div class="text-muted text-center py-4">No slides yet.{% if can_edit %} Click "+ Add Slide" to begin.{% endif %}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {# Right panel: info + Bible #}
+    <div class="col-12 col-lg-4">
+      <div class="card bg-dark border-secondary mb-3" style="border-radius:12px;">
+        <div class="card-body p-3">
+          <div class="mb-2"><span class="text-muted small">Event</span><br><span class="small">{{ pres.event|default:"Not linked" }}</span></div>
+          {% if pres.setlist %}<div class="mb-2"><span class="text-muted small">Setlist</span><br>
+            <a href="{% url 'music:setlist_detail' uid=pres.setlist.uid %}" class="small text-white">{{ pres.setlist.title }}</a></div>{% endif %}
+        </div>
+      </div>
+
+      {# Bible lookup widget #}
+      <div class="card bg-dark border-secondary" style="border-radius:12px;">
+        <div class="card-header border-secondary fw-semibold">📖 Bible Lookup</div>
+        <div class="card-body p-3">
+          <div class="mb-2">
+            <input id="bibleRef" class="form-control form-control-sm bg-dark border-secondary text-white mb-2" placeholder="e.g. John 3:16">
+            <select id="bibleVersion" class="form-select form-select-sm bg-dark border-secondary text-white mb-2">
+              {% for v in bible_versions %}<option value="{{ v.code }}">{{ v.code }}</option>{% endfor %}
+            </select>
+          </div>
+          <button class="btn btn-sm btn-outline-primary w-100 mb-2" id="fetchBibleBtn">Fetch Passage</button>
+          <div id="bibleResult" class="small text-muted" style="max-height:150px;overflow-y:auto;"></div>
+          {% if can_edit %}
+          <button class="btn btn-sm btn-outline-success w-100 mt-2 d-none" id="addBibleSlidesBtn">+ Add as Slides</button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if can_edit %}
+{# Add Slide Modal #}
+<div class="modal fade" id="addSlideModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Add Slide</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <div class="mb-3"><label class="text-muted small">Type</label>
+        <select id="newSlideType" class="form-select bg-dark border-secondary text-white">
+          {% for val,label in slide_types %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+        </select></div>
+      <div class="mb-3"><label class="text-muted small">Content</label>
+        <textarea id="newSlideContent" rows="4" class="form-control bg-dark border-secondary text-white"></textarea></div>
+      <div class="mb-3"><label class="text-muted small">Sub-text (reference, subtitle)</label>
+        <input id="newSlideSubContent" class="form-control bg-dark border-secondary text-white"></div>
+      <div class="mb-3"><label class="text-muted small">Template</label>
+        <select id="newSlideTemplate" class="form-select bg-dark border-secondary text-white">
+          <option value="">— Default —</option>
+          {% for t in templates %}<option value="{{ t.pk }}">{{ t.name }}</option>{% endfor %}
+        </select></div>
+    </div>
+    <div class="modal-footer border-secondary">
+      <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button class="btn btn-primary" id="addSlideBtn">Add</button>
+    </div>
+  </div></div>
+</div>
+
+<script>
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1]||'';
+const SLIDE_ADD    = "{% url 'media:slide_add' uid=pres.uid %}";
+const SLIDE_DEL    = (id) => `/media/presentation/{{ pres.uid }}/slides/${id}/delete/`;
+const SLIDE_REORDER = "{% url 'media:slide_reorder' uid=pres.uid %}";
+const BIBLE_URL    = "{% url 'media:bible_fetch' %}";
+
+function post(url, data={}) {
+  return fetch(url,{method:'POST',headers:{'X-CSRFToken':CSRF,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(data)}).then(r=>r.json());
+}
+
+// Add slide
+document.getElementById('addSlideBtn')?.addEventListener('click', () => {
+  post(SLIDE_ADD, {
+    slide_type: document.getElementById('newSlideType').value,
+    content: document.getElementById('newSlideContent').value,
+    sub_content: document.getElementById('newSlideSubContent').value,
+    template_id: document.getElementById('newSlideTemplate').value,
+  }).then(d => { if (d.ok) location.reload(); else alert(d.error); });
+});
+
+// Delete slide
+document.querySelectorAll('.delete-slide-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (!confirm('Remove this slide?')) return;
+    post(SLIDE_DEL(btn.dataset.id)).then(d => { if (d.ok) location.reload(); });
+  });
+});
+
+// Drag reorder
+const list = document.getElementById('slideList');
+let drag = null;
+list?.querySelectorAll('.slide-row').forEach(r => {
+  r.setAttribute('draggable','true');
+  r.addEventListener('dragstart', ()=>{ drag=r; r.style.opacity='.4'; });
+  r.addEventListener('dragend',   ()=>{ drag=null; r.style.opacity='1'; saveSlideOrder(); });
+  r.addEventListener('dragover',  e=>{ e.preventDefault(); const after=getAfter(list,e.clientY); after?list.insertBefore(drag,after):list.appendChild(drag); });
+});
+function getAfter(c,y){return[...c.querySelectorAll('.slide-row')].reduce((cl,ch)=>{const b=ch.getBoundingClientRect(),o=y-b.top-b.height/2;return o<0&&o>cl.offset?{offset:o,element:ch}:cl},{offset:Number.NEGATIVE_INFINITY}).element;}
+function saveSlideOrder(){const ids=[...list.querySelectorAll('.slide-row')].map(el=>el.dataset.id);const p=new URLSearchParams();ids.forEach(id=>p.append('ids[]',id));fetch(SLIDE_REORDER,{method:'POST',headers:{'X-CSRFToken':CSRF,'Content-Type':'application/x-www-form-urlencoded'},body:p});}
+
+// Bible fetch
+let biblePassage = null;
+document.getElementById('fetchBibleBtn')?.addEventListener('click', () => {
+  const ref = document.getElementById('bibleRef').value.trim();
+  const ver = document.getElementById('bibleVersion').value;
+  if (!ref) return;
+  const btn = document.getElementById('fetchBibleBtn');
+  btn.textContent = 'Fetching…'; btn.disabled = true;
+  fetch(`${BIBLE_URL}?ref=${encodeURIComponent(ref)}&version=${ver}`)
+    .then(r=>r.json()).then(d=>{
+      btn.textContent='Fetch Passage'; btn.disabled=false;
+      if (d.ok) {
+        biblePassage = d;
+        document.getElementById('bibleResult').textContent = d.text;
+        document.getElementById('addBibleSlidesBtn').classList.remove('d-none');
+      } else {
+        document.getElementById('bibleResult').textContent = d.error;
+      }
+    });
+});
+document.getElementById('addBibleSlidesBtn')?.addEventListener('click', () => {
+  if (!biblePassage) return;
+  post(SLIDE_ADD, {
+    slide_type: 'scripture',
+    bible_reference: biblePassage.reference,
+    bible_version: document.getElementById('bibleVersion').value,
+  }).then(d => { if (d.ok) location.reload(); else alert(d.error); });
+});
+</script>
+{% endif %}
+{% endblock %}

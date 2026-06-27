@@ -1,86 +1,268 @@
-{% extends "base.html" %}
-{% load static widget_tweaks %}
+{% extends base_template %}
+{% load static widget_tweaks access_tags %}
 
 {% block title %}My Settings{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <div class="row justify-content-center">
-    <div class="col-12 col-md-8 col-lg-6">
+<div class="page-wrapper py-5">
+  <div class="page-header d-print-none">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <kbd class="bg-indigo-lt"><h2 class="page-title mb-0">My Settings</h2></kbd>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      <h2 class="fw-bold mb-4">My Settings</h2>
-
+  <div class="page-body d-print-none">
+    <div class="container-xl pb-5">
       {% if messages %}
         {% for message in messages %}
-          <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show" role="alert">
+          <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show mb-3" role="alert">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
           </div>
         {% endfor %}
       {% endif %}
 
-      <form method="post">
-        {% csrf_token %}
-
-        <div class="card bg-dark border-secondary mb-4">
-          <div class="card-header py-3">
-            <h5 class="mb-0 fw-bold">Notification preferences</h5>
-          </div>
-          <div class="card-body p-4">
-
-            <div class="mb-4">
-              <label class="form-label fw-bold">Notification sound</label>
-              <div class="list-group">
-                {% for value, label in form.fields.notification_sound.choices %}
-                <label class="list-group-item bg-dark border-secondary d-flex align-items-center">
-                  <input type="radio" name="notification_sound" value="{{ value }}"
-                         {% if form.instance.notification_sound == value %}checked{% endif %}
-                         class="me-2">
-                  <span class="flex-grow-1">{{ label }}</span>
-                  <button type="button" class="btn btn-outline-secondary btn-sm preview-btn"
-                          data-sound="{{ value }}">▶</button>
-                </label>
-                {% endfor %}
+      <div class="row g-0" style="min-height:80vh;">
+        <div class="col-12 col-lg-auto" style="width:220px;flex-shrink:0;">
+          <div class="card bg-grey h-100" style="border-radius:36px 0 0 36px;border-right:none;">
+            <div class="card-body p-3">
+              <div class="text-center mb-4 pt-2">
+                {% if request.user.image %}
+                  <img src="{{ request.user.image.url }}" alt="{{ request.user.username }}"
+                       style="width:100px;height:100px;object-fit:cover;border-radius:24px;box-shadow:0 4px 8px {{ request.user.get_color }};">
+                {% else %}
+                  <div class="d-flex align-items-center justify-content-center mx-auto"
+                       style="width:100px;height:100px;border-radius:24px;box-shadow:0 4px 8px {{ request.user.get_color }};">
+                    <span style="font-size:2rem;font-weight:700;color:{{ request.user.get_color }};">{{ request.user.initials }}</span>
+                  </div>
+                {% endif %}
+                <div class="fw-semibold small text-white text-truncate mt-2">{{ request.user.full_name }}</div>
+                <div class="text-muted" style="font-size:.7rem;">@{{ request.user.username }}</div>
               </div>
-            </div>
 
-            <div class="form-check">
-              {% render_field form.vibration_enabled class="form-check-input" %}
-              <label class="form-check-label" for="{{ form.vibration_enabled.id_for_label }}">
-                Enable vibration
-              </label>
+              <nav class="d-flex flex-column gap-3">
+                <a href="?tab=profile"
+                   class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none {% if active_tab == 'profile' or not active_tab %}text-white bg-gray-900{% else %}text-muted{% endif %}"
+                   style="font-size:.875rem;transition:all .15s;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                  Profile
+                </a>
+                <a href="?tab=preference"
+                   class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none {% if active_tab == 'preference' %}text-white bg-gray-900{% else %}text-muted{% endif %}"
+                   style="font-size:.875rem;transition:all .15s;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                  Preferences
+                </a>
+              </nav>
             </div>
-
           </div>
         </div>
 
-        <div class="d-flex justify-content-end gap-3">
-          <a href="/" class="btn btn-outline-secondary px-4">Cancel</a>
-          <button type="submit" class="btn fw-bold px-5"
-                  style="background:#ff5e01;color:#fff;border:none;">
-            Save preferences
-          </button>
-        </div>
-      </form>
+        <div class="col">
+          <div class="card bg-grey h-100" style="border-radius:0 36px 36px 0;">
+            <div class="card-body p-4 p-lg-5">
+              {% if active_tab == 'preference' %}
+              <div class="d-flex align-items-start justify-content-between mb-4">
+                <div>
+                  <h2 class="fw-bold mb-1">Notification Preferences</h2>
+                  <p class="text-muted mb-0 small">Control the sound and vibration behavior for your alerts.</p>
+                </div>
+              </div>
 
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="tab" value="preference">
+                {% with form=forms.preference %}
+                <div class="card bg-gray-900 mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                  <div class="card-body p-4">
+                    <div class="mb-4">
+                      <label class="form-label fw-bold">Notification sound</label>
+                      <div class="list-group">
+                        {% for value, label in form.fields.notification_sound.choices %}
+                        <label class="list-group-item bg-cyan-lt d-flex align-items-center"
+                                style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;cursor:pointer;">
+                          <input type="radio" name="notification_sound" value="{{ value }}"
+                                 {% if form.instance.notification_sound == value %}checked{% endif %}
+                                 class="me-2">
+                          <span class="flex-grow-1">{{ label }}</span>
+                          <button type="button" class="btn btn-outline-secondary btn-sm preview-btn" data-sound="{{ value }}">▶</button>
+                        </label>
+                        {% endfor %}
+                      </div>
+                    </div>
+
+                    <div class="form-check">
+                      {% render_field form.vibration_enabled class="form-check-input" %}
+                      <label class="form-check-label" for="{{ form.vibration_enabled.id_for_label }}">Enable vibration</label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-3">
+                  <button type="submit" class="btn fw-bold px-5" style="background:#ff5e01;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                    Save preferences
+                  </button>
+                  <a href="/" class="btn btn-outline-secondary px-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                    Cancel
+                  </a>
+                </div>
+                {% endwith %}
+              </form>
+              {% else %}
+              <div class="d-flex align-items-start justify-content-between mb-4">
+                <div>
+                  <h2 class="fw-bold mb-1">Profile</h2>
+                  <p class="text-muted mb-0 small">Update your visible member profile details.</p>
+                </div>
+              </div>
+
+              <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="tab" value="profile">
+                {% with form=forms.profile %}
+                <div class="row g-4">
+                  <div class="col-12 col-xl-4">
+                    <div class="card bg-gray-900 mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      <div class="card-body p-4 text-center">
+                        {% if request.user.image %}
+                          <img src="{{ request.user.image.url }}" alt="Profile"
+                               style="width:200px;height:200px;border-radius:24px;object-fit:cover;box-shadow:0 4px 8px #000000d2">
+                        {% else %}
+                          <div class="d-flex align-items-center justify-content-center mx-auto"
+                               style="width:200px;height:200px;border-radius:24px;box-shadow:0 4px 8px #000000d2">
+                            <span style="font-size:2.3rem;font-weight:700;color:{{ church.primary_color }};">{{ request.user.initials }}</span>
+                          </div>
+                        {% endif %}
+                        <h3 class="mb-1 fw-bold mt-3">{{ request.user.full_name }}</h3>
+                        <div class="text-secondary small">{{ request.user.email|default:request.user.username }}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-12 col-xl-8">
+                    <div class="card bg-gray-900" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      <div class="card-body p-4">
+                        <h6 class="mb-3 fw-bold">Profile photo</h6>
+                        {% render_field form.image class="form-control" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                        <div class="form-text text-secondary mb-4">Upload a clear photo. JPG or PNG, max 5 MB.</div>
+
+                        <h6 class="mb-3 fw-bold">Cover photo</h6>
+                        {% if request.user.cover_image %}
+                        <img
+                          src="{{ request.user.cover_image.url }}"
+                          alt="Cover photo"
+                          class="w-100 mb-2"
+                          style="height:160px;object-fit:cover;border-radius:16px;box-shadow:0 4px 8px #000000d2;"
+                        >
+                        {% endif %}
+                        {% render_field form.cover_image class="form-control" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                        <div class="form-text text-secondary">This appears as your dashboard profile cover.</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-12">
+                    <div class="card bg-cyan-lt mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      <div class="card-body text-white p-4">
+                        <h3 class="fw-semibold mb-3">Personal Information</h3>
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <label class="form-label">Username</label>
+                            {% render_field form.username class="form-control" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                          </div>
+                          <div class="col-md-6 d-flex align-items-end justify-content-md-end">
+                            <button type="button" id="togglePasswordBtn" class="btn btn-outline-secondary btn-sm" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                              Change password
+                            </button>
+                          </div>
+                          <div id="passwordFields" class="row g-3 mt-1 d-none">
+                            {% for field in form.visible_fields %}
+                              {% if field.name == 'password' or field.name == 'confirm_password' %}
+                              <div class="col-md-6">
+                                <label class="form-label">{{ field.label }}</label>
+                                {% render_field field class="form-control" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" type="password" %}
+                                {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors.0 }}</div>{% endif %}
+                              </div>
+                              {% endif %}
+                            {% endfor %}
+                          </div>
+                          <div class="col-md-3">
+                            <label class="form-label">Title</label>
+                            {% render_field form.title class="form-select" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                          </div>
+                          <div class="col-md-9">
+                            <label class="form-label">Full name</label>
+                            {% render_field form.full_name class="form-control" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                            {% if form.full_name.errors %}<div class="text-danger small mt-1">{{ form.full_name.errors.0 }}</div>{% endif %}
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label">Phone number</label>
+                            {% render_field form.phone_number class="form-control" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label">Date of birth</label>
+                            {% render_field form.date_of_birth class="form-control" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label">Marital status</label>
+                            {% render_field form.marital_status class="form-select" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                          </div>
+                          <div class="col-12">
+                            <label class="form-label">Address</label>
+                            {% render_field form.address class="form-control" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" rows="2" %}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-3">
+                      <button type="submit" class="btn fw-bold px-5" style="background:#ff5e01;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                        Save profile
+                      </button>
+                      <a href="/" class="btn btn-outline-secondary px-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                        Cancel
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                {% endwith %}
+              </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
+{% endblock %}
 
 {% block extra_js %}
 <script>
-  // Sound preview
-  const audio = new Audio();
-  document.querySelectorAll('.preview-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const sound = this.dataset.sound;
-      const map = window.APP_CONFIG?.sound?.soundMap || {};
-      if (map[sound]) {
-        audio.src = map[sound];
-        audio.play().catch(() => {});
-      }
+const toggleBtn = document.getElementById('togglePasswordBtn');
+const pwFields = document.getElementById('passwordFields');
+if (toggleBtn && pwFields) {
+  toggleBtn.addEventListener('click', () => {
+    const hidden = pwFields.classList.contains('d-none');
+    pwFields.classList.toggle('d-none', !hidden);
+    if (!hidden) pwFields.querySelectorAll('input').forEach((input) => {
+      input.value = '';
     });
   });
+}
+
+const audio = new Audio();
+document.querySelectorAll('.preview-btn').forEach((btn) => {
+  btn.addEventListener('click', function() {
+    const sound = this.dataset.sound;
+    const map = window.APP_CONFIG?.sound?.soundMap || {};
+    if (map[sound]) {
+      audio.src = map[sound];
+      audio.play().catch(() => {});
+    }
+  });
+});
 </script>
-{% endblock %}
 {% endblock %}

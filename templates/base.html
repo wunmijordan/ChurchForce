@@ -1,4 +1,4 @@
-{% load static %}
+{% load static campus_tags %}
 {% load user_avatar_tags %}
 {% load guest_avatar_tags %}
 {% load widget_tweaks %}
@@ -53,7 +53,7 @@
 </head>
 <body class="min-vh-100" data-new-gr-c-s-check-loaded="14.1249.0" data-gr-ext-installed="">
 
-  <div class="page">
+  <div class="page d-flex flex-column">
     <header class="navbar scrolled navbar-expand-md d-print-none">
       <div class="container-fluid">
         <!-- Mobile row: toggler (left), logo (center), icons (right) -->
@@ -73,8 +73,8 @@
           </button>
 
           <!-- Mobile logo (centered absolutely) -->
-          {% if request|is_admin %}
-            <a href="{% url 'dashboard:admin_dashboard' %}" aria-label="ChurchForce" class="navbar-brand position-absolute top-50 start-50 translate-middle">
+          {% if nav_is_admin %}
+            <a href="{% scoped_url request 'dashboard:admin_dashboard' %}" aria-label="ChurchForce" class="navbar-brand position-absolute top-50 start-50 translate-middle">
               {% if church and church.is_white_label and church.logo %}
               <img src="{{ church.logo.url }}" alt="{{ church.name }}" width="80" height="80" class="me-2" style="object-fit:cover;">
             {% else %}
@@ -82,7 +82,7 @@
             {% endif %}
             </a>
           {% else %}
-            <a href="{% url 'dashboard:dashboard' %}" aria-label="ChurchForce" class="navbar-brand position-absolute top-50 start-50 translate-middle">
+            <a href="{% scoped_url request 'dashboard:dashboard' %}" aria-label="ChurchForce" class="navbar-brand position-absolute top-50 start-50 translate-middle">
               {% if church and church.is_white_label and church.logo %}
               <img src="{{ church.logo.url }}" alt="{{ church.name }}" width="80" height="80" class="me-2" style="object-fit:cover;">
             {% else %}
@@ -93,7 +93,14 @@
 
           <div class="navbar-nav flex-row ms-auto">
           
-            
+            {% if nav_is_admin %}
+            <a class="nav-item d-flex align-items-center ms-2 text-white" href="{% scoped_url request 'tenants:account_page' %}" title="Account">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-building-church">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 21l18 0" />
+                <path d="M10 21v-4a2 2 0 0 1 4 0v4" /><path d="M10 5l4 0" /><path d="M12 3l0 5" /><path d="M6 21v-7m-2 2l8 -8l8 8m-2 -2v7" />
+              </svg>
+            </a>
+            {% endif %}
 
             <div class="nav-item dropdown d-flex align-items-center ms-0">
               <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" aria-label="Show notifications">
@@ -159,18 +166,6 @@
               </div>
             </div>
 
-            {% if request|is_admin %}
-            <div class="nav-item d-flex align-items-center ms-2">
-              <a href="{% url 'tenants:church_settings' %}" class="nav-link px-0" aria-label="Church settings">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2fb344" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                  <path d="M3 19v-11.568a1 1 0 0 1 .426 -.82l9 -6.21a1 1 0 0 1 1.148 0l9 6.21a1 1 0 0 1 .426 .82v11.568a1 1 0 0 1 -1 1h-5v-4a1 1 0 0 0 -1 -1h-6a1 1 0 0 0 -1 1v4h-5a1 1 0 0 1 -1 -1z"/>
-                  <path d="M12 0v5" /><path d="M10 3h4" />
-                </svg>
-              </a>
-            </div>
-            {% endif %}
-
             <div class="nav-item dropdown">
               <a href="#" class="nav-link d-flex lh-1 p-0 px-0 ms-2 text-white" data-bs-toggle="dropdown" aria-label="Open user menu" aria-expanded="false">
                 {% if user.image %}
@@ -184,22 +179,7 @@
                 {% endif %}
 
                 <div class="ps-2 d-flex flex-column justify-content-center">
-                  <!--<div class="d-block d-xl-none">{{ user.get_full_name|default:user.full_name }}</div>--> <!-- Show on mobile -->
-                  <div class="d-none d-xl-block"><i><small>{{ user.title|default:"" }}</small></i><br> {{ user.full_name }}</div> <!-- Show on xl+ -->
-
-                  <!--
-                  <div class="d-block d-xl-none mt-1 fs-6 text-secondary">
-                    {% if user.is_superuser %}
-                      <span class="bg-warning-lt">Superuser</span>
-                    {% elif user.groups.all.0.name == "Admin" %}
-                      <span class="bg-green-lt">Admin</span>
-                    {% elif user.groups.all.0.name == "Team Member" %}
-                      <span class="bg-azure-lt">Team Member</span>
-                    {% else %}
-                      <span class="badge bg-gray-lt">Sign-In</span>
-                    {% endif %}
-                  </div>
-                  -->
+                  <div class="d-none d-xl-block"><i><small>{{ user.title|default:"" }}</small></i><br> {{ user.full_name|default:user.username }}</div> <!-- Show on xl+ -->
 
                   <div class="d-none d-xl-block mt-1 fs-6 text-secondary">
                     <span class="text-secondary">{{ user|role_label }}</span>
@@ -208,6 +188,7 @@
               </a>
               <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow py-1">
 
+                {% if nav_is_admin %}
                 <a href="https://churchforce.io" class="dropdown-item" target="_blank" rel="noreferrer">
                   <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-pointer">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -216,7 +197,9 @@
                   ChurchForce
                   <span class="badge badge-sm bg-green-lt ms-auto">Home</span>
                 </a>
-                <a class="dropdown-item" href="{% url 'workforce:member_settings' %}">
+                <div class="dropdown-divider"></div>
+                {% endif %}
+                <a class="dropdown-item" href="{% scoped_url request 'workforce:member_settings' %}">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-settings">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" />
                     <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
@@ -225,7 +208,17 @@
                 </a>
 
                 <div class="dropdown-divider"></div>
-                <a href="{% url 'login' %}" class="dropdown-item text-danger">
+                {% if request.user.is_superuser %}
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item text-warning fw-semibold" href="{% url 'dashboard:superuser_dashboard' %}">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-device-remote">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M15 2a3 3 0 0 1 3 3v14a3 3 0 0 1 -3 3h-6a3 3 0 0 1 -3 -3v-14a3 3 0 0 1 3 -3h2v1a1 1 0 0 0 .883 .993l.117 .007a1 1 0 0 0 1 -1v-1zm-5 15a1 1 0 0 0 -1 1l.007 .127a1 1 0 0 0 1.993 -.117l-.007 -.127a1 1 0 0 0 -.993 -.883m4 0a1 1 0 0 0 -1 1l.007 .127a1 1 0 0 0 1.993 -.117l-.007 -.127a1 1 0 0 0 -.993 -.883m-4 -3a1 1 0 0 0 -1 1l.007 .127a1 1 0 0 0 1.993 -.117l-.007 -.127a1 1 0 0 0 -.993 -.883m4 0a1 1 0 0 0 -1 1l.007 .127a1 1 0 0 0 1.993 -.117l-.007 -.127a1 1 0 0 0 -.993 -.883m-2 -7a3 3 0 0 0 -2.995 2.824l-.005 .176a3 3 0 1 0 3 -3" />
+                  </svg> 
+                  Control Panel
+                </a>
+                {% endif %}
+                <a href="{% url 'accounts:login' %}" class="dropdown-item text-danger">
                   <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-logout">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
                     <path d="M9 12h12l-3 -3" /><path d="M18 15l3 -3" />
@@ -238,8 +231,8 @@
         </div>
 
         <!-- Desktop logo (hidden on mobile) -->
-        {% if request|is_admin %}
-          <a href="{% url 'dashboard:admin_dashboard' %}" aria-label="ChurchForce" class="navbar-brand d-none d-md-flex align-items-center">
+        {% if nav_is_admin %}
+          <a href="{% scoped_url request 'dashboard:admin_dashboard' %}" aria-label="ChurchForce" class="navbar-brand d-none d-md-flex align-items-center">
             {% if church and church.is_white_label and church.logo %}
               <img src="{{ church.logo.url }}" alt="{{ church.name }}" width="80" height="80" class="me-2" style="object-fit:cover;">
             {% else %}
@@ -247,7 +240,7 @@
             {% endif %}
           </a>
         {% else %}
-          <a href="{% url 'dashboard:dashboard' %}" aria-label="ChurchForce" class="navbar-brand d-none d-md-flex align-items-center">
+          <a href="{% scoped_url request 'dashboard:dashboard' %}" aria-label="ChurchForce" class="navbar-brand d-none d-md-flex align-items-center">
             {% if church and church.is_white_label and church.logo %}
               <img src="{{ church.logo.url }}" alt="{{ church.name }}" width="80" height="80" class="me-2" style="object-fit:cover;">
             {% else %}
@@ -258,6 +251,15 @@
 
         <!-- Desktop right icons (classic style, hidden on mobile since duplicated above) -->
         <div class="navbar-nav flex-row order-md-last d-none d-md-flex">  
+          {% if nav_is_admin %}
+          <a class="nav-item d-flex align-items-center ms-2 text-white" href="{% scoped_url request 'tenants:account_page' %}" title="Account">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-building-church">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 21l18 0" />
+              <path d="M10 21v-4a2 2 0 0 1 4 0v4" /><path d="M10 5l4 0" /><path d="M12 3l0 5" /><path d="M6 21v-7m-2 2l8 -8l8 8m-2 -2v7" />
+            </svg>
+          </a>
+          {% endif %}
+
           <div class="nav-item dropdown d-flex align-items-center">
             <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" aria-label="Show notifications">
               <!-- Tabler bell icon -->
@@ -322,18 +324,6 @@
             </div>
           </div>
 
-          {% if request|is_admin %}
-          <div class="nav-item d-flex align-items-center ms-2">
-            <a href="{% url 'tenants:church_settings' %}" class="nav-link px-0" aria-label="Church settings">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2fb344" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <path d="M3 19v-11.568a1 1 0 0 1 .426 -.82l9 -6.21a1 1 0 0 1 1.148 0l9 6.21a1 1 0 0 1 .426 .82v11.568a1 1 0 0 1 -1 1h-5v-4a1 1 0 0 0 -1 -1h-6a1 1 0 0 0 -1 1v4h-5a1 1 0 0 1 -1 -1z"/>
-                <path d="M12 0v5" /><path d="M10 3h4" />
-              </svg>
-            </a>
-          </div>
-          {% endif %}
-
           <div class="nav-item dropdown">
             <a href="#" class="nav-link d-flex lh-1 p-0 px-2 ms-2 text-white" data-bs-toggle="dropdown" aria-label="Open user menu" aria-expanded="false">
               {% if user.image %}
@@ -345,29 +335,6 @@
                   {{ user.initials }}
                 </span>
               {% endif %}
-
-              <!--<div class="ps-2 d-flex flex-column justify-content-center">
-                <div class="d-block d-xl-none">{{ user.get_full_name|default:user.full_name }}</div>--> <!-- Show on mobile --
-                <div class="d-none d-xl-block"><i><small>{{ user.title|default:"" }}</small></i><br> {{ user.full_name }}</div>  Show on xl+ -->
-
-                <!--
-                <div class="d-block d-xl-none mt-1 fs-6 text-secondary">
-                  {% if user.is_superuser %}
-                    <span class="bg-warning-lt">Superuser</span>
-                  {% elif user.groups.all.0.name == "Admin" %}
-                    <span class="bg-green-lt">Admin</span>
-                  {% elif user.groups.all.0.name == "Team Member" %}
-                    <span class="bg-azure-lt">Team Member</span>
-                  {% else %}
-                    <span class="badge bg-gray-lt">Sign-In</span>
-                  {% endif %}
-                </div>
-                
-
-                <div class="d-none d-xl-block mt-1 fs-6 text-secondary">
-                  <span class="text-secondary">{{ user|role_label }}</span>
-                </div>
-              </div>-->
             </a>
             <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow py-1">
 
@@ -380,7 +347,25 @@
                 <span class="badge badge-sm bg-green-lt ms-auto">Home</span>
               </a>
               <div class="dropdown-divider"></div>
-              <a href="{% url 'login' %}" class="dropdown-item text-danger">
+              <a class="dropdown-item" href="{% scoped_url request 'workforce:member_settings' %}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-settings">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" />
+                  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+                </svg>
+                My Settings
+              </a>
+              <div class="dropdown-divider"></div>
+              {% if request.user.is_superuser %}
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item text-warning fw-semibold" href="{% url 'dashboard:superuser_dashboard' %}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-device-remote">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M15 2a3 3 0 0 1 3 3v14a3 3 0 0 1 -3 3h-6a3 3 0 0 1 -3 -3v-14a3 3 0 0 1 3 -3h2v1a1 1 0 0 0 .883 .993l.117 .007a1 1 0 0 0 1 -1v-1zm-5 15a1 1 0 0 0 -1 1l.007 .127a1 1 0 0 0 1.993 -.117l-.007 -.127a1 1 0 0 0 -.993 -.883m4 0a1 1 0 0 0 -1 1l.007 .127a1 1 0 0 0 1.993 -.117l-.007 -.127a1 1 0 0 0 -.993 -.883m-4 -3a1 1 0 0 0 -1 1l.007 .127a1 1 0 0 0 1.993 -.117l-.007 -.127a1 1 0 0 0 -.993 -.883m4 0a1 1 0 0 0 -1 1l.007 .127a1 1 0 0 0 1.993 -.117l-.007 -.127a1 1 0 0 0 -.993 -.883m-2 -7a3 3 0 0 0 -2.995 2.824l-.005 .176a3 3 0 1 0 3 -3" />
+                </svg> 
+                Control Panel
+              </a>
+              {% endif %}
+              <a href="{% url 'accounts:login' %}" class="dropdown-item text-danger">
                 <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-logout">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
                   <path d="M9 12h12l-3 -3" /><path d="M18 15l3 -3" />
@@ -396,8 +381,8 @@
           <!-- BEGIN NAVBAR MENU -->
           <ul class="navbar-nav">
             <li class="nav-item">
-              {% if request|is_admin %}
-                <a class="nav-link text-white" href="{% url 'dashboard:admin_dashboard' %}">
+              {% if nav_is_admin %}
+                <a class="nav-link text-white" href="{% scoped_url request 'dashboard:admin_dashboard' %}">
                   <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0066ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
                       <path d="M5 12l-2 0l9 -9l9 9l-2 0"></path>
@@ -408,7 +393,7 @@
                   <span class="nav-link-title"> Dashboard </span>
                 </a>
               {% else %}
-                <a class="nav-link text-white" href="{% url 'dashboard:dashboard' %}">
+                <a class="nav-link text-white" href="{% scoped_url request 'dashboard:dashboard' %}">
                   <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0066ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
                       <path d="M5 12l-2 0l9 -9l9 9l-2 0"></path>
@@ -421,154 +406,64 @@
               {% endif %}
             </li>
 
-            {% if nav_units or nav_groups %}
+            {% if nav_units %}
             <li class="nav-item ms-1 dropdown">
               <a class="nav-link dropdown text-white" href="#units" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                 <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-building-community">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M8 9l2 -2l2 2" /><path d="M12 7v5" />
-                    <path d="M16 9l2 -2l2 2" /><path d="M18 7v5" />
-                    <path d="M8 15h8" /><path d="M10 19h4" />
-                    <path d="M3 21h18" />
-                    <path d="M3 10l9 -7l9 7v11a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1z" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-users">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+                    <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
                   </svg>
                 </span>
-                <span class="nav-link-title"> My Units </span>
+                <span class="nav-link-title">{% if nav_is_admin %}Units{% else %}My Units{% endif %}</span>
               </a>
               <div class="dropdown-menu">
-                {% if nav_units %}
-                  <div class="dropdown-header">Units</div>
-                  {% for unit in nav_units %}
-                    <a class="dropdown-item" href="{% url 'units:detail' unit.id %}">{{ unit.name }}</a>
-                  {% endfor %}
-                {% endif %}
-                {% if nav_groups %}
-                  <div class="dropdown-header">Groups</div>
-                  {% for unit in nav_groups %}
-                    <a class="dropdown-item" href="{% url 'units:detail' unit.id %}">{{ unit.name }}</a>
-                  {% endfor %}
-                {% endif %}
+                {% for unit in nav_units %}
+                  <a class="dropdown-item" href="{% url 'units:detail' unit.slug %}">{{ unit.name }}</a>
+                {% endfor %}
                 <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="{% url 'units:list' %}">All Units & Groups</a>
+                {% if nav_is_admin %}
+                <a class="dropdown-item fw-semibold text-blue" href="{% url 'units:list' %}">Manage All Units</a>
+                {% else %}
+                <a class="dropdown-item" href="{% url 'units:list' %}">View All</a>
+                {% endif %}
               </div>
             </li>
             {% endif %}
 
-            {% if church_settings.enable_guest_module and not request.user.is_superuser and permissions|can:"guests.view" %}
-              <li class="nav-item ms-1">
-                <a class="nav-link text-white" href="{% url 'guests:guest_list' %}">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#ff5e01ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
-                    </svg>
-                  </span>
-                  <span class="nav-link-title"> Guests </span>
-                </a>
-              </li>
-            {% elif request.user.is_superuser %}
-              <li class="nav-item ms-1 dropdown py-1">
-                <a class="nav-link dropdown text-white" href="#guest" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#ff5e01ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
-                    </svg>
-                  </span>
-                  <span class="nav-link-title"> Guests </span>
-                </a>
-                <div class="dropdown-menu">
-                  <a class="dropdown-item" href="{% url 'guests:guest_list' %}">
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
-                    </svg>
-                    View Guests
-                  </a>
-                  <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#bulkDeleteModal">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-cancel">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
-                      <path d="M18.364 5.636l-12.728 12.728" />
-                    </svg>
-                    Delete Guest(s)
-                  </a>
-                </div>
-              </li>
-            {% endif %}
-            {% if church_settings.enable_music_module and permissions|can:"music.view" %}
-              <li class="nav-item ms-1">
-                <a class="nav-link text-white" href="{% url 'music:index' %}">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                      <path d="M9 18v-12l12 -2v12" />
-                      <circle cx="6" cy="18" r="3" />
-                      <circle cx="18" cy="16" r="3" />
-                    </svg>
-                  </span>
-                  <span class="nav-link-title"> Music </span>
-                </a>
-              </li>
-            {% endif %}
-            {% if church_settings.enable_media_module and permissions|can:"media.view" %}
-              <li class="nav-item ms-1">
-                <a class="nav-link text-white" href="{% url 'media:index' %}">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                      <path d="M4 7a2 2 0 0 1 2 -2h9a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-9a2 2 0 0 1 -2 -2z" />
-                      <path d="M16 9l5 -2v10l-5 -2z" />
-                    </svg>
-                  </span>
-                  <span class="nav-link-title"> Media </span>
-                </a>
-              </li>
-            {% endif %}
-            {% if church_settings.enable_children_module and permissions|can:"children.view" %}
-              <li class="nav-item ms-1">
-                <a class="nav-link text-white" href="{% url 'children:index' %}">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                      <path d="M7 8a4 4 0 1 1 4 4v7" />
-                      <path d="M16 8a4 4 0 1 1 -4 4" />
-                    </svg>
-                  </span>
-                  <span class="nav-link-title"> Children </span>
-                </a>
-              </li>
-            {% endif %}
-            {% if church_settings.enable_youth_module and permissions|can:"youth.view" %}
-              <li class="nav-item ms-1">
-                <a class="nav-link text-white" href="{% url 'youth:index' %}">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                      <path d="M12 3l7 5v6c0 3.866 -3.134 7 -7 7s-7 -3.134 -7 -7v-6z" />
-                      <path d="M9 12l2 2l4 -4" />
-                    </svg>
-                  </span>
-                  <span class="nav-link-title"> Youth </span>
-                </a>
-              </li>
-            {% endif %}
-            {% if church_settings.enable_teenagers_module and permissions|can:"teenagers.view" %}
-              <li class="nav-item ms-1">
-                <a class="nav-link text-white" href="{% url 'teenagers:index' %}">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                      <path d="M4 7h16" />
-                      <path d="M7 7v10" />
-                      <path d="M17 7v10" />
-                      <path d="M9 17h6" />
-                    </svg>
-                  </span>
-                  <span class="nav-link-title"> Teenagers </span>
-                </a>
-              </li>
+            {% if nav_groups %}
+            <li class="nav-item ms-1 dropdown">
+              <a class="nav-link dropdown text-white" href="#groups" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-users-group">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                    <path d="M8 21v-2a4 4 0 0 1 8 0v2" />
+                    <path d="M15 3a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                    <path d="M17 10v-2a4 4 0 0 1 4 0v2" />
+                    <path d="M5 3a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                    <path d="M3 10v-2a4 4 0 0 1 4 0v2" />
+                  </svg>
+                </span>
+                <span class="nav-link-title">{% if nav_is_admin %}Groups{% else %}My Groups{% endif %}</span>
+              </a>
+              <div class="dropdown-menu">
+                {% for unit in nav_groups %}
+                  <a class="dropdown-item" href="{% url 'units:detail' unit.slug %}">{{ unit.name }}</a>
+                {% endfor %}
+                <div class="dropdown-divider"></div>
+                {% if nav_is_admin %}
+                <a class="dropdown-item fw-semibold text-blue" href="{% url 'units:list' %}">Manage All Groups</a>
+                {% else %}
+                <a class="dropdown-item" href="{% url 'units:list' %}">View All</a>
+                {% endif %}
+              </div>
+            </li>
             {% endif %}
 
-            {% if request|is_admin or permissions|can:"accounts.view_team" %}
+            {% if can_view_all_members %}
               <li class="nav-item ms-1">
-                <a class="nav-link text-white" href="{% url 'accounts:user_list' %}">
+                <a class="nav-link text-white" href="{% scoped_url request 'accounts:user_list' %}">
                   <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
                     <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#02bd12ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users-group">
                       <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1" />
@@ -576,11 +471,73 @@
                       <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M3 13v-1a2 2 0 0 1 2 -2h2" />
                     </svg>
                   </span>
-                  <span class="nav-link-title"> Team </span>
+                  <span class="nav-link-title"> Workforce </span>
                 </a>
               </li>
             {% endif %}
-            {% if request.user.is_superuser or permissions|can:"messaging.send_bulk" %}
+            {# Training — LMS, badge = pending reviews (admin) or active enrollments (member) #}
+            <li class="nav-item dropdown {% if request.resolver_match.app_name == 'lms' %}active{% endif %}">
+              <a class="nav-link d-flex align-items-center gap-1"
+                href="{% url 'lms:course_list' %}"
+                data-bs-toggle="dropdown"
+                role="button"
+                aria-expanded="false">
+
+                {# Diploma / training icon #}
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                    fill="none" stroke="#f59f00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="flex-shrink-0">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                  <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                </svg>
+                Training
+                {% if lms_pending_peer_count %}
+                <span class="badge bg-warning text-dark ms-1"
+                      style="font-size:.58rem;border-radius:20px;padding:2px 5px;vertical-align:middle;">
+                  {{ lms_pending_peer_count }}
+                </span>
+                {% endif %}
+              </a>
+
+              <div class="dropdown-menu dropdown-menu-end" style="min-width:200px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:#1a2535;">
+
+                <a class="dropdown-item small" href="{% url 'lms:course_list' %}">
+                  📚 My Courses
+                </a>
+
+                {% if nav_is_admin %}
+                <a class="dropdown-item small" href="{% url 'lms:course_list' %}?type=all">
+                  🗂 All Courses
+                </a>
+                <a class="dropdown-item small" href="{% url 'lms:admin_courses' %}">
+                  ⚙ Manage Courses
+                </a>
+                <a class="dropdown-item small d-flex align-items-center justify-content-between"
+                  href="{% url 'lms:proctor_queue' %}">
+                  📝 Review Queue
+                  {% if lms_pending_reviews %}
+                  <span class="badge bg-danger" style="font-size:.6rem;">{{ lms_pending_reviews }}</span>
+                  {% endif %}
+                </a>
+                <div class="dropdown-divider" style="border-color:rgba(255,255,255,.08);"></div>
+                {% endif %}
+
+                {% if lms_pending_peer_count %}
+                <a class="dropdown-item small d-flex align-items-center justify-content-between"
+                  href="{% url 'lms:proctor_queue' %}">
+                  👥 Peer Reviews
+                  <span class="badge bg-warning text-dark" style="font-size:.6rem;">{{ lms_pending_peer_count }}</span>
+                </a>
+                {% endif %}
+
+                <a class="dropdown-item small" href="{% url 'lms:certificates' %}">
+                  🏆 Certificates
+                </a>
+
+              </div>
+            </li>
+
+            {% if request.user.is_superuser or can_send_bulk %}
               <li class="nav-item ms-1 dropdown">
                 <!-- Bulk Message Trigger Button -->
                 <a class="nav-link text-white" href="#" data-bs-toggle="modal" data-bs-target="#bulkMessageModal">
@@ -592,62 +549,6 @@
                   </span>
                   <span class="nav-link-title"> Message </span>
                 </a>
-              </li>
-            {% endif %}
-            {% if request|is_admin or permissions|can:"guests.export" or permissions|can:"guests.import" %}
-              <li class="nav-item ms-1 dropdown py-1">
-                <a class="nav-link dropdown text-white" href="#share" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/checkbox -->
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#00ffb3ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-share">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
-                      <path d="M18 6m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M18 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
-                      <path d="M8.7 10.7l6.6 -3.4" /><path d="M8.7 13.3l6.6 3.4" />
-                    </svg>
-                  </span>
-                  <span class="nav-link-title"> Share </span>
-                </a>
-                <div class="dropdown-menu">
-                  <a class="dropdown-item" href="{% url 'guests:export_guests_excel' %}">
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#37b307ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-file-excel">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                      <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" />
-                      <path d="M10 12l4 5" /><path d="M10 17l4 -5" />
-                    </svg>
-                    Excel
-                  </a>
-                  <a class="dropdown-item"
-                    href="mailto:?subject=Guest%20Entries&body=Download%20the%20guest%20list%20here:%20{{ request.build_absolute_uri|cut:request.get_full_path }}{% url 'guests:export_guests_excel' %}">
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#EA4335"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-gmail">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                      <path d="M16 20h3a1 1 0 0 0 1 -1v-14a1 1 0 0 0 -1 -1h-3v16z" />
-                      <path d="M5 20h3v-16h-3a1 1 0 0 0 -1 1v14a1 1 0 0 0 1 1z" />
-                      <path d="M16 4l-4 4l-4 -4" /><path d="M4 6.5l8 7.5l8 -7.5" />
-                    </svg>
-                    Mail
-                  </a>
-                  <a class="dropdown-item"
-                    target="_blank"
-                    href="https://wa.me/?text=Download%20guest%20entries%20Excel%20here:%20{{ request.build_absolute_uri|cut:request.get_full_path }}{% url 'guests:export_guests_excel' %}">
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#03f74cff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-whatsapp">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" />
-                      <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" />
-                    </svg>
-                    WhatsApp
-                  </a>
-                  {% if request.user.is_superuser %}
-                    <form action="{% url 'guests:import_guests_csv' %}" method="post" enctype="multipart/form-data" class="dropdown-item p-0 m-0">
-                      {% csrf_token %}
-                      <label for="csvUpload" class="d-flex align-items-center px-3 py-2 cursor-pointer mb-0" style="width:100%;">
-                        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#806885ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-file-import">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                          <path d="M5 13v-8a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-5.5m-9.5 -2h7m-3 -3l3 3l-3 3" />
-                        </svg>
-                        Import CSV
-                      </label>
-                      <input type="file" id="csvUpload" name="csv_file" accept=".csv" class="d-none" onchange="this.form.submit()">
-                    </form>
-                  {% endif %}
-                </div>
               </li>
             {% endif %}
             
@@ -708,9 +609,9 @@
               </ul>
             </li>
             {% endif %}
-            {% if request|is_admin or permissions|can:"events.manage_all" %}
+            {% if nav_is_admin or can_manage_all_events %}
               <li class="nav-item ms-1">
-                <a class="nav-link text-white" href="{% url 'workforce:manage_events' %}">
+                <a class="nav-link text-white" href="{% url 'services:manage_events' %}">
                   <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-calendar-cog">
                       <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 21h-6a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v5" />
@@ -726,7 +627,7 @@
               </li>
             {% endif %}
             <li class="nav-item ms-1">
-              <a href="{% url 'workforce:chat_room' %}" class="nav-link text-white" aria-label="ChatRoom">
+              <a href="{% scoped_url request 'workforce:chat_room' %}" class="nav-link text-white" aria-label="ChatRoom">
                 <span class="nav-link-icon d-md-none d-lg-inline-block">
                   <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#f703d7ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-armchair">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -738,7 +639,44 @@
                 <span class="nav-link-title"> ChatRoom </span>
               </a>
             </li>
-            
+
+            {# ── Campus-church nav items ───────────────────────────────── #}
+            {% if is_campus_church %}
+              {# Inside a campus-church: show link back to HQ #}
+              <li class="nav-item ms-1">
+                <a class="nav-link text-white" href="{{ hq_church|campus_church_url|default:'/' }}" title="Back to {{ hq_church.name }}">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" class="icon">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M3 21l18 0"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/>
+                      <path d="M10 5l4 0"/><path d="M12 3l0 5"/>
+                      <path d="M6 21v-7m-2 2l8 -8l8 8m-2 -2v7"/>
+                    </svg>
+                  </span>
+                  <span class="nav-link-title">HQ</span>
+                </a>
+              </li>
+            {% elif led_campus and not nav_is_admin %}
+              {# HQ side: campus leader sees link to their campus-church #}
+              <li class="nav-item ms-1">
+                {% if led_campus.campus_church_id %}
+                  <a class="nav-link text-white" href="{{ led_campus.campus_church|campus_church_url }}" title="{{ led_campus.name }}">
+                {% else %}
+                  <a class="nav-link text-white" href="{% url 'tenants:campus_workspace' led_campus.slug %}" title="{{ led_campus.name }}">
+                {% endif %}
+                  <span class="nav-link-icon d-md-none d-lg-inline-block">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" class="icon">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M3 21l18 0"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/>
+                      <path d="M10 5l4 0"/><path d="M12 3l0 5"/>
+                      <path d="M6 21v-7m-2 2l8 -8l8 8m-2 -2v7"/>
+                    </svg>
+                  </span>
+                  <span class="nav-link-title">My Campus</span>
+                  </a>
+              </li>
+            {% endif %}
+
           </ul>
           <!-- END NAVBAR MENU -->
         </div>
@@ -748,9 +686,1257 @@
 
 
   <!-- Page Content -->
-  <main>
-    {% block content %}{% endblock %}
+  <main class="flex-fill">
+    
+    {% if banner_announcements %}
+    <div class="sticky-banner-shell">
+      <div class="container-xl">
+        <div class="dashboard-banner-ticker">
+          <div class="dashboard-banner-track">
+            {% for a in banner_announcements %}
+              <span class="dashboard-banner-item">
+                <span class="badge {% if a.unit_id %}bg-orange-lt{% else %}bg-blue-lt{% endif %}">
+                  {% if a.unit_id %}Unit{% else %}Workforce{% endif %}
+                </span>
+                <strong>{{ a.title }}</strong>
+                <span>{{ a.body|truncatechars:140 }}</span>
+              </span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  
+    <input type="checkbox" id="panel-toggle" hidden>
+    <!-- Widget Panel Toggle button -->
+    <label for="panel-toggle" class="trigger-bubble" title="Widget Panel">
+      <span> 
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-layout-sidebar-right-expand">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M18 3a3 3 0 0 1 2.995 2.824l.005 .176v12a3 3 0 0 1 -2.824 2.995l-.176 .005h-12a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-12a3 3 0 0 1 2.824 -2.995l.176 -.005h12zm-3 2h-9a1 1 0 0 0 -.993 .883l-.007 .117v12a1 1 0 0 0 .883 .993l.117 .007h9v-14zm-3.293 4.293a1 1 0 0 1 .083 1.32l-.083 .094l-1.292 1.293l1.292 1.293a1 1 0 0 1 .083 1.32l-.083 .094a1 1 0 0 1 -1.32 .083l-.094 -.083l-2 -2a1 1 0 0 1 -.083 -1.32l.083 -.094l2 -2a1 1 0 0 1 1.414 0z" />
+        </svg>
+      </span>
+    </label>
+    
+    <div class="dashboard-widget-rail">
+      {% block widget_buttons %}
+        
+        {# ── Bible rail button ─────────────────────────────────────────── #}
+        <button type="button" class="dashboard-widget-jump" data-title="Bible" title="Bible Reading Plans"
+                onclick="window.location.href='{% url 'bible:dashboard' %}'">
+          <span style="font-size:1.4rem;line-height:1;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 6.5a5.5 5.5 0 0 1 4-1.5h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1h-3.5"/>
+              <path d="M12 6.5a5.5 5.5 0 0 0-4-1.5H5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h3.5"/>
+              <path d="M12 6.5V19"/><path d="M9 10h1"/><path d="M9 13h1"/>
+            </svg>
+          </span>
+        </button>
+
+        <button type="button" class="dashboard-widget-jump" style="opacity:.7;" data-title="Bible Search" title="Search Bible (/)"
+                onclick="openBibleSlashModal()">
+          <span style="font-size:1.1rem;line-height:1;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-search">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
+              <path d="M21 21l-6 -6" />
+            </svg>
+          </span>
+        </button>
+
+        <button type="button" class="dashboard-widget-jump clockin-trigger" data-title="Clock In"
+                title="Clock In">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+              fill="none" stroke="#f59f00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M21 12a9 9 0 1 0-9.972 8.948c.32.034.644.052.972.052"/>
+            <path d="M12 7v5l2 2"/><path d="M18.42 15.61a2.1 2.1 0 0 1 2.97 2.97l-3.39 3.42h-3v-3l3.42-3.39z"/>
+          </svg>
+        </button>
+        
+        {% if can_create_guest %}
+        <button type="button" class="dashboard-widget-jump" data-title="Add Guest">
+          <a href="{% url 'guests:create_guest' %}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0-8 0"/>
+              <path d="M3 21v-2a4 4 0 0 1 4-4h4c.96 0 1.84.338 2.53.901"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M16 19h6"/><path d="M19 16v6"/>
+            </svg>
+          </a>
+        </button>
+        {% endif %}
+
+        {% if can_view_all_members %}
+        <button type="button" class="dashboard-widget-jump" data-title="Add Member">
+          <a href="{% url 'accounts:create_user' %}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#02bd12ff" stroke-width="2" class="icon">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/>
+              <path d="M3 21v-2a4 4 0 0 1 4 -4h4c.96 0 1.84 .338 2.53 .901"/>
+              <path d="M16 19h6"/><path d="M19 16v6"/>
+            </svg>
+          </a>
+        </button>
+        
+        {% endif %}
+        {% if permissions|can:"guests.bulk_delete" %}
+        <button class="dashboard-widget-jump" data-title="Bulk Delete Guest" data-bs-toggle="modal" data-bs-target="#bulkDeleteModal">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                viewBox="0 0 24 24" fill="currentColor">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M20 6a1 1 0 0 1 .117 1.993l-.117.007h-.081l-.919 11a3 3 0 0 1-2.824 2.995l-.176.005h-8c-1.598 0-2.904-1.249-2.992-2.75l-.005-.167-.923-11.083h-.08a1 1 0 0 1-.117-1.993l.117-.007zm-10 4a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1m4 0a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1"/>
+            <path d="M14 2a2 2 0 0 1 2 2a1 1 0 0 1-1.993.117l-.007-.117h-4l-.007.117a1 1 0 0 1-1.993-.117a2 2 0 0 1 1.85-1.995l.15-.005z"/>
+          </svg>
+        </button>
+        {% endif %}
+        
+      {% endblock %}
+    </div>
+
+    {% block content %}
+    {% endblock %}
+    
   </main>
+
+  <!-- ── Clockin + Calendar ── -->
+  <div id="clockinPanel" class="clockin-panel" aria-hidden="true">
+    
+    <div class="card p-3 m-3" id="timeCard" style="border-radius:24px;background:#111827;" data-user-color="{{ user.color_hex|default:'#22c55e' }}">
+      <div class="card-body p-0">
+        <div class="row g-3 align-items-center">
+
+          <!-- Clock column -->
+          <div class="col-md-6 d-flex flex-column align-items-center justify-content-center text-center">
+            {% if nav_is_admin %}
+            <div class="mb-2 w-100">
+              <select id="userSelect" class="form-select border-0 text-white"
+                      style="box-shadow:0 4px 8px #000000d2;border-radius:24px;background:var(--tblr-gray-900);font-weight:bold;">
+                <option value="">Select member to view data</option>
+                {% for u in users %}
+                  <option value="{{ u.id }}">{{ u.title|default:"" }} {{ u.full_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endif %}
+            <div id="clockinDate" class="fw-bold" style="font-size:1rem;letter-spacing:.04em;color:#f59f00;"></div>
+            <canvas id="clockinAnalogClock" width="160" height="160"></canvas>
+            <div id="clockinDigitalClock" class="fw-bold" style="font-size:2.2rem;letter-spacing:.1em;font-family:monospace;color:#f59f00;"></div>
+
+            <div class="clockin-calendar-anchor mt-2">
+              <button id="clockinCalToggle" class="clockin-cal-toggle-btn" title="Open Calendar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 5m0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-12a2 2 0 0 1-2-2z"/><path d="M16 3l0 4"/><path d="M8 3l0 4"/><path d="M4 11l16 0"/><path d="M11 15l1 0"/><path d="M12 15l0 3"/></svg>
+                Calendar
+              </button>
+              <div id="clockinCalendarWrap" class="clockin-calendar-popup" aria-hidden="true">
+                <div id="clockinCalendarMount" style="border-radius:16px;overflow:hidden;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats column (hidden for admin until user selected) -->
+          <div id="summaryColumn" class="col-md-6 d-flex flex-column gap-3"
+              {% if nav_is_admin %}style="display:none;"{% endif %}>
+
+            <!-- Next event countdown -->
+            {% if next_events_for_week %}
+            <div id="weeklyEventsContainer" class="flex-fill p-3 text-center"
+                style="border-radius:24px;background:var(--tblr-gray-900);box-shadow:0 4px 8px #000000d2;">
+              <div id="eventDisplayArea" class="fw-bold text-warning text-center" style="font-size:1.05rem;">
+                {% for event in next_events_for_week %}
+                <div class="weekly-event-item {% if not forloop.first %}d-none{% endif %}"
+                    data-datetime="{{ event.datetime_iso }}"
+                    data-postponed="{{ event.postponed|yesno:'true,false' }}">
+                  <div class="d-flex justify-content-center align-items-center mb-1">
+                    <span class="ms-2 text-white fw-bold">{{ event.name }}</span>
+                    {% if event.unit_name %}
+                      <span class="badge ms-2 {{ event.unit_color_class }}">{{ event.unit_name }}</span>
+                    {% else %}
+                      {% if church %}
+                        <span class="badge ms-2 bg-indigo-lt">{{ church.name }}</span>
+                      {% else %}
+                        <span class="badge ms-2 bg-indigo-lt">ChurchForce</span>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                  {% if event.postponed %}
+                    <small class="text-danger fst-italic">
+                      Postponed → {% if event.date %}{{ event.date }}{% else %}Date TBD{% endif %}
+                    </small>
+                  {% else %}
+                    <small class="text-secondary">{{ event.date|date:"D, M j Y" }} • {{ event.time|default:"TBA" }}</small>
+                  {% endif %}
+                  <div class="countdown fw-semibold mt-1"><span class="countdown-text">Loading…</span></div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% else %}
+            <div class="p-3 text-center text-muted small" style="border-radius:12px;background:#111827;">No Programme(s) this Week.</div>
+            {% endif %}
+
+            <!-- Clock-in stats row -->
+            <div class="d-flex gap-2">
+              <div class="flex-fill p-3 text-center bg-cyan-lt" style="border-radius:24px;box-shadow:inset 0 4px 8px #000000d2;">
+                <div class="text-white small">Clock In</div>
+                <h1 id="totalClockIn" class="fw-bold text-warning" style="font-family:monospace;">{{ total_clock_in|default:"--" }}</h1>
+              </div>
+              <div class="flex-fill p-3 text-center bg-cyan-lt" style="border-radius:24px;box-shadow:inset 0 4px 8px #000000d2;">
+                <div class="text-white small">Clock Out</div>
+                <h1 id="totalClockOut" class="fw-bold text-purple" style="font-family:monospace;">{{ total_clock_out|default:"--" }}</h1>
+              </div>
+            </div>
+
+            <!-- Attendance summary -->
+            <div class="d-flex gap-2">
+              <div class="flex-fill p-3 text-center bg-cyan-lt" style="border-radius:24px;box-shadow:inset 0 4px 8px #000000d2;">
+                <div class="text-white small">Present</div>
+                <h1 id="summaryPresent" class="fw-bold text-success" style="font-family:monospace;">--</h1>
+              </div>
+              <div class="flex-fill p-3 text-center bg-cyan-lt" style="border-radius:24px;box-shadow:inset 0 4px 8px #000000d2;">
+                <div class="text-white small">Excused</div>
+                <h1 id="summaryExcused" class="fw-bold text-blue" style="font-family:monospace;">--</h1>
+              </div>
+              <div class="flex-fill p-3 text-center bg-cyan-lt" style="border-radius:24px;box-shadow:inset 0 4px 8px #000000d2;">
+                <div class="text-white small">Absent</div>
+                <h1 id="summaryAbsent" class="fw-bold text-red" style="font-family:monospace;">--</h1>
+              </div>
+            </div>
+
+            <!-- Clock-in button -->
+            <div class="d-flex justify-content-center m-3">
+              <button id="clockInBtn" data-bs-toggle="modal" data-bs-target="#dashboardAttendanceModal"
+                      class="btn flex-fill py-3 fw-bold border-0" style="border-radius:24px;background:var(--tblr-gray-900);box-shadow:0 4px 8px #000000d2;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon me-2">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M20.984 12.535a9 9 0 1 0-8.431 8.448"/>
+                  <path d="M12 7v5l3 3"/><path d="M19 16v6"/><path d="M22 19l-3 3l-3-3"/>
+                </svg>
+                Clock In
+              </button>
+            </div>
+            <div class="text-center mb-2">
+              <span id="autoMarkBadge" class="badge bg-success-lt text-success d-none">
+                Attendance auto-marked from clock-in
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>{# /card-body #}
+
+    </div>{# /card #}
+  </div>{# /clockinPanel #}
+
+  {# ── Attendance modal (unchanged) ── #}
+  <div class="modal modal-blur fade" id="dashboardAttendanceModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header d-flex justify-content-between align-items-center py-3">
+          <div class="modal-title fw-bold d-flex px-4">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2" style="width:48px;height:48px;">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M21 12a9 9 0 1 0-9.972 8.948c.32.034.644.052.972.052"/><path d="M12 7v5l2 2"/><path d="M18.42 15.61a2.1 2.1 0 0 1 2.97 2.97l-3.39 3.42h-3v-3l3.42-3.39z"/>
+            </svg>
+          </div>
+          <div class="ms-auto" style="font-family:monospace">
+            <span id="dashboardModalLiveDate" class="badge bg-gray-900 fw-bold me-2" style="box-shadow:0 4px 8px #000000d2;"></span>
+            <span class="text-white">—</span>
+            <span id="dashboardModalLiveTime" class="badge bg-gray-900 fw-bold ms-2" style="box-shadow:0 4px 8px #000000d2;"></span>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="dashboardAttendanceForm" method="POST" action="{% url 'workforce:mark_attendance' %}">
+          {% csrf_token %}
+          <div class="modal-body">
+            <div id="unitSelectionRow" class="d-flex flex-wrap gap-2 mb-3 justify-content-center">
+              <button type="button" class="btn px-3 py-2 unit-btn border-0" data-unit-id="null" style="border-radius:12px;background:{{ church.primary_color }}22;">
+                {% if church %}{{ church.name }}'s Event{% else %}ChurchForce{% endif %}
+              </button>
+              {% for unit in nav_units %}
+              <button type="button" class="btn px-3 py-2 unit-btn text-white border-0 {{ unit.color_class }}" data-unit-id="{{ unit.id }}" style="border-radius:12px;background:#1F2937;">{{ unit.name }}</button>
+              {% endfor %}
+              {% for unit in nav_groups %}
+              <button type="button" class="btn px-3 py-2 unit-btn text-white border-0 {{ unit.color_class }}" data-unit-id="{{ unit.id }}" style="border-radius:12px;background:#1F2937;">{{ unit.name }}</button>
+              {% endfor %}
+            </div>
+            <div id="eventCarouselWrapper" class="mb-4" style="display:none;">
+              <div id="eventCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner" id="eventCarouselInner"></div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#eventCarousel" data-bs-slide="prev">
+                  <span class="carousel-control-prev-icon bg-cyan-lt" style="border-radius:24px;box-shadow:inset 0 4px 8px #000000d2;"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#eventCarousel" data-bs-slide="next">
+                  <span class="carousel-control-next-icon bg-cyan-lt" style="border-radius:24px;box-shadow:0 4px 8px #000000d2;"></span>
+                </button>
+              </div>
+            </div>
+            <div class="d-flex flex-column align-items-center text-center">
+              <div id="clockSection">
+                <div id="modalAnalogClockWrapper">
+                  <div id="modalLiveDateMini" class="fw-bold mb-2" style="font-size:1.1rem;"></div>
+                  <canvas id="modalAnalogClock" width="200" height="200" class="mb-3"></canvas>
+                  <div id="modalDigitalClock" class="fw-bold" style="font-size:2.5rem;letter-spacing:.05em;font-family:monospace;"></div>
+                </div>
+              </div>
+              <div id="eventModeSection" class="text-center" style="display:none;">
+                <h2 id="eventNameDisplay" class="fw-bold mb-1"></h2>
+                <div id="eventTypeDisplay" class="text-secondary mb-2"></div>
+                <div id="eventCountdown" class="fw-bold mb-2" style="font-size:2rem;font-family:monospace;"></div>
+                <div id="eventLocationStatus" class="small mb-3"></div>
+                <textarea name="remarks" class="form-control bg-gray-800 mb-3" rows="2" style="border-radius:24px;box-shadow:inset 0 4px 8px #000000d2;" placeholder="Optional remarks…"></textarea>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                  <button type="button" class="btn bg-success-lt px-3 py-2 mark-btn" data-status="present" style="border-radius:24px;box-shadow:0 4px 8px #000000d2;">Present</button>
+                  <button type="button" class="btn bg-warning-lt px-3 py-2 mark-btn" data-status="excused" style="border-radius:24px;box-shadow:0 4px 8px #000000d2;">Excused</button>
+                  <button type="button" class="btn bg-danger-lt px-3 py-2 mark-btn" data-status="absent" style="border-radius:24px;box-shadow:0 4px 8px #000000d2;">Absent</button>
+                  <button type="button" id="clockOutBtn" class="btn bg-secondary-lt px-3 py-2 d-none" data-status="clock_out" style="border-radius:24px;box-shadow:0 4px 8px #000000d2;">Clock Out</button>
+                </div>
+              </div>
+            </div>
+            <input type="hidden" name="event_id" id="eventIdField">
+            <input type="hidden" name="latitude" id="latitude">
+            <input type="hidden" name="longitude" id="longitude">
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+  // ── URL constants ──────────────────────────────────────────────────────────
+  const URLS = {
+    markAttendance:  "{% url 'workforce:mark_attendance' %}",
+    clockAction:     "{% url 'accounts:clock_action' %}",
+    attendanceCheck: "{% url 'accounts:attendance_check' %}",
+    summaryFetch:    "{% url 'accounts:attendance_summary' %}",
+    apiEvents:       "{% url 'workforce:api_events' %}",
+  };
+  const CHURCH = {
+    lat:      {{ church.latitude|default:"0" }},
+    lon:      {{ church.longitude|default:"0" }},
+    radiusKm: {{ church.attendance_radius_km|default:"0.1" }},
+  };
+  const USER_COLOR = "{{ user.color_hex }}";
+  const CHURCH_COLOR = "{{ request.church.primary_color }}";
+  const IS_ADMIN   = {{ nav_is_admin|yesno:"true,false" }};
+ 
+  function getCsrf() { return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ""; }
+  function haversineKm(lat1,lon1,lat2,lon2){const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180,a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+  function showToast(msg,type="dark"){const t=document.createElement("div");t.className=`position-fixed bottom-0 start-50 translate-middle-x bg-${type} text-white px-4 py-2 rounded shadow`;t.style.zIndex=9999;t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
+ 
+  document.addEventListener("DOMContentLoaded", function() {
+    // ════════════════════════════════════════════════════════════════════════════
+    // ANALOG CLOCK (reusable)
+    // ════════════════════════════════════════════════════════════════════════════
+    function drawClock(canvas, color) {
+      if (!canvas) return;
+      const ctx=canvas.getContext("2d"),r=canvas.width/2,now=new Date();
+      ctx.clearRect(0,0,canvas.width,canvas.height);ctx.save();ctx.translate(r,r);
+      ctx.beginPath();ctx.arc(0,0,r-4,0,2*Math.PI);ctx.fillStyle="#0f172a";ctx.fill();
+      ctx.strokeStyle=color+"55";ctx.lineWidth=3;ctx.stroke();
+      for(let i=0;i<60;i++){ctx.beginPath();const len=i%5===0?8:3;ctx.lineWidth=i%5===0?2:1;ctx.strokeStyle="#475569";ctx.moveTo(0,-r+4);ctx.lineTo(0,-r+4+len);ctx.stroke();ctx.rotate(Math.PI/30);}
+      ctx.fillStyle="#94a3b8";ctx.font=`${Math.floor(r*0.14)}px monospace`;ctx.textAlign="center";ctx.textBaseline="middle";
+      for(let n=1;n<=12;n++){const ang=(n*Math.PI)/6;ctx.rotate(ang);ctx.translate(0,-r*.78);ctx.rotate(-ang);ctx.fillText(n,0,0);ctx.rotate(ang);ctx.translate(0,r*.78);ctx.rotate(-ang);}
+      const h=now.getHours()%12,m=now.getMinutes(),s=now.getSeconds();
+      function hand(ang,len,w,col){ctx.beginPath();ctx.lineWidth=w;ctx.lineCap="round";ctx.strokeStyle=col;ctx.rotate(ang);ctx.moveTo(0,r*0.12);ctx.lineTo(0,-len);ctx.stroke();ctx.rotate(-ang);}
+      hand((h*30+m/2)*Math.PI/180,r*.55,5,color);
+      hand(m*6*Math.PI/180,r*.78,3,color);
+      hand(s*6*Math.PI/180,r*.9,1,"#8f8f8f");
+      ctx.restore();
+    }
+ 
+    // ── Clockin panel clocks (delegate to base.html shared drawClock) ─────────
+    // The clockin panel uses IDs: clockinDate, clockinAnalogClock, clockinDigitalClock
+    // These are ticked by base.html's own setInterval. No duplication here.
+ 
+    // ── Countdown strip ────────────────────────────────────────────────────────
+    const container=document.getElementById("weeklyEventsContainer");
+    if(container){
+      const items=()=>[...container.querySelectorAll(".weekly-event-item")];
+      let idx=0;
+      function updateCountdowns(){
+        items().forEach(item=>{
+          const ts=item.dataset.datetime,postponed=item.dataset.postponed==="true",txt=item.querySelector(".countdown-text");
+          if(!txt)return;
+          if(postponed&&(!ts||ts==="null")){txt.innerHTML=`<span class="text-danger fst-italic">Postponed (Date TBD)</span>`;return;}
+          if(!ts)return;
+          const diff=new Date(ts)-new Date();
+          if(diff<=-3600000){item.remove();return;}
+          if(diff<=0){txt.innerHTML=`<span class="text-success">● In Progress</span>`;return;}
+          const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+          txt.innerHTML=`<span class="fst-italic">Starts in — </span><span style="font-family:monospace;">${h?h+"hr ":""}${m?m+"min ":""}${s}sec</span>`;
+        });
+        if(items().length===0&&container)container.innerHTML=`<div class="text-muted small text-center">No events this week.</div>`;
+      }
+      setInterval(updateCountdowns,1000);updateCountdowns();
+      setInterval(()=>{const all=items();if(all.length<=1)return;all[idx].classList.add("d-none");idx=(idx+1)%all.length;all[idx].classList.remove("d-none");},6000);
+    }
+ 
+    // ── Attendance summary fetch ───────────────────────────────────────────────
+    async function fetchSummary(data=null){
+      try{
+        if(!data){const r=await fetch(URLS.summaryFetch);data=await r.json();}
+        const sum=data.summary||{},tot=data.totals||{};
+        const fmt=v=>(typeof v==="string"?v.replace("%",""):(v??"--"));
+        const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=fmt(val);};
+        set("summaryPresent",sum.present);set("summaryExcused",sum.excused);set("summaryAbsent",sum.absent);
+        set("totalClockIn",tot.clock_in);set("totalClockOut",tot.clock_out);
+        const summaryCol=document.getElementById("summaryColumn");
+        if(summaryCol)summaryCol.style.display="flex";
+      }catch(e){console.warn("summary fetch failed:",e);}
+    }
+    (function connectWs(){
+      const proto=location.protocol==="https:"?"wss":"ws";
+      const ws=new WebSocket(`${proto}://${location.host}/ws/attendance/`);
+      ws.onopen=()=>fetchSummary();
+      ws.onmessage=e=>{try{const msg=JSON.parse(e.data);if(msg.type==="dashboard_summary")fetchSummary(msg);}catch{}};
+      ws.onclose=()=>setTimeout(connectWs,5000);
+    })();
+    const userSelect=document.getElementById("userSelect");
+    if(userSelect){userSelect.addEventListener("change",async e=>{const uid=e.target.value;if(!uid){fetchSummary();return;}try{const r=await fetch(`${URLS.summaryFetch}?user_id=${uid}`);fetchSummary(await r.json());}catch(err){console.error(err);}});}
+ 
+    const calEl = document.getElementById("clockinCalendarMount");
+    const calToggle = document.getElementById("clockinCalToggle");
+    const calWrap = document.getElementById("clockinCalendarWrap");
+    const largeCalendarQuery = window.matchMedia("(min-width: 992px)");
+ 
+    function showClockinCalendar(calendar) {
+      if (!calWrap || !calToggle) {
+        return;
+      }
+ 
+      calWrap.classList.add("open");
+      calWrap.setAttribute("aria-hidden", "false");
+      calToggle.classList.add("active");
+      calendar.updateSize();
+    }
+ 
+    function hideClockinCalendar() {
+      if (!calWrap || !calToggle) {
+        return;
+      }
+ 
+      calWrap.classList.remove("open");
+      calWrap.setAttribute("aria-hidden", "true");
+      calToggle.classList.remove("active");
+    }
+ 
+    if (calEl && typeof FullCalendar !== "undefined") {
+      const cal = new FullCalendar.Calendar(calEl, {
+        initialView: "dayGridMonth",
+        height: "auto",
+        expandRows: true,
+        timeZone: "local",
+        themeSystem: "bootstrap5",
+        headerToolbar: {
+          left: "prev,next today",
+          center: "title",
+          right: "dayGridMonth,dayGridWeek,dayGridDay",
+        },
+        buttonText: {
+          today: "Today",
+          month: "Month",
+          week: "Week",
+          day: "Day",
+        },
+        events: URLS.apiEvents,
+        eventContent: (arg) => {
+          const color = arg.event.extendedProps.color || "#4dabf7";
+          const bar = document.createElement("div");
+ 
+          bar.style.cssText = `
+            background: ${color};
+            height: 6px;
+            border-radius: 3px;
+            width: 100%;
+          `;
+ 
+          return { domNodes: [bar] };
+        },
+        dateClick: (info) => {
+          const eventsForDay = cal.getEvents().filter((eventItem) => {
+            return new Date(eventItem.start).toISOString().split("T")[0] === info.dateStr;
+          });
+ 
+          document.querySelectorAll(".calendar-popup").forEach((popup) => popup.remove());
+ 
+          const popup = document.createElement("div");
+          popup.className = "calendar-popup";
+ 
+          const box = document.createElement("div");
+          box.className = "calendar-popup-box";
+ 
+          const title = document.createElement("h5");
+          title.className = "calendar-popup-title";
+          title.textContent = new Date(info.date).toLocaleDateString(undefined, {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+          box.appendChild(title);
+ 
+          const list = document.createElement("ul");
+          list.className = "calendar-popup-list";
+ 
+          if (!eventsForDay.length) {
+            const empty = document.createElement("li");
+            empty.className = "text-muted small";
+            empty.textContent = "No events on this date.";
+            list.appendChild(empty);
+          } else {
+            eventsForDay.forEach((eventItem) => {
+              const item = document.createElement("li");
+              const dot = document.createElement("span");
+              const main = document.createElement("div");
+              const name = document.createElement("div");
+              const meta = document.createElement("div");
+ 
+              dot.className = "color-dot";
+              dot.style.backgroundColor = eventItem.extendedProps.color || "#4dabf7";
+ 
+              main.className = "event-info";
+              name.className = "event-title";
+              name.textContent = eventItem.title;
+ 
+              meta.className = "event-meta";
+ 
+              if (eventItem.extendedProps.time) {
+                const timeChip = document.createElement("span");
+                timeChip.className = "event-chip";
+                timeChip.textContent = `🕒 ${eventItem.extendedProps.time}`;
+                meta.appendChild(timeChip);
+              }
+ 
+              ["mode", "type"].forEach((key) => {
+                if (!eventItem.extendedProps[key]) {
+                  return;
+                }
+ 
+                const chip = document.createElement("span");
+                chip.className = "event-chip";
+                chip.textContent = eventItem.extendedProps[key];
+                meta.appendChild(chip);
+              });
+ 
+              main.appendChild(name);
+              main.appendChild(meta);
+              item.appendChild(dot);
+              item.appendChild(main);
+              list.appendChild(item);
+            });
+          }
+ 
+          box.appendChild(list);
+          popup.appendChild(box);
+          document.body.appendChild(popup);
+ 
+          setTimeout(() => popup.classList.add("show"), 10);
+ 
+          popup.addEventListener("click", (event) => {
+            if (event.target === popup) {
+              popup.remove();
+            }
+          });
+        },
+      });
+ 
+      cal.render();
+ 
+      if (calToggle && calWrap) {
+        let hoverTimeout = null;
+ 
+        const delayedHide = () => {
+          clearTimeout(hoverTimeout);
+          hoverTimeout = window.setTimeout(hideClockinCalendar, 120);
+        };
+ 
+        calToggle.addEventListener("mouseenter", () => {
+          if (!largeCalendarQuery.matches) {
+            return;
+          }
+ 
+          clearTimeout(hoverTimeout);
+          showClockinCalendar(cal);
+        });
+ 
+        calWrap.addEventListener("mouseenter", () => {
+          if (!largeCalendarQuery.matches) {
+            return;
+          }
+ 
+          clearTimeout(hoverTimeout);
+          showClockinCalendar(cal);
+        });
+ 
+        calToggle.addEventListener("mouseleave", () => {
+          if (largeCalendarQuery.matches) {
+            delayedHide();
+          }
+        });
+ 
+        calWrap.addEventListener("mouseleave", () => {
+          if (largeCalendarQuery.matches) {
+            delayedHide();
+          }
+        });
+ 
+        calToggle.addEventListener("click", (event) => {
+          if (largeCalendarQuery.matches) {
+            return;
+          }
+ 
+          event.preventDefault();
+ 
+          if (calWrap.classList.contains("open")) {
+            hideClockinCalendar();
+            return;
+          }
+ 
+          showClockinCalendar(cal);
+        });
+ 
+        document.addEventListener("click", (event) => {
+          if (
+            largeCalendarQuery.matches ||
+            !calWrap.classList.contains("open") ||
+            event.target.closest("#clockinCalToggle") ||
+            calWrap.contains(event.target)
+          ) {
+            return;
+          }
+ 
+          hideClockinCalendar();
+        });
+ 
+        largeCalendarQuery.addEventListener?.("change", () => {
+          hideClockinCalendar();
+        });
+      }
+    }
+ 
+    // ATTENDANCE MODAL JS
+    // ─────────────────────────────────────────────────────────────────────────
+    const modalEl       = document.getElementById("dashboardAttendanceModal");
+    const modalDateEl   = document.getElementById("dashboardModalLiveDate");
+    const modalTimeEl   = document.getElementById("dashboardModalLiveTime");
+    const modalCanvas   = document.getElementById("modalAnalogClock");
+    const modalDigital  = document.getElementById("modalDigitalClock");
+    const dateMini      = document.getElementById("modalLiveDateMini");
+    const clockSection  = document.getElementById("clockSection");
+    const eventSection  = document.getElementById("eventModeSection");
+    const eventNameEl   = document.getElementById("eventNameDisplay");
+    const eventTypeEl   = document.getElementById("eventTypeDisplay");
+    const countdownEl   = document.getElementById("eventCountdown");
+    const locationEl    = document.getElementById("eventLocationStatus");
+    const carouselWrap  = document.getElementById("eventCarouselWrapper");
+    const carouselInner = document.getElementById("eventCarouselInner");
+    const attendForm    = document.getElementById("dashboardAttendanceForm");
+    const clockOutBtn   = document.getElementById("clockOutBtn");
+ 
+    let activeEvent       = null;
+    let activeCountdown   = null;
+    let proximityInterval = null;
+    let activeUnitBtn     = null;
+    // Per-event marked state — survives modal close so clock-out reappears on reopen
+    const attendanceMarked = {};
+    const attendanceButtons = () => [...document.querySelectorAll(".mark-btn")]
+      .filter((button) => button.dataset.status !== "clock_out");
+ 
+    function resetAttendanceButtons() {
+      attendanceButtons().forEach((button) => {
+        button.disabled = false;
+        button.classList.remove("btn-secondary", "opacity-50");
+        button.removeAttribute("title");
+        button.textContent = button.dataset.status.charAt(0).toUpperCase() + button.dataset.status.slice(1);
+      });
+    }
+ 
+    function setAttendanceButtonsDisabled(disabled, label) {
+      attendanceButtons().forEach((button) => {
+        button.disabled = disabled;
+        button.classList.toggle("opacity-50", disabled);
+        if (label) {
+          button.textContent = label;
+          button.classList.toggle("btn-secondary", disabled);
+        }
+      });
+    }
+ 
+    // ── Live clock ──────────────────────────────────────────────────────────
+    function tickAttendanceModal() {
+      const now     = new Date();
+      const dateStr = formatDisplayDate(now);
+      const timeStr = formatClockTime(now);
+      const color   = USER_COLOR || CHURCH_COLOR;
+      if (modalDateEl) { modalDateEl.textContent = dateStr; modalDateEl.style.color = color; }
+      if (modalTimeEl) { modalTimeEl.textContent = timeStr; modalTimeEl.style.color = color; }
+      if (dateMini)    { dateMini.textContent    = dateStr; dateMini.style.color    = color; }
+      if (modalDigital){ modalDigital.textContent = timeStr; modalDigital.style.color = color; }
+      drawClock(modalCanvas, color);
+      // Dashboard page-header live date/time (unique IDs, no clash with modal)
+      const dashDate = document.getElementById("dashHeaderLiveDate");
+      const dashTime = document.getElementById("dashHeaderLiveTime");
+      if (dashDate) { dashDate.textContent = dateStr; dashDate.style.color = color; }
+      if (dashTime) { dashTime.textContent = timeStr; dashTime.style.color = color; }
+      // Welcome Modal live date/time (unique IDs, no clash with modal)
+      const welcomeDate = document.getElementById("welcomeHeaderLiveDate");
+      const welcomeTime = document.getElementById("welcomeHeaderLiveTime");
+      if (welcomeDate) { welcomeDate.textContent = dateStr; welcomeDate.style.color = color; }
+      if (welcomeTime) { welcomeTime.textContent = timeStr; welcomeTime.style.color = color; }
+    }
+    setInterval(tickAttendanceModal, 1000);
+    tickAttendanceModal();
+ 
+    // ── Load events for a unit ──────────────────────────────────────────────
+    async function loadUnitEvents(unitId) {
+      if (!carouselInner) return;
+      carouselWrap.style.display = "none";
+      carouselInner.innerHTML = '<div class="text-center py-4 text-muted">Loading\u2026</div>';
+      try {
+        const url  = unitId ? `${URLS.apiEvents}?unit_id=${unitId}` : `${URLS.apiEvents}?unit_id=null`;
+        const data = await fetch(url).then(r => r.json());
+        const evs  = data.events || [];
+        if (!evs.length) {
+          carouselInner.innerHTML = '<div class="text-center text-muted py-4">No upcoming events.</div>';
+          carouselWrap.style.display = "block";
+          return;
+        }
+        const now   = new Date();
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        carouselInner.innerHTML = evs.map((ev, idx) => {
+          const img     = ev.event_image || "{% static 'images/event-placeholder.png' %}";
+          const evDT    = ev.date && ev.time ? new Date(`${ev.date}T${ev.time}`) : null;
+          const closeDT = ev.date && ev.attendance_closes_at ? new Date(`${ev.date}T${ev.attendance_closes_at}`) : null;
+          const evDate  = ev.date ? new Date(ev.date) : null;
+          const isClosed = closeDT ? now > closeDT : false;
+          let blurClass = "", overlayTag = "", selectable = false;
+ 
+          if (evDate) {
+            if (evDate < today) { blurClass = "opacity-50"; }
+            else if (evDate.toDateString() === today.toDateString()) {
+              if (!isClosed && evDT && now >= new Date(evDT.getTime() - 15*60000)) selectable = true;
+              else blurClass = "opacity-50";
+            } else { blurClass = "opacity-50"; }
+          } else {
+            selectable = !isClosed;
+            if (isClosed) blurClass = "opacity-50";
+          }
+          if (ev.postponed) overlayTag = '<div class="badge bg-danger position-absolute top-0 start-0 m-2">Postponed</div>';
+          if (isClosed)     overlayTag = '<div class="badge bg-secondary position-absolute top-0 start-0 m-2">Attendance Closed</div>';
+          const closesNote = ev.attendance_closes_at
+            ? `<div class="text-muted small mt-1">Attendance closes at ${ev.attendance_closes_at.slice(0,5)}</div>` : "";
+ 
+          return `
+            <div class="carousel-item ${idx === 0 ? "active" : ""}">
+              <div class="card mx-auto py-1 justify-content-center position-relative ${selectable ? "start-event-btn" : ""}"
+                   data-event='${JSON.stringify(ev).replace(/'/g, "&#39;")}'
+                   style="width:500px;max-width:90vw;height:550px;border-radius:24px;box-shadow:0 4px 8px #000000d2;overflow:hidden;${selectable ? "cursor:pointer;" : ""}">
+                <img src="${img}" class="mt-4 ${blurClass}" style="height:450px;object-fit:cover;width:100%;">
+                <div class="card-body text-center">
+                  <h3 class="text-warning fw-bold mb-1">${ev.name}</h3>
+                  <div class="text-white small">${ev.date || ""} ${ev.time ? ev.time.slice(0,5) : ""}</div>
+                  <div class="badge bg-secondary-lt mt-1">${ev.attendance_mode || ""} ${ev.event_type || ""}</div>
+                  ${closesNote}
+                  ${isClosed ? '<div class="text-danger small mt-1 fw-bold">Attendance window closed</div>' : ""}
+                </div>
+                ${overlayTag}
+              </div>
+            </div>`;
+        }).join("");
+        carouselWrap.style.display = "block";
+        new bootstrap.Carousel(document.getElementById("eventCarousel"), { touch: true });
+      } catch {
+        carouselInner.innerHTML = '<div class="text-danger text-center py-4">Failed to load events.</div>';
+        carouselWrap.style.display = "block";
+      }
+    }
+ 
+    // ── Unit button clicks ──────────────────────────────────────────────────
+    document.querySelectorAll("#unitSelectionRow .unit-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (activeUnitBtn === button) {
+          button.classList.remove("active");
+          activeUnitBtn = null;
+          carouselWrap.style.display = "none";
+          exitEventMode();
+          return;
+        }
+        if (activeUnitBtn) activeUnitBtn.classList.remove("active");
+        button.classList.add("active");
+        activeUnitBtn = button;
+        loadUnitEvents(button.dataset.unitId === "null" ? null : button.dataset.unitId);
+      });
+    });
+ 
+    // ── Card click ─────────────────────────────────────────────────────────
+    document.addEventListener("click", (e) => {
+      const card = e.target.closest(".start-event-btn");
+      if (!card || card.closest(".opacity-50")) return;
+      try { const d = JSON.parse(card.dataset.event); if (d.id) selectEvent(d); }
+      catch (err) { console.warn("Invalid event data", err); }
+    });
+ 
+    // ── Select event ────────────────────────────────────────────────────────
+    async function selectEvent(evData) {
+      activeEvent = evData;
+      if (clockSection) clockSection.style.display = "none";
+      if (eventSection) eventSection.style.display = "block";
+      if (eventNameEl)  eventNameEl.innerHTML  = `<span style="color:${USER_COLOR}">${evData.name}</span>`;
+      if (eventTypeEl)  eventTypeEl.innerHTML  = `<span class="text-secondary fst-italic">${evData.attendance_mode || ""} ${evData.event_type || ""}</span>`;
+      if (locationEl)   locationEl.textContent = "";
+ 
+      // Always reset button state when switching to a new event
+      resetAttendanceButtons();
+ 
+      if (activeCountdown) clearInterval(activeCountdown);
+ 
+      const closeDT  = evData.date && evData.attendance_closes_at
+        ? new Date(`${evData.date}T${evData.attendance_closes_at}`) : null;
+      const isClosed = closeDT ? new Date() > closeDT : false;
+      if (!attendanceMarked[evData.id]) {
+        attendanceButtons().forEach((button) => {
+          button.disabled = isClosed;
+          button.classList.toggle("opacity-50", isClosed);
+          if (isClosed) {
+            button.title = `Attendance closed at ${(evData.attendance_closes_at || "").slice(0,5)}`;
+          }
+        });
+      }
+ 
+      if (evData.date && evData.time) {
+        const target = new Date(`${evData.date}T${evData.time}`);
+        activeCountdown = setInterval(() => {
+          const diff = target - new Date();
+          if (!countdownEl) return;
+          if (diff <= 0) { countdownEl.innerHTML = '<span class="text-danger">\u23f0 In progress!</span>'; clearInterval(activeCountdown); return; }
+          const h=Math.floor(diff/3600000), m=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000);
+          countdownEl.innerHTML = `<span class="badge text-success" style="font-family:monospace;">${h?h+"hr ":""}${m?m+"min ":""}${s}sec to go</span>`;
+        }, 1000);
+      }
+ 
+      if (proximityInterval) clearInterval(proximityInterval);
+      const mode = (evData.attendance_mode || "").toLowerCase();
+      if (mode === "virtual") { if (locationEl) locationEl.textContent = "\U0001f310 Virtual Event"; }
+      else if ((mode === "physical" || mode === "hybrid") && !isClosed && !attendanceMarked[evData.id]) {
+        checkProximity();
+        proximityInterval = setInterval(checkProximity, 5000);
+      }
+ 
+      // Check server for existing clock-in
+      try {
+        const res  = await fetch(`${URLS.attendanceCheck}?event_id=${evData.id}`);
+        const data = await res.json();
+        if (data.clock_in && !data.clock_out) {
+          attendanceMarked[evData.id] = true;
+          clockOutBtn?.classList.remove("d-none");
+          setAttendanceButtonsDisabled(true, "Marked");
+          if (data.location_label && locationEl) {
+            locationEl.innerHTML = `<span class="badge ${data.location_label === "Offsite" ? "bg-warning-lt text-warning" : "bg-success-lt text-success"} fst-italic">${data.location_label}</span>`;
+          }
+        } else if (data.clock_out) {
+          attendanceMarked[evData.id] = false;
+          clockOutBtn?.classList.add("d-none");
+          setAttendanceButtonsDisabled(true, "Done");
+        } else {
+          clockOutBtn?.classList.add("d-none");
+        }
+      } catch (err) { console.warn("Attendance check failed", err); }
+    }
+ 
+    function exitEventMode() {
+      if (activeCountdown)   clearInterval(activeCountdown);
+      if (proximityInterval) clearInterval(proximityInterval);
+      activeEvent = null;
+      if (eventSection) eventSection.style.display = "none";
+      if (clockSection) clockSection.style.display = "block";
+      if (countdownEl)  countdownEl.textContent = "";
+      if (locationEl)   locationEl.textContent   = "";
+      clockOutBtn?.classList.add("d-none");
+    }
+ 
+    function checkProximity() {
+      const presentBtn = document.querySelector(".mark-btn[data-status='present']");
+      if (!presentBtn) return;
+      if (activeEvent?.id && attendanceMarked[activeEvent.id]) return;
+      const mode = (activeEvent?.attendance_mode || "").toLowerCase();
+      if (!navigator.geolocation) {
+        if (mode === "physical") {
+          presentBtn.disabled = true;
+          presentBtn.classList.add("opacity-50");
+        }
+        if (locationEl) locationEl.textContent = "⚠️ Location unavailable";
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (activeEvent?.id && attendanceMarked[activeEvent.id]) return;
+          const dist = haversineKm(pos.coords.latitude, pos.coords.longitude, CHURCH.lat, CHURCH.lon);
+          const ok   = dist <= CHURCH.radiusKm;
+          document.getElementById("latitude").value  = pos.coords.latitude;
+          document.getElementById("longitude").value = pos.coords.longitude;
+          if (locationEl) {
+            const label = ok ? "Onsite" : "Offsite";
+            const badgeClass = ok ? "bg-success-lt text-success" : "bg-warning-lt text-warning";
+            locationEl.innerHTML = `<span class="badge ${badgeClass} fst-italic">\u{1f4cd} ${label}${mode === "hybrid" ? ` (${dist.toFixed(2)} km)` : ""}</span>`;
+          }
+          if (mode === "physical") {
+            presentBtn.disabled = !ok;
+            presentBtn.classList.toggle("opacity-50", !ok);
+          } else {
+            presentBtn.disabled = false;
+            presentBtn.classList.remove("opacity-50");
+          }
+        },
+        () => {
+          if (activeEvent?.id && attendanceMarked[activeEvent.id]) return;
+          if (mode === "physical") {
+            presentBtn.disabled = true;
+            presentBtn.classList.add("opacity-50");
+          }
+          if (locationEl) {
+            locationEl.textContent = mode === "hybrid"
+              ? "Location unavailable - attendance will be recorded as offsite if you continue"
+              : "⚠️ Location unavailable";
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+ 
+    // ── Mark-btn + Clock-out handler ────────────────────────────────────────
+    document.querySelectorAll(".mark-btn").forEach((button) => {
+      button.addEventListener("click", async () => {
+        if (!activeEvent?.id) { showToast("No event selected!", "warning"); return; }
+        const evData  = activeEvent;
+        const eventId = evData.id;
+        const status  = button.dataset.status;
+        const remarks = attendForm?.querySelector("[name=remarks]")?.value || "";
+        const lat     = document.getElementById("latitude")?.value  || "";
+        const lon     = document.getElementById("longitude")?.value || "";
+ 
+        // ── Clock-out path ──────────────────────────────────────────────────
+        if (status === "clock_out") {
+          if (!attendanceMarked[eventId]) { showToast("Mark attendance before clocking out.", "warning"); return; }
+          button.disabled = true;
+          const origText = button.textContent;
+          button.textContent = "\u2026";
+          try {
+            const res  = await fetch(URLS.clockAction, {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCsrf() },
+              body: new URLSearchParams({ action: "clock_out", event_id: eventId, latitude: lat, longitude: lon }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              attendanceMarked[eventId] = false;
+              clockOutBtn?.classList.add("d-none");
+              showToast(`\u2705 Clocked out${data.clock_out ? " at " + data.clock_out : ""}`, "success");
+              const bsModal = bootstrap.Modal.getInstance(modalEl);
+              if (bsModal) bsModal.hide();
+              fetchSummary();
+            } else {
+              showToast(`\u26a0\ufe0f ${data.error || "Clock-out failed"}`, "danger");
+              button.disabled = false; button.textContent = origText;
+            }
+          } catch (err) {
+            showToast("\u26a0\ufe0f Network error", "danger"); console.error(err);
+            button.disabled = false; button.textContent = origText;
+          }
+          return;
+        }
+ 
+        // ── Attendance mark path ────────────────────────────────────────────
+        const closeDT = evData.date && evData.attendance_closes_at
+          ? new Date(`${evData.date}T${evData.attendance_closes_at}`) : null;
+        if (closeDT && new Date() > closeDT) {
+          showToast(`\u26a0\ufe0f Attendance closed at ${(evData.attendance_closes_at || "").slice(0,5)}`, "danger");
+          return;
+        }
+ 
+        // Disable all three mark buttons immediately
+        attendanceButtons().forEach((button) => { button.disabled = true; });
+        button.textContent = "\u2026";
+ 
+        let marked = false;
+        try {
+          const attRes  = await fetch(attendForm.action, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "X-CSRFToken": getCsrf(),
+              "X-Requested-With": "XMLHttpRequest",
+            },
+            body: new URLSearchParams({ event_id: eventId, status, remarks, latitude: lat, longitude: lon }),
+          });
+          const attData = await attRes.json();
+ 
+          if (!attRes.ok || !attData.success) {
+            showToast(`\u26a0\ufe0f ${attData.error || "Error marking attendance"}`, "danger");
+            resetAttendanceButtons();
+            button.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            return;
+          }
+ 
+          marked = true;
+          showToast(`\u2705 ${attData.message || status + " marked"}`, "success");
+ 
+          // Fire-and-forget clock-in record
+          try {
+            const clkRes  = await fetch(URLS.clockAction, {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": getCsrf() },
+              body: new URLSearchParams({ action: "clock_in", event_id: eventId, latitude: lat, longitude: lon }),
+            });
+            const clkData = await clkRes.json();
+            const badge   = document.getElementById("autoMarkBadge");
+            if (badge && clkData.success && clkData.auto_attendance_marked) {
+              badge.classList.remove("d-none");
+              setTimeout(() => badge.classList.add("d-none"), 5000);
+            }
+          } catch {}
+ 
+          // Keep mark buttons disabled + labelled
+          setAttendanceButtonsDisabled(true, "Marked");
+ 
+          // Show clock-out in modal, store state
+          attendanceMarked[eventId] = true;
+          clockOutBtn?.classList.remove("d-none");
+ 
+          // Auto-close modal
+          const bsModal = bootstrap.Modal.getInstance(modalEl);
+          if (bsModal) bsModal.hide();
+ 
+          fetchSummary();
+ 
+        } catch (err) {
+          showToast("\u26a0\ufe0f Network error", "danger"); console.error(err);
+          if (!marked) {
+            resetAttendanceButtons();
+            button.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+          }
+        }
+        // No finally re-enable — buttons stay disabled after successful mark
+      });
+    });
+ 
+    // ── Modal close ─────────────────────────────────────────────────────────
+    if (modalEl) {
+      modalEl.addEventListener("hidden.bs.modal", () => {
+        exitEventMode();
+        if (activeUnitBtn) { activeUnitBtn.classList.remove("active"); activeUnitBtn = null; }
+        if (carouselWrap)  carouselWrap.style.display = "none";
+        resetAttendanceButtons();
+      });
+    }
+ 
+  }); // end DOMContentLoaded
+ 
+  </script>
+
+
+
+  <script>
+  let clockinPanelOpen = false;
+  const CHURCH_TIME_FORMAT = "{{ church.hq_church.settings.time_format|default:church.settings.time_format|default:'%H:%M:%S'|escapejs }}";
+  const CHURCH_DATE_FORMAT = "{{ church.hq_church.settings.date_format|default:church.settings.date_format|default:''|escapejs }}";
+
+  const $ = (id) => document.getElementById(id);
+  const clockinPanel = $("clockinPanel");
+  const clockinDigital = $("clockinDigitalClock");
+  const clockinDateEl = $("clockinDate");
+  const clockinCanvas = $("clockinAnalogClock");
+
+  function pad2(value) {
+    return String(value).padStart(2, "0");
+  }
+
+  function formatClockTime(date, format = CHURCH_TIME_FORMAT) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+      return "";
+    }
+
+    const hours24 = date.getHours();
+    const minutes = pad2(date.getMinutes());
+    const seconds = pad2(date.getSeconds());
+    const hours12 = hours24 % 12 || 12;
+    const ampm = hours24 >= 12 ? "PM" : "AM";
+
+    switch (format) {
+      case "%I:%M %p":
+        return `${pad2(hours12)}:${minutes}:${seconds} ${ampm}`;
+      case "%H:%M:%S":
+        return `${pad2(hours24)}:${minutes}:${seconds}`;
+      case "%I:%M:%S %p":
+        return `${pad2(hours12)}:${minutes}:${seconds} ${ampm}`;
+      case "%H:%M":
+        return `${pad2(hours24)}:${minutes}`;
+      default:
+        // Fallback: 24-hour with seconds (handles empty string or unrecognised format)
+        return `${pad2(hours24)}:${minutes}:${seconds}`;
+    }
+  }
+
+  /**
+   * Format a JS Date as a display date string.
+   * Maps the church's Python strftime date_format to a JS toLocaleDateString options object.
+   * Always prepends the full weekday name so dates carry the day everywhere.
+   */
+  function formatDisplayDate(date) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+    const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
+    let body;
+    switch (CHURCH_DATE_FORMAT) {
+      case "%d %b %Y":   // 14 Jun 2025
+        body = date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+        break;
+      case "%b %d, %Y":  // Jun 14, 2025
+        body = date.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+        break;
+      case "%d/%m/%Y":
+        body = `${pad2(date.getDate())}/${pad2(date.getMonth()+1)}/${date.getFullYear()}`;
+        break;
+      case "%m/%d/%Y":
+        body = `${pad2(date.getMonth()+1)}/${pad2(date.getDate())}/${date.getFullYear()}`;
+        break;
+      case "%Y-%m-%d":
+        body = `${date.getFullYear()}-${pad2(date.getMonth()+1)}-${pad2(date.getDate())}`;
+        break;
+      case "%d %B %Y":   // 14 June 2025
+        body = date.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+        break;
+      default:           // Sensible fallback: Month DD, YYYY
+        body = date.toLocaleDateString("en-US", { month: "long", day: "2-digit", year: "numeric" });
+    }
+    return `${weekday}, ${body}`;
+  }
+
+  function drawClockBase(canvas, color) {
+    if (!canvas) {
+      return;
+    }
+
+    const ctx = canvas.getContext("2d");
+    const radius = canvas.width / 2;
+    const now = new Date();
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(radius, radius);
+
+    ctx.beginPath();
+    ctx.arc(0, 0, radius - 4, 0, 2 * Math.PI);
+    ctx.fillStyle = "#0f172a";
+    ctx.fill();
+    ctx.strokeStyle = `${color}55`;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    for (let i = 0; i < 60; i += 1) {
+      const tickLength = i % 5 === 0 ? 8 : 3;
+
+      ctx.beginPath();
+      ctx.lineWidth = i % 5 === 0 ? 2 : 1;
+      ctx.strokeStyle = "#475569";
+      ctx.moveTo(0, -radius + 4);
+      ctx.lineTo(0, -radius + 4 + tickLength);
+      ctx.stroke();
+      ctx.rotate(Math.PI / 30);
+    }
+
+    const hour = now.getHours() % 12;
+    const minute = now.getMinutes();
+    const second = now.getSeconds();
+
+    function drawHand(angle, length, width, stroke) {
+      ctx.beginPath();
+      ctx.lineWidth = width;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = stroke;
+      ctx.rotate(angle);
+      ctx.moveTo(0, radius * 0.12);
+      ctx.lineTo(0, -length);
+      ctx.stroke();
+      ctx.rotate(-angle);
+    }
+
+    drawHand((hour * 30 + minute / 2) * Math.PI / 180, radius * 0.55, 5, color);
+    drawHand(minute * 6 * Math.PI / 180, radius * 0.78, 3, color);
+    drawHand(second * 6 * Math.PI / 180, radius * 0.9, 1, "#8f8f8f");
+
+    ctx.restore();
+  }
+
+  function tickClockinPanel() {
+    const now = new Date();
+    const color = "#f59f00";
+
+    if (clockinDateEl) {
+      clockinDateEl.textContent = formatDisplayDate(now);
+    }
+
+    if (clockinDigital) {
+      clockinDigital.textContent = formatClockTime(now);
+    }
+
+    drawClockBase(clockinCanvas, color);
+  }
+
+  function openClockinPanel() {
+    if (!clockinPanel) {
+      return;
+    }
+
+    clockinPanel.classList.add("open");
+    clockinPanel.setAttribute("aria-hidden", "false");
+    clockinPanelOpen = true;
+  }
+
+  function closeClockinPanel() {
+    if (!clockinPanel) {
+      return;
+    }
+
+    clockinPanel.classList.remove("open");
+    clockinPanel.setAttribute("aria-hidden", "true");
+    clockinPanelOpen = false;
+
+    const calendarToggle = $("clockinCalToggle");
+    const calendarWrap = $("clockinCalendarWrap");
+
+    if (calendarToggle && calendarWrap) {
+      calendarToggle.classList.remove("active");
+      calendarWrap.classList.remove("open");
+      calendarWrap.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  document.querySelector(".clockin-trigger")?.addEventListener("click", () => {
+    if (clockinPanelOpen) {
+      closeClockinPanel();
+      return;
+    }
+
+    openClockinPanel();
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!clockinPanelOpen) {
+      return;
+    }
+
+    if (event.target.closest(".clockin-trigger")) {
+      return;
+    }
+
+    if (!clockinPanel?.contains(event.target)) {
+      closeClockinPanel();
+    }
+  });
+
+  setInterval(tickClockinPanel, 1000);
+  tickClockinPanel();
+  </script>
 
 
   <!-- Follow-Up Report Modal -->
@@ -819,10 +2005,10 @@
 
 
   <!-- User Delete Confirmation Modal -->
-  <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+  <div class="modal modal-blur fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header bg-danger text-white">
+        <div class="modal-header">
           <h5 class="modal-title" id="deleteUserModalLabel">
             <svg  xmlns="http://www.w3.org/2000/svg"  width="36"  height="48"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-hand-stop">
               <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5" />
@@ -833,19 +2019,45 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          You want to permanently delete 
-          <span class="text-red fs-2"><strong>{{ user_obj.full_name }}'s</strong></span> record?
+          You want to permanently delete
+          <span class="text-red fs-2">
+            <strong id="deleteUserName">this user's</strong>
+          </span>
+          record?
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-gray" data-bs-dismiss="modal">No, Cancel</button>
+        <div class="modal-footer bg-gray-900 border-0" style="border-radius:0 0 24px 24px;">
           <form method="post" style="display:inline;">
             {% csrf_token %}
-            <button type="submit" name="delete_user" class="btn btn-danger">Yes, I'm Sure!</button>
+            <button type="submit" name="delete_user" class="btn btn-danger"
+                    style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+              Yes, I'm Sure!
+            </button>
           </form>
+          <button type="button" class="btn btn-gray" data-bs-dismiss="modal"
+                  style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+            No, Cancel
+          </button>
         </div>
       </div>
     </div>
   </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('deleteUserModal');
+    const nameEl = document.getElementById('deleteUserName');
+
+    if (!modal || !nameEl) return;
+
+    modal.addEventListener('show.bs.modal', function (event) {
+      const trigger = event.relatedTarget;
+      if (!trigger) return;
+
+      const userName = trigger.getAttribute('data-user-name') || 'this user';
+      nameEl.textContent = userName + "'s";
+    });
+  });
+  </script>
 
 
   <!-- Import CSV Modal -->
@@ -996,7 +2208,7 @@
      church.name        → text name
      church.primary_color → hex string, default #206bc4
   -->
-  <footer class="footer text-light py-3 mt-auto border-top shadow-sm">
+  <footer class="text-light py-3 mt-auto shadow-sm">
     <div class="container">
       <div class="row align-items-center text-center text-md-start g-2">
 
@@ -1006,7 +2218,10 @@
             <img src="{{ church.logo.url }}"
                  alt="{{ church.name }} logo"
                  style="height:30px;object-fit:contain;">
-            <span class="fw-semibold small">{{ church.name }}</span>
+            <span class="fw-semibold small"
+                  style="color:{% if church and church.primary_color %}{{ church.primary_color }}{% else %}#ff5e01{% endif %};">
+              {{ church.name }}
+            </span>
           {% else %}
             <img src="{% static 'images/churchforce-icon.png' %}"
                  alt="ChurchForce"
@@ -1028,23 +2243,14 @@
 
         {# Right: platform credit + developer credit #}
         <div class="col-12 col-md-4 text-center text-md-end small text-muted">
-          {% if church %}
-            {# White-label: show "Powered by ChurchForce" only if church hasn't hidden it #}
-            {% if not church.hide_platform_credit %}
-              Powered by
-              <a href="https://churchforce.io" target="_blank" rel="noopener"
-                 class="text-secondary text-decoration-none">ChurchForce</a>
-              &middot;
-            {% endif %}
-          {% else %}
+          {# White-label: show "Powered by ChurchForce" only if church hasn't hidden it #}
+          {% if church and not church.hide_platform_credit %}
+            Powered by
             <a href="https://churchforce.io" target="_blank" rel="noopener"
-               class="text-secondary text-decoration-none">churchforce.io</a>
+                class="text-secondary text-decoration-none">ChurchForce Inc</a>
             &middot;
           {% endif %}
-          Built with ❤️ by
-          <a href="https://www.linkedin.com/in/wunmijordan/"
-             target="_blank" rel="noopener"
-             class="text-light text-decoration-underline">Wùnmí™ Jordan</a>
+          Built for the Church Workforce
         </div>
 
       </div>
@@ -1083,6 +2289,12 @@
             Install
           </button>
         </div>
+        <div class="form-check mt-3 text-start">
+          <input class="form-check-input" type="checkbox" id="dontShowInstall">
+          <label class="form-check-label text-muted" for="dontShowInstall">
+            Do not show again
+          </label>
+        </div>
       </div>
     </div>
   </div>
@@ -1114,6 +2326,12 @@
             </svg><br>
             then, <strong>"Add to Home Screen"</strong>
           </div>
+        </div>
+        <div class="form-check mt-3 text-start">
+          <input class="form-check-input" type="checkbox" id="dontShowIOSInstall">
+          <label class="form-check-label text-muted" for="dontShowIOSInstall">
+            Do not show again
+          </label>
         </div>
       </div>
     </div>
@@ -1187,64 +2405,133 @@
 
   <script>
   let deferredPrompt;
+
   const installModal = document.getElementById('installModal');
   const installBtn = document.getElementById('installBtn');
   const iosModal = document.getElementById('iosInstallModal');
+
+  const dontShowInstall = document.getElementById('dontShowInstall');
+  const dontShowIOSInstall = document.getElementById('dontShowIOSInstall');
+
   const closeBtns = document.querySelectorAll('.closeModal');
 
-  // SHOW modal
+  const INSTALL_KEY = "pwaInstallHidden";
+  const INSTALL_SNOOZE = "pwaInstallSnooze";
+
+  /* -----------------------------------
+    Helpers
+  ----------------------------------- */
+
+  function isInstalled() {
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true
+    );
+  }
+
+  function shouldShowModal() {
+    if (isInstalled()) return false;
+
+    if (localStorage.getItem(INSTALL_KEY) === "true")
+      return false;
+
+    const snooze = localStorage.getItem(INSTALL_SNOOZE);
+    if (snooze && Date.now() < Number(snooze))
+      return false;
+
+    return true;
+  }
+
+  function snoozeModal(days = 7) {
+    const nextTime = Date.now() + (days * 24 * 60 * 60 * 1000);
+    localStorage.setItem(INSTALL_SNOOZE, nextTime);
+  }
+
+  /* -----------------------------------
+    Modal Controls
+  ----------------------------------- */
+
   function showModal(modal) {
-    modal.classList.remove('d-none');   // FIX
+    if (!shouldShowModal()) return;
+
+    modal.classList.remove('d-none');
     requestAnimationFrame(() => {
       modal.classList.add('show');
     });
   }
 
-  // HIDE modal
   function hideModal(modal) {
     modal.classList.remove('show');
+
     setTimeout(() => {
-      modal.classList.add('d-none');    // hide after fade-out
+      modal.classList.add('d-none');
     }, 300);
   }
 
-  // ANDROID PWA
+  /* -----------------------------------
+    ANDROID INSTALL
+  ----------------------------------- */
+
   window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();         // block native banner
-    deferredPrompt = e;         // store event
-    showModal(installModal);    // show custom modal
+    if (!shouldShowModal()) return;
+
+    e.preventDefault();
+    deferredPrompt = e;
+
+    setTimeout(() => showModal(installModal), 800);
   });
 
-  // User clicks install
   installBtn.addEventListener('click', async () => {
     if (!deferredPrompt) return;
+
     hideModal(installModal);
 
-    deferredPrompt.prompt();                          // <-- REQUIRED USER ACTION
+    deferredPrompt.prompt();
     const choice = await deferredPrompt.userChoice;
-    console.log('User choice:', choice.outcome);
+
+    if (choice.outcome === 'accepted') {
+      localStorage.setItem(INSTALL_KEY, "true");
+    }
 
     deferredPrompt = null;
   });
 
-  // Close buttons
+  /* -----------------------------------
+    CLOSE BUTTONS
+  ----------------------------------- */
+
   closeBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
       const modal = e.target.closest('.pwa-modal');
-      hideModal(modal);
-      if (modal === iosModal) {
-        localStorage.setItem('iosInstallDismissed', 'true');
+
+      // permanent hide if checkbox checked
+      if (
+        dontShowInstall?.checked ||
+        dontShowIOSInstall?.checked
+      ) {
+        localStorage.setItem(INSTALL_KEY, "true");
+      } else {
+        snoozeModal(); // hide for 7 days
       }
+
+      hideModal(modal);
     });
   });
 
-  // iOS Install
+  /* -----------------------------------
+    iOS INSTALL
+  ----------------------------------- */
+
   document.addEventListener("DOMContentLoaded", () => {
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isStandalone = window.navigator.standalone === true;
 
-    if (isIOS && !isStandalone && !localStorage.getItem('iosInstallDismissed')) {
-      setTimeout(() => showModal(iosModal), 800);
+    if (
+      isIOS &&
+      !isStandalone &&
+      shouldShowModal()
+    ) {
+      setTimeout(() => showModal(iosModal), 1200);
     }
   });
   </script>
@@ -1308,6 +2595,178 @@
     </div>
   </div>
 
+  <!-- Support Bot -->
+  {% if request.church and request.user.is_authenticated %}
+  <div id="supportBotBubble" style="position:fixed;bottom:24px;right:1rem;z-index:9999;">
+ 
+    <!-- Toggle button — unchanged -->
+    <button id="supportBotToggle" title="{% if nav_is_admin %}ChurchForce Support{% else %}Help{% endif %}"
+      style="width:52px;height:52px;border-radius:24px;border:none;cursor:pointer;
+      background:linear-gradient(135deg, var(--tblr-gray-900), #17a2b8);box-shadow:0 4px 16px #000000d2;
+      display:flex;align-items:center;justify-content:center;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-heart-handshake">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572"/>
+        <path d="M12 6l-3.293 3.293a1 1 0 0 0 0 1.414l.543 .543c.69 .69 1.81 .69 2.5 0l1 -1a3.182 3.182 0 0 1 4.5 0l2.25 2.25"/><path d="M12.5 15.5l2 2"/><path d="M15 13l2 2"/>
+      </svg>
+    </button>
+ 
+    <!-- Chat panel — unchanged dimensions/styling -->
+    <div id="supportBotPanel" style="display:none;flex-direction:column;position:absolute;
+      bottom:64px;right:0;width:360px;height:480px;border-radius:36px;overflow:hidden;
+      background:var(--tblr-gray-900);box-shadow:0 8px 32px #000000d2;border:1px solid #17a2b8;">
+ 
+      {# ── Header — title/subtitle tier-aware ── #}
+      <div style="background:linear-gradient(135deg, #17a2b8, #f76707);padding:12px 16px;
+                  display:flex;align-items:center;gap:10px;">
+        <span style="font-size:1.2rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-robot">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 6a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2l0 -4"/>
+            <path d="M12 2v2"/><path d="M9 12v9"/><path d="M15 12v9"/><path d="M5 16l4 -2"/><path d="M15 14l4 2"/><path d="M9 18h6"/><path d="M10 8v.01"/><path d="M14 8v.01"/>
+          </svg>
+        </span>
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:1rem;">
+            {% if nav_is_admin %}ChurchForce Support{% else %}{{ church.name }} Help{% endif %}
+          </div>
+          <div style="font-size:.68rem;color:rgba(255,255,255,.75);">
+            {% if nav_is_admin %}AI-powered · Full platform access{% else %}AI-powered · Workflow assistant{% endif %}
+          </div>
+        </div>
+        <button id="supportBotClose" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;">✕</button>
+      </div>
+ 
+      {# ── Context notice — tier-aware ── #}
+      <div style="font-size:.68rem;color:#64748b;padding:6px 12px;border-bottom:1px solid #1e293b;">
+        {% if nav_is_admin %}
+          Non-sensitive operational data only — no personal records shared with AI.
+        {% else %}
+          Helping with your day-to-day workflow. For account issues, contact your church admin.
+        {% endif %}
+      </div>
+ 
+      {# ── Messages — opening greeting is tier-aware ── #}
+      <div id="botMessages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;max-height:280px;">
+        <div style="background:var(--tblr-gray-800);box-shadow:0 4px 8px #000000d2;border-radius:0 12px 12px 12px;padding:8px 12px;font-size:.8rem;color:#e2e8f0;align-self:flex-start;max-width:90%;">
+          {% if nav_is_admin %}
+            👋 Hi! Ask me anything about ChurchForce — features, billing, workflows, or platform setup.
+          {% else %}
+            👋 Hi! I can help with attendance, tasks, training, and your unit tools. For account or access issues, contact your church admin.
+          {% endif %}
+        </div>
+      </div>
+ 
+      {# ── Thinking indicator — unchanged ── #}
+      <div id="botThinking" style="display:none;padding:4px 12px;font-size:.72rem;color:#64748b;">
+        <span style="animation:blink 1s infinite;">⋯</span> Thinking…
+      </div>
+ 
+      {# ── Input row — unchanged ── #}
+      <div style="padding:8px 12px;display:flex;gap:8px;">
+        <input id="botInput" type="text" placeholder="Ask something…"
+               class="bg-gray-800"
+               style="flex:1;box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;
+                      padding:6px 10px;color:#fff;font-size:.8rem;outline:none;border:none;">
+        <button id="botSend" class="bg-success-lt" style="border-radius:24px;
+                color:#fff;padding:6px 12px;cursor:pointer;font-size:.8rem;border:none;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-send">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M21.864 3.549l-6.454 17.868a1.55 1.55 0 0 1 -1.41 .903a1.54 1.54 0 0 1 -1.394 -.874l-2.88 -5.759zm-1.414 -1.414l-12.139 12.138l-5.728 -2.864a1.55 1.55 0 0 1 -.903 -1.409c0 -.606 .353 -1.157 .981 -1.44z"/>
+          </svg>
+        </button>
+      </div>
+ 
+      {# ── Quick prompts — tier-aware sets, same pill style ── #}
+      <div style="padding:4px 12px 8px;display:flex;flex-wrap:wrap;gap:4px;">
+        {% if nav_is_admin %}
+          {# Admin / sub-admin — full platform prompts #}
+          <button class="bot-quick bg-cyan-lt" data-text="How do I add a guest?"          style="font-size:.65rem;border-radius:99px;padding:2px 8px;cursor:pointer;border:none;">Add Guest</button>
+          <button class="bot-quick bg-cyan-lt" data-text="How do I create a setlist?"     style="font-size:.65rem;border-radius:99px;padding:2px 8px;cursor:pointer;border:none;">Setlist</button>
+          <button class="bot-quick bg-cyan-lt" data-text="How do I mark attendance?"      style="font-size:.65rem;border-radius:99px;padding:2px 8px;cursor:pointer;border:none;">Attendance</button>
+          <button class="bot-quick bg-cyan-lt" data-text="How do I manage user roles?"    style="font-size:.65rem;border-radius:99px;padding:2px 8px;cursor:pointer;border:none;">Roles</button>
+          <button class="bot-quick bg-cyan-lt" data-text="How do I upgrade my plan?"      style="font-size:.65rem;border-radius:99px;padding:2px 8px;cursor:pointer;border:none;">Upgrade</button>
+        {% else %}
+          {# Regular member — workflow-scoped prompts #}
+          <button class="bot-quick bg-cyan-lt" data-text="How do I mark attendance?"           style="font-size:.65rem;border-radius:99px;padding:2px 8px;cursor:pointer;border:none;">Attendance</button>
+          <button class="bot-quick bg-cyan-lt" data-text="How do I view my unit tasks?"        style="font-size:.65rem;border-radius:99px;padding:2px 8px;cursor:pointer;border:none;">My Tasks</button>
+          <button class="bot-quick bg-cyan-lt" data-text="How do I access my training?"        style="font-size:.65rem;border-radius:99px;padding:2px 8px;cursor:pointer;border:none;">Training</button>
+          <button class="bot-quick bg-cyan-lt" data-text="How do I update my profile?"         style="font-size:.65rem;border-radius:99px;padding:2px 8px;cursor:pointer;border:none;">Profile</button>
+          <button class="bot-quick bg-cyan-lt" data-text="Who do I contact for account help?"  style="font-size:.65rem;border-radius:99px;padding:2px 8px;cursor:pointer;border:none;">Get Help</button>
+        {% endif %}
+      </div>
+ 
+    </div>
+  </div>
+ 
+  <style>
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    #supportBotPanel.open { display:flex!important; }
+  </style>
+ 
+  <script>
+  (function(){
+    {# Pass church_slug to JS so the consumer can resolve it reliably #}
+    const CHURCH_SLUG = "{{ church.slug|escapejs }}";
+    const WS = (location.protocol==='https:'?'wss':'ws')+'://'+location.host+'/ws/support/?slug='+encodeURIComponent(CHURCH_SLUG);
+ 
+    let sock=null, open=false;
+    const toggle   = document.getElementById('supportBotToggle');
+    const panel    = document.getElementById('supportBotPanel');
+    const closeBtn = document.getElementById('supportBotClose');
+    const msgs     = document.getElementById('botMessages');
+    const input    = document.getElementById('botInput');
+    const send     = document.getElementById('botSend');
+    const thinking = document.getElementById('botThinking');
+    if(!toggle||!panel||!closeBtn||!msgs||!input||!send||!thinking) return;
+ 
+    function connect(){
+      sock = new WebSocket(WS);
+      sock.onmessage = function(e){
+        const d = JSON.parse(e.data);
+        thinking.style.display = 'none';
+        if(d.type === 'reply') addMsg(d.text, 'bot');
+        send.disabled = false;
+      };
+      sock.onclose = function(){ setTimeout(connect, 3000); };
+    }
+    connect();
+ 
+    function addMsg(text, role){
+      const d = document.createElement('div');
+      d.style.cssText = role === 'user'
+        ? 'background:#17a2b8;box-shadow:0 4px 8px #000000d2;border-radius:12px 0 12px 12px;padding:8px 12px;font-size:.8rem;color:#fff;align-self:flex-end;max-width:88%;word-break:break-word;'
+        : 'background:var(--tblr-gray-800);box-shadow:0 4px 8px #000000d2;border-radius:0 12px 12px 12px;padding:8px 12px;font-size:.8rem;color:#e2e8f0;align-self:flex-start;max-width:88%;word-break:break-word;white-space:pre-wrap;';
+      d.textContent = text;
+      msgs.appendChild(d);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+ 
+    function doSend(){
+      const t = input.value.trim();
+      if(!t || !sock || sock.readyState !== 1) return;
+      addMsg(t, 'user');
+      input.value = '';
+      thinking.style.display = 'block';
+      send.disabled = true;
+      sock.send(JSON.stringify({type:'message', text:t}));
+    }
+ 
+    toggle.addEventListener('click', function(){
+      open = !open;
+      panel.style.display = open ? 'flex' : 'none';
+      if(open) input.focus();
+    });
+    closeBtn.addEventListener('click', function(){ open=false; panel.style.display='none'; });
+    send.addEventListener('click', doSend);
+    input.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); doSend(); }
+    });
+    document.querySelectorAll('.bot-quick').forEach(function(b){
+      b.addEventListener('click', function(){ input.value = b.dataset.text; doSend(); });
+    });
+  })();
+  </script>
+  {% endif %}
+
   <!-- APP_CONFIG: all Django vars have JS-safe defaults so no SyntaxError when
        context processors don't fire (e.g. pre-auth pages, error views) -->
   <script>
@@ -1358,6 +2817,70 @@
   <!--<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler-theme.min.js" integrity="sha384-pku3birjgGovaJ9ngF7SaxKkF/eYUvBjiMJ+jTtWbNesIj2Rud2K63+4JD7EF4gk">
     integrity="sha384-SoDJmj40r6f9Rfxi6Fq+bNS8ofhlZMyxHk9dq9Y8e1M17PZGkBRN/XUpx8swn0i5" crossorigin="anonymous"
   </script>-->
+
+  <script id="4v4g36">
+  window.CHURCH_PRIMARY = "{{ request.church.primary_color|default:'#206ac486' }}";
+
+  document.addEventListener("DOMContentLoaded", function () {
+
+      // ---- THEME ENGINE ----
+      const primary = window.CHURCH_PRIMARY;
+
+      function hexToRgb(hex) {
+          hex = hex.replace("#", "");
+          if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
+          const bigint = parseInt(hex, 16);
+          return {
+              r: (bigint >> 16) & 255,
+              g: (bigint >> 8) & 255,
+              b: bigint & 255
+          };
+      }
+
+      function getLuminance({ r, g, b }) {
+          return (0.299 * r + 0.587 * g + 0.114 * b);
+      }
+
+      function getContrastColor(hex) {
+          return getLuminance(hexToRgb(hex)) > 160 ? "#000" : "#fff";
+      }
+
+      function adjustColor(hex, percent) {
+          const { r, g, b } = hexToRgb(hex);
+          const adjust = c => Math.min(255, Math.max(0, c + (percent / 100) * 255));
+          return `rgb(${adjust(r)}, ${adjust(g)}, ${adjust(b)})`;
+      }
+
+      const root = document.documentElement;
+      root.style.setProperty("--church-primary", primary);
+      root.style.setProperty("--church-primary-contrast", getContrastColor(primary));
+      root.style.setProperty("--church-primary-light", adjustColor(primary, 20));
+      root.style.setProperty("--church-primary-dark", adjustColor(primary, -20));
+
+      // ---- MODAL ALTERNATION ----
+      let flip = false;
+
+      document.addEventListener("show.bs.modal", function (event) {
+          const modal = event.target;
+
+          // Header logic (existing)
+          const header = modal.querySelector(".modal-header");
+          if (header) {
+              header.classList.add("modal-header-themed");
+              header.classList.remove("modal-header-a", "modal-header-b");
+              header.classList.add(flip ? "modal-header-a" : "modal-header-b");
+              flip = !flip;
+          }
+
+          // NEW: content styling
+          const content = modal.querySelector(".modal-content");
+          if (content) {
+              content.classList.add("modal-content-themed");
+          }
+      });
+
+  });
+  </script>
 
   <!-- ========================= -->
   <!-- Theme toggle logic -->
@@ -1414,17 +2937,20 @@
 
   <script src="{% static 'js/custom.js' %}"></script>
   
-  
+  {# ── Bible slash modal (global — triggers from chat, feeds, rail) ── #}
+  {% load static %}
+  <script>
+    // Make CSRF token and Bible API URLs available globally
+    window.CSRF_TOKEN = "{{ csrf_token }}";
+    window.BIBLE_SEARCH_URL   = "{% url 'bible:search' %}";
+    window.BIBLE_SHARE_URL    = "{% url 'bible:share_to_feed' %}";
+    window.BIBLE_BOOK_LIST_URL = "{% url 'bible:book_list' %}";
+    window.BIBLE_CHAPTER_URL  = "{% url 'bible:chapter_verses' %}";
+    window.BIBLE_TRANSLATIONS_URL = "{% url 'bible:translations_list' %}";
+  </script>
+  {% include "bible/widgets/slash_modal.html" %}
+
   {% block extra_js %}{% endblock %}
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-

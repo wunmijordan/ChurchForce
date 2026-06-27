@@ -1,0 +1,65 @@
+{% extends base_template %}
+{% load static access_tags %}
+{% block title %}Edit — {{ course.title }}{% endblock %}
+{% block content %}
+<div class="container-xl py-4" style="max-width:760px;">
+  <div class="mb-4"><a href="{% url 'lms:course_detail' course.slug %}" class="text-muted small">← Back to Course</a></div>
+  <h2 class="fw-bold mb-4">Edit Course</h2>
+  <div class="card bg-dark border-secondary">
+    <div class="card-body p-4">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-12"><label class="form-label">Title</label><input name="title" class="form-control bg-dark text-white border-secondary" value="{{ course.title }}" required></div>
+          <div class="col-md-6">
+            <label class="form-label">Course type</label>
+            <select name="course_type" class="form-select bg-dark text-white border-secondary">
+              <option value="induction" {% if course.course_type == "induction" %}selected{% endif %}>Member Induction</option>
+              <option value="unit_training" {% if course.course_type == "unit_training" %}selected{% endif %}>Unit Training</option>
+              <option value="workforce" {% if course.course_type == "workforce" %}selected{% endif %}>Workforce-wide Training</option>
+              <option value="disciplinary" {% if course.course_type == "disciplinary" %}selected{% endif %}>Disciplinary Program</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Membership track</label>
+            <select name="membership_track" class="form-select bg-dark text-white border-secondary">
+              <option value="">— None —</option>
+              {% for t in membership_tracks %}<option value="{{ t.id }}" {% if course.membership_track_id == t.id %}selected{% endif %}>{{ t.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Delivery</label>
+            <select name="delivery_mode" class="form-select bg-dark text-white border-secondary">
+              <option value="physical" {% if course.delivery_mode == "physical" %}selected{% endif %}>Physical</option>
+              <option value="virtual" {% if course.delivery_mode == "virtual" %}selected{% endif %}>Virtual</option>
+              <option value="hybrid" {% if course.delivery_mode == "hybrid" %}selected{% endif %}>Hybrid</option>
+            </select>
+          </div>
+          <div class="col-md-4"><label class="form-label">Passing score (%)</label><input name="passing_score" type="number" class="form-control bg-dark text-white border-secondary" value="{{ course.passing_score }}" min="0" max="100"></div>
+          <div class="col-md-4"><label class="form-label">Max retakes</label><input name="max_retakes" type="number" class="form-control bg-dark text-white border-secondary" value="{{ course.max_retakes }}" min="0"></div>
+          <div class="col-md-6">
+            <label class="form-label">Linked unit</label>
+            <select name="unit" class="form-select bg-dark text-white border-secondary">
+              <option value="">— Church-wide —</option>
+              {% for u in all_units %}<option value="{{ u.id }}" {% if course.unit_id == u.id %}selected{% endif %}>{{ u.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2"><div class="form-check mt-4"><input class="form-check-input" type="checkbox" name="allow_retake" id="ar" {% if course.allow_retake %}checked{% endif %}><label class="form-check-label" for="ar">Retakes</label></div></div>
+          <div class="col-md-2"><div class="form-check mt-4"><input class="form-check-input" type="checkbox" name="strict_sequence" id="ss" {% if course.strict_sequence %}checked{% endif %}><label class="form-check-label" for="ss">Strict seq.</label></div></div>
+          <div class="col-md-2"><div class="form-check mt-4"><input class="form-check-input" type="checkbox" name="is_active" id="ia" {% if course.is_active %}checked{% endif %}><label class="form-check-label" for="ia">Active</label></div></div>
+          <div class="col-12"><label class="form-label">Description</label><textarea name="description" class="form-control bg-dark text-white border-secondary" rows="3">{{ course.description }}</textarea></div>
+          <div class="col-12">
+            <label class="form-label">Certificate template</label>
+            <textarea name="certificate_template" class="form-control bg-dark text-white border-secondary" rows="2">{{ course.certificate_template }}</textarea>
+            <div class="form-text">Use {name}, {course}, {date} as placeholders.</div>
+          </div>
+        </div>
+        <div class="mt-4 d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <a href="{% url 'lms:course_detail' course.slug %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "founder/base_founder.html" %}
+{% block title %}System Health{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-heart-pulse me-2"></i>System Health</h2>
+  <a href="." class="btn btn-sm btn-outline-secondary ms-auto">↺ Refresh</a>
+</div>
+
+<div class="row g-3 mb-4">
+  {% for name, status, detail in checks %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="stat-card d-flex align-items-center gap-3">
+      <div class="flex-shrink-0" style="font-size:1.6rem;">
+        {% if status == 'ok' %}✅{% elif status == 'warn' %}⚠️{% else %}❌{% endif %}
+      </div>
+      <div>
+        <div class="fw-semibold small">{{ name }}</div>
+        <div class="text-muted" style="font-size:.75rem;">{{ detail }}</div>
+      </div>
+      <span class="ms-auto badge
+        {% if status == 'ok' %}bg-success-lt
+        {% elif status == 'warn' %}bg-warning-lt
+        {% else %}bg-danger-lt{% endif %}"
+        style="font-size:.62rem;">{{ status }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="stat-card">
+  <h6 class="fw-semibold mb-3">Quick Links</h6>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="/admin/" target="_blank" class="btn btn-sm btn-outline-secondary">Django Admin ↗</a>
+    <a href="{% url 'founder:model_registry' %}" class="btn btn-sm btn-outline-secondary">Model Registry</a>
+    <a href="{% url 'founder:church_list' %}" class="btn btn-sm btn-outline-secondary">All Churches</a>
+    <a href="{% url 'founder:user_list' %}" class="btn btn-sm btn-outline-secondary">All Users</a>
+  </div>
+</div>
+
+{% endblock %}

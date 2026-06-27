@@ -1,0 +1,102 @@
+{% extends base_template %}
+{% load static access_tags %}
+{% block title %}Training — {{ church.name }}{% endblock %}
+{% block content %}
+<div class="container-xl py-4">
+
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+    <div>
+      <h2 class="mb-0 fw-bold">Training</h2>
+      <p class="text-muted mb-0 small">Your courses and learning progress</p>
+    </div>
+    {% if nav_is_admin %}
+    <a href="{% url 'lms:admin_courses' %}" class="btn btn-outline-primary btn-sm" style="border-radius:12px;">Manage Courses</a>
+    {% endif %}
+  </div>
+
+  {% if nav_is_admin %}
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item"><a class="nav-link {% if not filter_type or filter_type == 'all' %}active{% endif %}" href="?type=all">All</a></li>
+    <li class="nav-item"><a class="nav-link {% if filter_type == 'induction' %}active{% endif %}" href="?type=induction">Induction</a></li>
+    <li class="nav-item"><a class="nav-link {% if filter_type == 'unit_training' %}active{% endif %}" href="?type=unit_training">Unit Training</a></li>
+    <li class="nav-item"><a class="nav-link {% if filter_type == 'workforce' %}active{% endif %}" href="?type=workforce">Workforce-wide</a></li>
+    <li class="nav-item"><a class="nav-link {% if filter_type == 'mine' %}active{% endif %}" href="?type=mine">My Enrollments</a></li>
+  </ul>
+  {% endif %}
+
+  {% if courses %}
+  <div class="row row-cards g-3">
+    {% for course in courses %}
+    {% with enroll=enrollments|lookup:"course.id" %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card bg-dark border-secondary h-100" style="border-radius:18px;overflow:hidden;">
+
+        {# Course banner #}
+        {% if course.course_image %}
+        <img src="{{ course.course_image.url }}" class="lms-course-card-img" alt="{{ course.title }}">
+        {% else %}
+        <div class="lms-course-card-placeholder bg-{% if course.course_type == 'induction' %}blue{% elif course.course_type == 'workforce' %}purple{% elif course.course_type == 'unit_training' %}green{% else %}orange{% endif %}-lt">
+          {% if course.course_type == 'induction' %}🎓{% elif course.course_type == 'workforce' %}🏢{% elif course.course_type == 'unit_training' %}🔧{% else %}⚠{% endif %}
+        </div>
+        {% endif %}
+
+        <div class="card-body d-flex flex-column p-3">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="badge bg-{% if course.course_type == 'induction' %}blue{% elif course.course_type == 'workforce' %}purple{% elif course.course_type == 'unit_training' %}green{% else %}orange{% endif %}-lt small">
+              {{ course.get_course_type_display }}
+            </span>
+            {% if enroll %}
+            <span class="badge bg-{% if enroll.status == 'passed' or enroll.status == 'certified' %}success{% elif enroll.status == 'failed' %}danger{% elif enroll.status == 'active' %}warning{% else %}secondary{% endif %} small">
+              {{ enroll.status|capfirst }}
+            </span>
+            {% endif %}
+          </div>
+
+          <h5 class="fw-bold mb-1">{{ course.title }}</h5>
+          {% if course.description %}
+          <p class="text-muted small mb-2 flex-grow-1" style="line-height:1.5;">{{ course.description|truncatechars:90 }}</p>
+          {% endif %}
+
+          <div class="d-flex gap-3 text-muted small mb-2 flex-wrap">
+            <span>{{ course.get_delivery_mode_display }}</span>
+            <span>Pass: {{ course.passing_score }}%</span>
+            <span>{{ course.modules.count }} module{{ course.modules.count|pluralize }}</span>
+          </div>
+
+          {% if enroll and enroll.status == 'active' %}
+          {% with pct=enroll.progress_pct %}
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="progress flex-grow-1" style="height:5px;border-radius:8px;">
+              <div class="progress-bar bg-primary" style="width:{{ pct }}%;border-radius:8px;"></div>
+            </div>
+            <span class="text-muted" style="font-size:.68rem;">{{ pct }}%</span>
+          </div>
+          {% endwith %}
+          {% endif %}
+
+          <a href="{% if course.slug %}{% url 'lms:course_detail' course.slug %}{% else %}#{% endif %}"
+             class="btn btn-sm {% if enroll %}btn-primary{% else %}btn-outline-primary{% endif %} w-100 mt-auto"
+             style="border-radius:12px;">
+            {% if enroll and enroll.status == 'passed' or enroll and enroll.status == 'certified' %}
+              🏆 View Certificate
+            {% elif enroll %}
+              Continue →
+            {% else %}
+              {% if nav_is_admin %}View{% else %}Start{% endif %}
+            {% endif %}
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endwith %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="mb-3 opacity-50"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <p class="mb-0">No courses available yet.</p>
+    {% if nav_is_admin %}<a href="{% url 'lms:admin_courses' %}" class="btn btn-primary mt-3" style="border-radius:12px;">Create First Course</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

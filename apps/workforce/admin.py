@@ -14,24 +14,24 @@ from workforce.models import (
 
 @admin.register(WorkforceStage)
 class WorkforceStageAdmin(ChurchAdmin):
-    list_display  = ("name", "church", "order", "is_active")
-    list_filter   = ("church", "is_active")
+    list_display = ("name", "church", "order", "is_active")
+    list_filter = ("church", "is_active")
     search_fields = ("name", "church__name")
-    ordering      = ("church", "order")
+    ordering = ("church", "order")
 
 
 @admin.register(WorkforceRole)
 class WorkforceRoleAdmin(ChurchAdmin):
-    list_display  = ("name", "church", "is_leadership", "order", "is_active")
-    list_filter   = ("church", "is_leadership", "is_active")
+    list_display = ("name", "church", "is_leadership", "order", "is_active")
+    list_filter = ("church", "is_leadership", "is_active")
     search_fields = ("name", "church__name")
-    ordering      = ("church", "order")
+    ordering = ("church", "order")
 
 
 @admin.register(WorkforceMember)
 class WorkforceMemberAdmin(ChurchAdmin):
-    list_display  = ("member", "church", "stage", "joined_at", "is_active")
-    list_filter   = ("church", "stage", "is_active")
+    list_display = ("member", "church", "stage", "joined_at", "is_active")
+    list_filter = ("church", "stage", "is_active")
     search_fields = (
         "member__user__full_name",
         "member__user__username",
@@ -43,8 +43,8 @@ class WorkforceMemberAdmin(ChurchAdmin):
 
 @admin.register(WorkforceMembershipRole)
 class WorkforceMembershipRoleAdmin(ChurchAdmin):
-    list_display  = ("workforce_member", "role", "church", "assigned_at")
-    list_filter   = ("church", "role")
+    list_display = ("workforce_member", "role", "church", "assigned_at")
+    list_filter = ("church", "role")
     search_fields = (
         "workforce_member__member__user__full_name",
         "role__name",
@@ -56,40 +56,40 @@ class WorkforceMembershipRoleAdmin(ChurchAdmin):
 
 @admin.register(AttendanceRecord)
 class AttendanceRecordAdmin(ChurchAdmin):
-    list_display  = ("user", "event", "date", "status", "church")
-    list_filter   = ("church", "status", "date")
+    list_display = ("user", "event", "date", "status", "church")
+    list_filter = ("church", "status", "date")
     search_fields = (
-        "user__workforce_member__member__user__full_name",
+        "user__user__full_name",
         "event__name",
         "church__name",
     )
     date_hierarchy = "date"
-    raw_id_fields  = ("user", "event")
+    raw_id_fields = ("user", "event")
 
 
 @admin.register(ClockRecord)
 class ClockRecordAdmin(ChurchAdmin):
-    list_display  = ("user", "event", "date", "clock_in", "clock_out", "church")
-    list_filter   = ("church", "date")
+    list_display = ("user", "event", "date", "clock_in", "clock_out", "church")
+    list_filter = ("church", "date")
     search_fields = (
-        "user__workforce_member__member__user__full_name",
+        "user__user__full_name",
         "church__name",
     )
     date_hierarchy = "date"
-    raw_id_fields  = ("user", "event")
+    raw_id_fields = ("user", "event")
 
 
 @admin.register(PersonalReminder)
 class PersonalReminderAdmin(ChurchAdmin):
-    list_display  = ("user", "title", "date", "is_done", "church")
-    list_filter   = ("church", "is_done", "date")
+    list_display = ("user", "title", "date", "is_done", "church")
+    list_filter = ("church", "is_done", "date")
     search_fields = ("title", "user__member__user__full_name", "church__name")
     date_hierarchy = "date"
 
 
 @admin.register(UserActivity)
 class UserActivityAdmin(ChurchAdmin):
-    list_display  = ("user", "activity_type", "church", "created_at")
-    list_filter   = ("church", "activity_type")
+    list_display = ("user", "activity_type", "church", "created_at")
+    list_filter = ("church", "activity_type")
     search_fields = ("user__user__full_name", "description", "church__name")
     date_hierarchy = "created_at"

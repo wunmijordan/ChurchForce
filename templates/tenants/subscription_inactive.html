@@ -1,60 +1,43 @@
-{% extends "public_base.html" %} {% load static %} {% block title %}Subscription
-Inactive — ChurchForce{% endblock %} {% block content %}
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-12 col-md-7 col-lg-5 text-center">
-      <div class="mb-4" style="font-size: 4rem">🔒</div>
+{% extends "public_base.html" %}
+{% load static %}
+{% block title %}Workspace Inactive — ChurchForce{% endblock %}
+{% block content %}
 
-      <h2 class="fw-bold mb-2">Your subscription is inactive</h2>
+<div class="container container-tight">
+  <div class="text-center">
+    <div class="mb-4" style="font-size: 4rem">🔒</div>
 
-      {% if church %}
-      <p class="text-secondary mb-4">
-        <strong class="text-light">{{ church.name }}</strong>'s subscription has
-        lapsed or been cancelled. Renew to restore access immediately.
-      </p>
-      {% else %}
-      <p class="text-secondary mb-4">
-        Your subscription is no longer active. Renew to restore full access.
-      </p>
-      {% endif %}
+    <h1 class="fw-bold mb-2">This workspace is inactive</h1>
 
-      <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
-        <a
-          href="{% url 'billing:portal' %}"
-          class="btn btn-lg fw-bold px-5 py-2"
-          style="background: #ff5e01; color: #fff; border: none"
-        >
-          Renew subscription
-        </a>
-        <a
-          href="{% url 'billing:pricing' %}"
-          class="btn btn-outline-secondary btn-lg px-4 py-2"
-        >
-          View plans
-        </a>
-      </div>
+    {% if church %}
+    <p class="text-secondary mb-4">
+      <strong class="text-light">{{ church.name }}</strong> does not have an active
+      record.<br> Contact support or review your routing settings.
+    </p>
+    {% else %}
+    <p class="text-secondary mb-4">
+      This organisation is no longer active.<br> Contact support for help.
+    </p>
+    {% endif %}
 
-      <div class="card bg-dark border-secondary mt-5 text-start">
-        <div class="card-body p-4">
-          <h6 class="fw-bold mb-3">Your data is safe</h6>
-          <ul class="text-secondary mb-0 small">
-            <li class="mb-2">
-              All records are preserved and will be restored immediately on
-              renewal.
-            </li>
-            <li class="mb-2">No data has been deleted.</li>
-            <li>Renewing instantly restores full access to all features.</li>
-          </ul>
-        </div>
-      </div>
-
-      <p class="text-secondary small mt-4">
-        Need help?
-        <a href="mailto:support@churchforce.io" class="text-light"
-          >Contact support</a
-        >
-      </p>
+    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+      <a href="{% url 'tenants:account' %}?section=subscription"
+        class="btn btn-lg fw-bold px-5 py-2"
+        style="background:#ff5e01;box-shadow:0 2px 5px #000000f3;border-radius:24px;">
+        Routing settings
+      </a>
+      <a href="{% url 'billing:pricing' %}"
+        class="btn bg-grey btn-lg px-4 py-2"
+        style="box-shadow:0 2px 5px #000000f3;border-radius:24px;">
+        Routing options
+      </a>
     </div>
+
+    <p class="text-secondary small mt-4">
+      Need help?
+      <a href="mailto:support@churchforce.io" class="text-light">Contact Support</a>
+    </p>
   </div>
 </div>
+
 {% endblock %}

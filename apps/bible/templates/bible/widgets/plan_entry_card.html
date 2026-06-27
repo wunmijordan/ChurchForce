@@ -1,0 +1,74 @@
+{# Reusable dashboard plan entry card. #}
+<div class="card mb-2" style="background:#1e293b;border-radius:16px;" id="passage-card-{{ entry.id }}">
+  <div class="card-body p-3">
+    {% if entry.entry_type == "devotional" and entry.devotional_title %}
+    <div class="fw-bold text-white mb-2" style="font-size:1.05rem;">{{ entry.devotional_title }}</div>
+    {% if entry.devotional_body %}
+    <div class="mb-3" style="color:#cbd5e1;font-size:.92rem;line-height:1.75;white-space:pre-line;">{{ entry.devotional_body }}</div>
+    {% endif %}
+    {% endif %}
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <span class="fw-bold text-warning" style="font-size:{% if entry.entry_type == 'devotional' %}.9rem{% else %}1.05rem{% endif %};">{{ entry.passage_reference }}</span>
+      <div class="d-flex gap-2 flex-wrap">
+        {% if entry.book_id and entry.chapter %}
+        <button class="btn btn-sm btn-outline-secondary"
+          onclick="loadPassage({{ entry.id }},'{{ entry.book_id }}',{{ entry.chapter }},{{ entry.chapter_to|default:entry.chapter }},{{ entry.verse_start|default:'null' }},{{ entry.verse_end|default:'null' }},'{{ entry.translation|default:plan.translation }}')"
+          title="Read inline">Read</button>
+        <a href="{% url 'bible:bible_reader' %}?book_id={{ entry.book_id }}&chapter={{ entry.chapter }}&translation={{ entry.translation|default:plan.translation }}"
+          class="btn btn-sm btn-outline-info" title="Open in full reader" target="_blank">Reader</a>
+        {% endif %}
+        {% if not is_completed %}
+        <button class="btn btn-sm btn-success" onclick="markComplete({{ entry.id }}, this)">Mark Done</button>
+        {% else %}
+        <span class="badge bg-success">Completed</span>
+        {% endif %}
+      </div>
+    </div>
+    {% if entry.notes %}<div class="text-muted small fst-italic">{{ entry.notes }}</div>{% endif %}
+    <div id="passage-text-{{ entry.id }}" class="mt-2 d-none" style="color:#cbd5e1;line-height:1.7;font-family:Georgia,serif;"></div>
+    <div class="mt-2">
+      <button class="btn btn-xs btn-outline-secondary w-100" style="border-radius:10px;font-size:.78rem;"
+        onclick="toggleDiscussion({{ entry.id }}, {{ plan.id }})">
+        Discuss This Reading
+      </button>
+      <div id="discussion-panel-{{ entry.id }}" class="d-none mt-2 p-3 rounded" style="background:#0f172a;border:1px solid #1e293b;border-radius:14px !important;">
+        <div id="disc-list-{{ entry.id }}" class="mb-3" style="max-height:240px;overflow-y:auto;font-size:.82rem;"></div>
+        <textarea id="disc-body-{{ entry.id }}" class="form-control form-control-sm mb-2" rows="2"
+          placeholder="{% if is_admin %}Start a conversation or prompt around this reading...{% else %}Share a thought or ask a question about this reading...{% endif %}"
+          style="background:#1e293b;color:#e2e8f0;border-color:#334155;border-radius:10px;font-size:.82rem;"></textarea>
+        <div class="row g-2 align-items-end">
+          <div class="col-auto">
+            <label class="form-label form-label-sm text-muted mb-1" style="font-size:.7rem;">Post to</label>
+            <select id="disc-scope-{{ entry.id }}" class="form-select form-select-sm"
+              style="background:#1e293b;color:#e2e8f0;border-color:#334155;border-radius:8px;font-size:.78rem;">
+              <option value="workforce:general">General Workforce</option>
+              {% if is_admin %}
+                {% for u in all_units %}
+                <option value="{{ u.unit_type }}:{{ u.id }}">{{ u.name }}</option>
+                {% endfor %}
+              {% else %}
+                {% for u in member_units %}
+                <option value="{{ u.unit_type }}:{{ u.id }}">{{ u.name }}</option>
+                {% endfor %}
+              {% endif %}
+            </select>
+          </div>
+          <div class="col-auto">
+            <label class="form-label form-label-sm text-muted mb-1" style="font-size:.7rem;">Via</label>
+            <select id="disc-dest-{{ entry.id }}" class="form-select form-select-sm"
+              style="background:#1e293b;color:#e2e8f0;border-color:#334155;border-radius:8px;font-size:.78rem;">
+              <option value="feeds">Feeds</option>
+              <option value="chat">Chat</option>
+            </select>
+          </div>
+          <div class="col ms-auto d-flex justify-content-end">
+            <button class="btn btn-sm btn-primary" style="border-radius:10px;font-size:.78rem;"
+              onclick="postDiscussion({{ entry.id }}, {{ plan.id }})">
+              {% if is_admin %}Post{% else %}Ask{% endif %}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

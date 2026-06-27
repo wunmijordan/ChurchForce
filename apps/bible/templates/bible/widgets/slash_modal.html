@@ -1,0 +1,616 @@
+<!-{#
+  bible/widgets/slash_modal.html
+  Reusable Bible verse search modal.
+  Included in:
+    - base.html  (dashboard, admin pages, any page extending base)
+    - workforce/chatbase.html  (chat — does NOT extend base.html)
+    - dashboard/dashboard.html extra_js block (feeds composer)
+#}->
+<div class="modal fade" id="bibleSlashModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:560px;">
+    <div class="modal-content">
+
+      <div class="modal-header pb-1">
+        <span style="font-size:1.1rem;line-height:1;display:inline-flex;align-items:center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.5a5.5 5.5 0 0 1 4-1.5h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1h-3.5"/><path d="M12 6.5a5.5 5.5 0 0 0-4-1.5H5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h3.5"/><path d="M12 6.5V19"/><path d="M9 10h1"/><path d="M9 13h1"/></svg></span>
+        <h5 class="modal-title text-white ms-2 mb-0">Search Bible</h5>
+        <select id="bsTranslation" class="form-select form-select-sm ms-auto me-2"
+          style="width:220px;max-width:50%;background:#0f172a;color:#e2e8f0;border-color:#334155;">
+          <option value="" disabled>Loading…</option>
+        </select>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      {# Copyright notice — shown when API.Bible key is not yet configured #}
+      <div id="bsTranslationNote" class="d-none px-3 py-1" style="background:#1e293b;font-size:.72rem;color:#94a3b8;border-bottom:1px solid #334155;">
+        ℹ️ NIV, NLT, AMP, NKJV and other licensed translations require an <strong style="color:#cbd5e1;">APIBIBLE_API_KEY</strong> in settings (free at <a href="https://scripture.api.bible" target="_blank" style="color:#60a5fa;">scripture.api.bible</a>).
+      </div>
+
+      <div class="modal-body pt-2 pb-2">
+        {# Tabs #}
+        <div class="d-flex gap-1 mb-3 p-1 rounded" style="background:#0f172a;">
+          <button id="bsTabRef" class="btn btn-sm flex-fill active"
+            style="border-radius:8px;font-size:.82rem;" onclick="bsTab('ref')">🔍 Reference</button>
+          <button id="bsTabBrowse" class="btn btn-sm flex-fill"
+            style="border-radius:8px;font-size:.82rem;" onclick="bsTab('browse')">📚 Browse</button>
+        </div>
+
+        {# Reference panel #}
+        <div id="bsPanelRef">
+          <div class="position-relative">
+            <input id="bsInput" type="text" class="form-control"
+              placeholder="John 3:16  ·  Romans 8:28-30  ·  Psalm 23  ·  keywords"
+              autocomplete="off"
+              style="background:#0f172a;color:#e2e8f0;border-color:#334155;border-radius:10px;padding-left:2.4rem;">
+            <span style="position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:#64748b;pointer-events:none;">🔍</span>
+          </div>
+          <div class="text-muted mt-1" style="font-size:.75rem;">
+            Type a reference or keywords. Press Enter or wait to search.
+          </div>
+        </div>
+
+        {# Browse panel #}
+        <div id="bsPanelBrowse" class="d-none">
+          <div class="row g-2">
+            <div class="col-12 col-sm-5">
+              <select id="bsBook" class="form-select form-select-sm"
+                style="background:#0f172a;color:#e2e8f0;border-color:#334155;">
+                <option value="">— Book —</option>
+              </select>
+            </div>
+            <div class="col-4 col-sm-2">
+              <select id="bsChapter" class="form-select form-select-sm"
+                style="background:#0f172a;color:#e2e8f0;border-color:#334155;" disabled>
+                <option value="">Ch.</option>
+              </select>
+            </div>
+            <div class="col-4 col-sm-2">
+              <select id="bsVerseFrom" class="form-select form-select-sm"
+                style="background:#0f172a;color:#e2e8f0;border-color:#334155;" disabled>
+                <option value="">v.</option>
+              </select>
+            </div>
+            <div class="col-4 col-sm-2">
+              <select id="bsVerseTo" class="form-select form-select-sm"
+                style="background:#0f172a;color:#e2e8f0;border-color:#334155;" disabled>
+                <option value="">to</option>
+              </select>
+            </div>
+            <div class="col-12 col-sm-1 d-flex align-items-end">
+              <button id="bsBrowseGo" class="btn btn-sm btn-primary w-100" disabled
+                onclick="bsBrowseFetch()">Go</button>
+            </div>
+          </div>
+          <div id="bsBrowseHint" class="text-muted mt-1" style="font-size:.75rem;">
+            Select a book and chapter to load verses.
+          </div>
+        </div>
+
+        {# Status #}
+        <div id="bsLoading" class="text-center py-3 d-none">
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+          <span class="text-muted small">Fetching from Bible API…</span>
+        </div>
+        <div id="bsWarming" class="alert alert-info py-2 px-3 mt-2 d-none" style="border-radius:10px;font-size:.83rem;">
+          📚 Verse index building. Try a direct reference like <strong>John 3:16</strong>.
+        </div>
+        <div id="bsError" class="alert alert-warning py-2 px-3 mt-2 d-none" style="border-radius:10px;font-size:.83rem;"></div>
+
+        {# Results #}
+        <div id="bsResults" class="mt-2 d-flex flex-column gap-2" style="max-height:310px;overflow-y:auto;"></div>
+        <div id="bsEmpty" class="text-center text-muted py-3 d-none" style="font-size:.85rem;">
+          No results. Check the reference or try keywords.
+        </div>
+      </div>
+
+      <div class="modal-footer bg-gray-900 pt-0" style="border-radius:0 0 36px 36px;">
+        <span class="text-muted" style="font-size:.7rem;">↩ insert into text · 📋 copy · ↗ share to feed</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Bible Slash Modal — self-contained IIFE ────────────────────────────────
+   Works in both base.html context (dashboard/admin) and standalone chatbase.html.
+   Reads URLs from window globals set by the host page, with safe fallbacks.
+   ───────────────────────────────────────────────────────────────────────── */
+(function () {
+  "use strict";
+
+  // Resolve config from window globals (set in base.html or chatbase extra_js)
+  function cfg(key, fallback) { return window[key] || fallback; }
+
+  let _target   = null;   // textarea that triggered the modal
+  let _results  = [];     // last search results for group actions
+  let _timer    = null;
+  let _booksOK  = false;
+  let _verses   = [];     // verse list for current browse chapter
+
+  // ── Open ────────────────────────────────────────────────────────────────
+  window.openBibleSlashModal = function (targetInput) {
+    _target = targetInput || null;
+    const el = document.getElementById("bibleSlashModal");
+    if (!el) return;
+    bootstrap.Modal.getOrCreateInstance(el).show();
+    setTimeout(function () {
+      bsTab("ref");
+      var inp = document.getElementById("bsInput");
+      if (inp) { inp.value = ""; inp.focus(); }
+      bsClear();
+    }, 160);
+  };
+
+  // ── Slash trigger ────────────────────────────────────────────────────────
+  window.setupBibleSlashTrigger = function (ta) {
+    if (!ta || ta._bs) return;
+    ta._bs = true;
+    ta.addEventListener("input", function () {
+      var pos    = this.selectionStart;
+      var before = this.value.slice(0, pos);
+      if (/(^|\s)\/$/.test(before)) {
+        var after  = this.value.slice(this.selectionEnd || pos);
+        this.value = before.slice(0, -1) + after;
+        this.setSelectionRange(pos - 1, pos - 1);
+        window.openBibleSlashModal(this);
+      }
+    });
+  };
+
+  // ── Tab switching ────────────────────────────────────────────────────────
+  window.bsTab = function (tab) {
+    var isRef = tab === "ref";
+    document.getElementById("bsPanelRef")?.classList.toggle("d-none", !isRef);
+    document.getElementById("bsPanelBrowse")?.classList.toggle("d-none", isRef);
+    document.getElementById("bsTabRef")?.classList.toggle("active", isRef);
+    document.getElementById("bsTabBrowse")?.classList.toggle("active", !isRef);
+    bsClear();
+    if (!isRef) bsLoadBooks();
+    else document.getElementById("bsInput")?.focus();
+  };
+
+  // ── Translation change ───────────────────────────────────────────────────
+  document.getElementById("bsTranslation")?.addEventListener("change", function () {
+    _booksOK = false;
+    bsClear();
+    if (!document.getElementById("bsPanelBrowse")?.classList.contains("d-none")) bsLoadBooks();
+  });
+
+  function trans() {
+    return document.getElementById("bsTranslation")?.value || "BSB";
+  }
+
+  // ── Load translations (Phase 3: deduped server-side, no BSB hardcode) ──────
+  function bsLoadTranslations() {
+    var url = cfg("BIBLE_TRANSLATIONS_URL", "/bible/api/translations/");
+    var sel = document.getElementById("bsTranslation");
+    if (!sel) return;
+    fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) return;
+
+        // Remember whatever was selected before (or empty)
+        var current = (sel.value || "").toUpperCase();
+        sel.innerHTML = "";
+
+        var note = document.getElementById("bsTranslationNote");
+
+        // Merge: YouVersion first, then helloao, then apibible.
+        // Server-side dedup means helloao/apibible never repeat a YouVersion entry.
+        var all = [];
+        (d.youversion || []).forEach(function (t) {
+          all.push({ id: t.id, name: t.name || t.id, disabled: false });
+        });
+        (d.helloao || d.translations || []).forEach(function (t) {
+          all.push({ id: t.id, name: t.name || t.id, disabled: false });
+        });
+        (d.apibible || []).forEach(function (t) {
+          all.push({ id: t.id, name: t.name || t.id, disabled: !!t.needs_key });
+        });
+
+        // Client-side dedup guard (belt-and-suspenders for any edge cases)
+        var seen = new Set();
+        var matched = false;
+        all.forEach(function (t) {
+          if (!t.id || seen.has(t.id.toUpperCase())) return;
+          seen.add(t.id.toUpperCase());
+
+          var o = document.createElement("option");
+          o.value = t.disabled ? "" : t.id;
+          o.disabled = t.disabled;
+
+          if (t.disabled) {
+            o.style.color = "#94a3b8";
+            o.textContent = t.name + " — needs API key";
+          } else {
+            o.textContent = t.name;
+          }
+
+          if (!t.disabled && t.id.toUpperCase() === current) {
+            o.selected = true;
+            matched = true;
+          }
+
+          sel.appendChild(o);
+        });
+
+        // If no match, select the first available option (YouVersion's first entry)
+        if (!matched) {
+          var first = sel.querySelector("option:not([disabled])");
+          if (first) first.selected = true;
+        }
+
+        // Show/hide API note (only when key not configured)
+        if (d.apibible && d.apibible.some(function(t){ return t.needs_key; }) && !d.apibible_ready) {
+          note?.classList.remove("d-none");
+        } else {
+          note?.classList.add("d-none");
+        }
+      })
+      .catch(function () {
+        // On network failure keep whatever placeholder is in the select
+      });
+  }
+
+  // Load translations as soon as the modal first opens
+  var _translationsLoaded = false;
+  document.getElementById("bibleSlashModal")?.addEventListener("show.bs.modal", function () {
+    if (!_translationsLoaded) { _translationsLoaded = true; bsLoadTranslations(); }
+  });
+
+  // ── Load books ───────────────────────────────────────────────────────────
+  function bsLoadBooks() {
+    if (_booksOK) return;
+    var sel = document.getElementById("bsBook");
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Loading…</option>';
+
+    var url = cfg("BIBLE_BOOK_LIST_URL", "/bible/api/books/") + "?translation=" + trans();
+    fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        sel.innerHTML = '<option value="">— Book —</option>';
+        (d.books || []).forEach(function (b) {
+          var o = document.createElement("option");
+          o.value = JSON.stringify({ id: b.id, name: b.name, chapters: b.numberOfChapters });
+          o.textContent = b.name;
+          sel.appendChild(o);
+        });
+        _booksOK = true;
+      })
+      .catch(function () { sel.innerHTML = '<option value="">Failed to load</option>'; });
+  }
+
+  // ── Book → chapter ───────────────────────────────────────────────────────
+  document.getElementById("bsBook")?.addEventListener("change", function () {
+    var chSel = document.getElementById("bsChapter");
+    var vFrom = document.getElementById("bsVerseFrom");
+    var vTo   = document.getElementById("bsVerseTo");
+    var goBtn = document.getElementById("bsBrowseGo");
+    var hint  = document.getElementById("bsBrowseHint");
+
+    // Reset downstream
+    chSel.innerHTML = '<option value="">Ch.</option>';
+    vFrom.innerHTML = '<option value="">v.</option>';
+    vTo.innerHTML   = '<option value="">to</option>';
+    vFrom.disabled = vTo.disabled = goBtn.disabled = true;
+    _verses = [];
+
+    if (!this.value) { chSel.disabled = true; return; }
+
+    var book = JSON.parse(this.value);
+    for (var i = 1; i <= book.chapters; i++) {
+      var o = document.createElement("option");
+      o.value = i; o.textContent = i;
+      chSel.appendChild(o);
+    }
+    chSel.disabled = false;
+    if (hint) hint.textContent = "Now select a chapter.";
+  });
+
+  // ── Chapter → verses ────────────────────────────────────────────────────
+  document.getElementById("bsChapter")?.addEventListener("change", function () {
+    var vFrom = document.getElementById("bsVerseFrom");
+    var vTo   = document.getElementById("bsVerseTo");
+    var goBtn = document.getElementById("bsBrowseGo");
+    var hint  = document.getElementById("bsBrowseHint");
+
+    vFrom.innerHTML = '<option value="">v. (loading…)</option>';
+    vTo.innerHTML   = '<option value="">to</option>';
+    vFrom.disabled = vTo.disabled = goBtn.disabled = true;
+    _verses = [];
+
+    if (!this.value) return;
+
+    var bookRaw = document.getElementById("bsBook")?.value;
+    if (!bookRaw) return;
+    var book    = JSON.parse(bookRaw);
+    var chapter = parseInt(this.value);
+
+    var url = cfg("BIBLE_CHAPTER_URL", "/bible/api/chapter-verses/") +
+      "?book_id=" + book.id + "&chapter=" + chapter + "&translation=" + trans();
+
+    fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        _verses = d.verses || [];
+        if (!_verses.length) {
+          vFrom.innerHTML = '<option value="">No verses found</option>';
+          vTo.innerHTML   = '<option value="">—</option>';
+          if (hint) hint.textContent = "Verse data unavailable for this chapter. Try the Reference tab.";
+          return;
+        }
+        vFrom.innerHTML = '<option value="">— from —</option>';
+        vTo.innerHTML   = '<option value="">— to —</option>';
+        _verses.forEach(function (v) {
+          var makeOpt = function (sel) {
+            var o = document.createElement("option");
+            o.value = v.number;
+            o.textContent = v.number + (v.text ? " — " + v.text.slice(0, 30) + (v.text.length > 30 ? "…" : "") : "");
+            sel.appendChild(o);
+          };
+          makeOpt(vFrom);
+          makeOpt(vTo);
+        });
+        vFrom.disabled = false;
+        // vTo and Go become active once vFrom is chosen (see vFrom listener below)
+        if (hint) hint.textContent = "Select starting verse (and optional end verse), then Go.";
+      })
+      .catch(function () {
+        vFrom.innerHTML = '<option value="">Failed to load verses</option>';
+        vTo.innerHTML   = '<option value="">—</option>';
+        if (hint) hint.textContent = "Could not load verses. Check connection or try the Reference tab.";
+      });
+  });
+
+  // ── vFrom change: enable vTo and Go ─────────────────────────────────────
+  document.getElementById("bsVerseFrom")?.addEventListener("change", function () {
+    var vTo   = document.getElementById("bsVerseTo");
+    var goBtn = document.getElementById("bsBrowseGo");
+    if (!this.value) { vTo.disabled = true; goBtn.disabled = true; return; }
+
+    var from = parseInt(this.value);
+    // Re-enable vTo and filter its options to >= from
+    vTo.disabled = false;
+    Array.from(vTo.options).forEach(function (o) {
+      o.disabled = o.value !== "" && parseInt(o.value) < from;
+    });
+    // Default vTo to same verse
+    if (!vTo.value || parseInt(vTo.value) < from) vTo.value = this.value;
+    goBtn.disabled = false;
+  });
+
+  // ── Browse fetch ─────────────────────────────────────────────────────────
+  window.bsBrowseFetch = function () {
+    var bookRaw = document.getElementById("bsBook")?.value;
+    var chapter = document.getElementById("bsChapter")?.value;
+    var vFrom   = document.getElementById("bsVerseFrom")?.value;
+    var vTo     = document.getElementById("bsVerseTo")?.value;
+    if (!bookRaw || !chapter) return;
+
+    var book = JSON.parse(bookRaw);
+    var ref  = book.name + " " + chapter;
+    if (vFrom) ref += ":" + vFrom;
+    if (vTo && vTo !== vFrom) ref += "-" + vTo;
+
+    // Switch to reference tab and search
+    bsTab("ref");
+    var inp = document.getElementById("bsInput");
+    if (inp) inp.value = ref;
+    bsSearch(ref);
+  };
+
+  // ── Reference input ──────────────────────────────────────────────────────
+  document.getElementById("bsInput")?.addEventListener("input", function () {
+    clearTimeout(_timer);
+    var q = this.value.trim();
+    if (!q) { bsClear(); return; }
+    _timer = setTimeout(function () { bsSearch(q); }, 320);
+  });
+
+  document.getElementById("bsInput")?.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      clearTimeout(_timer);
+      bsSearch(this.value.trim());
+    } else if (e.key === "Escape") {
+      bootstrap.Modal.getInstance(document.getElementById("bibleSlashModal"))?.hide();
+    }
+  });
+
+  // ── Search ───────────────────────────────────────────────────────────────
+  function bsSearch(q) {
+    if (!q || q.length < 2) return;
+    bsClear(); bsLoading(true);
+    var url = cfg("BIBLE_SEARCH_URL", "/bible/api/search/") +
+      "?q=" + encodeURIComponent(q) + "&translation=" + trans();
+
+    fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        bsLoading(false);
+        if (!d.ok) { bsShowErr(d.message || "Search failed."); return; }
+        if (d.warming) {
+          document.getElementById("bsWarming")?.classList.remove("d-none"); return;
+        }
+        _results = d.results || [];
+        if (!_results.length) {
+          var msg = d.message || "";
+          var el  = document.getElementById("bsEmpty");
+          if (el) { el.textContent = msg || "No results. Check the reference or try keywords."; el.classList.remove("d-none"); }
+          return;
+        }
+        bsRender(_results);
+      })
+      .catch(function () {
+        bsLoading(false);
+        bsShowErr("Could not reach the Bible API. Check your connection.");
+      });
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  function bsRender(results) {
+    var container = document.getElementById("bsResults");
+    if (!container) return;
+
+    var groupRef = results[0]?.group_reference || "";
+    var isRange  = results.length > 1 && results.every(function (v) { return v.group_reference === groupRef; });
+
+    if (isRange) {
+      // One combined card for the whole range
+      var combined = results.map(function (v) {
+        return '<sup class="text-muted me-1">' + v.number + "</sup>" + esc(v.text) + " ";
+      }).join("");
+      var card = bsMakeCard(
+        '<span class="fw-semibold text-warning">' + esc(groupRef) + '</span> <span class="text-muted small">(' + esc(results[0].translation) + ")</span>",
+        combined,
+        function () { bsInsertGroup(); },
+        function () { bsCopyGroup(); },
+        function () { bsShareGroup(); }
+      );
+      container.appendChild(card);
+    } else {
+      results.forEach(function (v) {
+        var card = bsMakeCard(
+          '<span class="fw-semibold text-warning">' + esc(v.reference) + '</span> <span class="text-muted small">(' + esc(v.translation) + ")</span>",
+          esc(v.text),
+          function () { bsInsertVerse(v); },
+          function () { bsCopyVerse(v); },
+          function () { bsShareVerse(v); }
+        );
+        container.appendChild(card);
+      });
+    }
+  }
+
+  function bsMakeCard(header, body, onInsert, onCopy, onShare) {
+    var card = document.createElement("div");
+    card.style.cssText = "background:#0f172a;border:1px solid #334155;border-radius:10px;padding:12px;transition:border-color .15s;";
+    card.innerHTML =
+      '<div class="d-flex align-items-start gap-2">' +
+        '<div class="flex-grow-1">' +
+          '<div class="mb-1">' + header + "</div>" +
+          '<div style="font-family:Georgia,serif;font-size:.875rem;line-height:1.65;color:#e2e8f0;">' + body + "</div>" +
+        "</div>" +
+        '<div class="d-flex flex-column gap-1 ms-1" style="min-width:32px;">' +
+          '<button class="btn btn-xs btn-outline-primary" title="Insert into text">↩</button>' +
+          '<button class="btn btn-xs btn-outline-secondary" title="Copy to clipboard">📋</button>' +
+          '<button class="btn btn-xs btn-outline-success" title="Share to feed">↗</button>' +
+        "</div>" +
+      "</div>";
+    card.addEventListener("mouseenter", function () { this.style.borderColor = "#3b82f6"; });
+    card.addEventListener("mouseleave", function () { this.style.borderColor = "#334155"; });
+    var btns = card.querySelectorAll("button");
+    btns[0].addEventListener("click", onInsert);
+    btns[1].addEventListener("click", onCopy);
+    btns[2].addEventListener("click", onShare);
+    return card;
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+
+  function bsInsertText(text) {
+    if (_target) {
+      var pos    = _target.selectionStart || 0;
+      var before = _target.value.slice(0, pos);
+      var after  = _target.value.slice(_target.selectionEnd || pos);
+      _target.value = before + text + " " + after;
+      var np = pos + text.length + 1;
+      _target.setSelectionRange(np, np);
+      _target.focus();
+      _target.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    bootstrap.Modal.getInstance(document.getElementById("bibleSlashModal"))?.hide();
+  }
+
+  // ── Verse insert ──────────────────────────────────────────────────────────
+  // _target is always a <textarea>. HTML/SVG is not rendered there — it appears
+  // as literal text. Instead we insert the 📖 Unicode character as a prefix;
+  // chat_room.js's formatMsg() detects it and swaps it for the Tabler bible SVG
+  // when rendering the bubble. For non-chat textareas the emoji renders natively.
+
+  function bsInsertVerse(v) {
+    bsInsertText('\uD83D\uDCD6 ' + v.reference + ' (' + v.translation + '): \u201c' + v.text + '\u201d');
+  }
+
+  window.bsInsertGroup = function () {
+    if (!_results.length) return;
+    var ref      = _results[0].group_reference || _results[0].reference;
+    var combined = _results.map(function (v) { return '[' + v.number + '] ' + v.text; }).join(' ');
+    bsInsertText('\uD83D\uDCD6 ' + ref + ' (' + _results[0].translation + '): \u201c' + combined + '\u201d');
+  };
+
+  function bsCopyVerse(v) {
+    bsCopyText('"' + v.text + '" — ' + v.reference + " (" + v.translation + ")");
+  }
+
+  window.bsCopyGroup = function () {
+    if (!_results.length) return;
+    var ref      = _results[0].group_reference || _results[0].reference;
+    var combined = _results.map(function (v) { return "[" + v.number + "] " + v.text; }).join(" ");
+    bsCopyText('"' + combined + '" — ' + ref + " (" + _results[0].translation + ")");
+  };
+
+  function bsCopyText(text, btn) {
+    navigator.clipboard?.writeText(text).then(function () {
+      if (btn) { var orig = btn.textContent; btn.textContent = "✓"; setTimeout(function () { btn.textContent = orig; }, 1800); }
+    });
+  }
+
+  function bsShareVerse(v) {
+    bsDoShare({ reference: v.reference, verse_text: v.text, translation: v.translation });
+  }
+
+  window.bsShareGroup = function () {
+    if (!_results.length) return;
+    var ref      = _results[0].group_reference || _results[0].reference;
+    var combined = _results.map(function (v) { return "[" + v.number + "] " + v.text; }).join(" ");
+    bsDoShare({ reference: ref, verse_text: combined, translation: _results[0].translation });
+  };
+
+  function bsDoShare(payload) {
+    var csrf = window.CSRF_TOKEN || document.querySelector("[name=csrfmiddlewaretoken]")?.value || "";
+    fetch(cfg("BIBLE_SHARE_URL", "/bible/ajax/share/"), {
+      method: "POST",
+      headers: { "X-CSRFToken": csrf, "Content-Type": "application/json" },
+      body: JSON.stringify(Object.assign({ share_type: "verse" }, payload)),
+    }).catch(function () {});
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function esc(s) { var d = document.createElement("div"); d.textContent = s || ""; return d.innerHTML; }
+  function bsClear() {
+    var r = document.getElementById("bsResults"); if (r) r.innerHTML = "";
+    ["bsEmpty","bsWarming","bsError"].forEach(function (id) { document.getElementById(id)?.classList.add("d-none"); });
+    _results = [];
+  }
+  function bsLoading(v) { document.getElementById("bsLoading")?.classList.toggle("d-none", !v); }
+  function bsShowErr(msg) {
+    var el = document.getElementById("bsError");
+    if (el) { el.textContent = msg; el.classList.remove("d-none"); }
+  }
+
+  // ── Auto-attach to known textareas once DOM is ready ─────────────────────
+  function attachAll() {
+    document.querySelectorAll(
+      "#chatInput, #pcInput, #dbFeedsComposeText, textarea[data-bible-slash]"
+    ).forEach(function (ta) { window.setupBibleSlashTrigger(ta); });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", attachAll);
+  } else {
+    attachAll();
+  }
+
+  // Watch for textareas added dynamically (reply boxes, edit boxes, etc.)
+  new MutationObserver(function (muts) {
+    muts.forEach(function (m) {
+      m.addedNodes.forEach(function (node) {
+        if (node.nodeType !== 1) return;
+        var tas = node.tagName === "TEXTAREA" ? [node] : node.querySelectorAll("textarea");
+        tas.forEach(function (ta) { window.setupBibleSlashTrigger(ta); });
+      });
+    });
+  }).observe(document.body, { childList: true, subtree: true });
+
+})();
+</script>

@@ -1,0 +1,655 @@
+{% extends "dashboard/dashboard.html" %}
+{% load static access_tags %}
+{% block title %}My Training — {{ church.name }}{% endblock %}
+
+{% block widget_buttons %}
+{{ block.super }}
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+ 
+<div class="container-xl py-4 db-tab-panel" id="db-tab-traineeWorkspace">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="fw-bold mb-0">
+      My Training
+      {% if lms_pending_peer_count %}
+      <span class="badge bg-warning text-dark ms-1" style="font-size:.62rem;border-radius:20px;vertical-align:middle;">
+        {{ lms_pending_peer_count }} peer review{{ lms_pending_peer_count|pluralize }}
+      </span>
+      {% endif %}
+    </h6>
+    <a href="{% url 'lms:course_list' %}" class="btn btn-xs btn-outline-primary" style="border-radius:10px;font-size:.72rem;">View all</a>
+  </div>
+
+  {% if lms_enrollments %}
+  <div class="d-flex flex-column gap-2 mb-3">
+    {% for enroll in lms_enrollments|slice:":5" %}
+    <a href="{% url 'lms:course_detail' enroll.course.slug %}"
+      class="text-decoration-none d-flex align-items-center gap-3 px-2 py-2 lms-trainee-mod-row"
+      style="border-radius:12px;border:1px solid rgba(255,255,255,.06);">
+
+      {# Course type icon bubble #}
+      <div class="flex-shrink-0 d-flex align-items-center justify-content-center"
+          style="width:36px;height:36px;border-radius:10px;font-size:1.1rem;
+                  background:{% if enroll.course.course_type == 'induction' %}rgba(32,107,196,.2){% elif enroll.course.course_type == 'workforce' %}rgba(130,80,190,.2){% elif enroll.course.course_type == 'unit_training' %}rgba(30,150,90,.2){% else %}rgba(200,100,20,.2){% endif %};">
+        {% if enroll.course.course_type == 'induction' %}🎓{% elif enroll.course.course_type == 'workforce' %}🏢{% elif enroll.course.course_type == 'unit_training' %}🔧{% else %}⚠{% endif %}
+      </div>
+
+      <div class="flex-grow-1 min-w-0">
+        <div class="fw-semibold text-white text-truncate" style="font-size:.82rem;">{{ enroll.course.title }}</div>
+        <div class="d-flex align-items-center gap-2 mt-1">
+          <div class="progress flex-grow-1" style="height:4px;border-radius:6px;background:rgba(255,255,255,.08);">
+            {% with pct=enroll.progress_pct %}
+            <div class="progress-bar bg-{% if enroll.status == 'passed' or enroll.status == 'certified' %}success{% else %}primary{% endif %}"
+                style="width:{% if enroll.status == 'passed' or enroll.status == 'certified' %}100{% else %}{{ pct }}{% endif %}%;border-radius:6px;"></div>
+            {% endwith %}
+          </div>
+          <span class="text-muted flex-shrink-0" style="font-size:.64rem;white-space:nowrap;">
+            {% if enroll.status == 'passed' or enroll.status == 'certified' %}Done{% else %}{{ enroll.progress_pct }}%{% endif %}
+          </span>
+        </div>
+      </div>
+
+      <div class="flex-shrink-0">
+        <span class="badge bg-{% if enroll.status == 'passed' or enroll.status == 'certified' %}success{% elif enroll.status == 'failed' %}danger{% elif enroll.status == 'active' %}warning{% else %}secondary{% endif %}-lt"
+              style="font-size:.6rem;border-radius:20px;">
+          {% if enroll.status == 'certified' %}🏆{% elif enroll.status == 'passed' %}✅{% elif enroll.status == 'failed' %}❌{% elif enroll.status == 'active' %}⏳{% else %}{{ enroll.status|capfirst }}{% endif %}
+        </span>
+      </div>
+    </a>
+    {% endfor %}
+
+    {% if lms_enrollments.count > 5 %}
+    <div class="text-center text-muted small pt-1">
+      +{{ lms_enrollments.count|add:"-5" }} more ·
+      <a href="{% url 'lms:course_list' %}" class="text-primary">See all</a>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="text-center py-3 text-muted small">
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" class="mb-2 d-block mx-auto opacity-40">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </svg>
+    No training enrolled yet.
+  </div>
+  {% endif %}
+
+  {# ── Peer review alert ───────────────────────────────────── #}
+  {% if lms_pending_peer_count %}
+  <a href="{% url 'lms:proctor_queue' %}"
+    class="d-flex align-items-center gap-2 p-2 mb-2 text-decoration-none"
+    style="border-radius:12px;background:rgba(240,173,0,.08);border:1px solid rgba(240,173,0,.25);">
+    <span style="font-size:1.1rem;">👥</span>
+    <span class="small text-warning fw-semibold">
+      {{ lms_pending_peer_count }} peer review{{ lms_pending_peer_count|pluralize }} waiting
+    </span>
+    <span class="ms-auto text-muted" style="font-size:.7rem;">Review →</span>
+  </a>
+  {% endif %}
+
+  {# ── Certificates ────────────────────────────────────────── #}
+  {% if lms_certificates %}
+  <div class="mt-1">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <span class="text-muted small fw-semibold">Certificates</span>
+      <a href="{% url 'lms:certificates' %}" class="text-muted small">View all</a>
+    </div>
+    {% for cert in lms_certificates|slice:":2" %}
+    <div class="d-flex align-items-center gap-2 py-1">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+      <span class="text-white small text-truncate">{{ cert.enrollment.course.title }}</span>
+      <span class="text-muted ms-auto" style="font-size:.65rem;white-space:nowrap;">{{ cert.issued_at|date:"d M Y" }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ── Admin review queue badge ─────────────────────────────── #}
+  {% if nav_is_admin and lms_pending_reviews %}
+  <div class="border-top border-secondary mt-3 pt-3">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <span class="text-muted small fw-semibold">Pending Proctor Reviews</span>
+      <span class="badge bg-danger" style="font-size:.62rem;">{{ lms_pending_reviews }}</span>
+    </div>
+    <a href="{% url 'lms:proctor_queue' %}" class="btn btn-sm btn-outline-danger w-100" style="border-radius:10px;font-size:.75rem;">
+      Open Review Queue →
+    </a>
+  </div>
+  {% endif %}
+ 
+  {# ── Header with status + primary CTA ──────────────────────────────────── #}
+  <div class="d-flex align-items-start align-items-md-center mb-4 flex-wrap gap-3">
+    <div class="flex-grow-1">
+      <h2 class="fw-bold mb-1">My Workspace</h2>
+      <p class="text-muted small mb-0">
+        Complete your induction to become a full workforce member.
+      </p>
+    </div>
+ 
+    {# ── Status badge + top-level action button ── #}
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      {% if is_eligible and not pending_approval %}
+        <span class="badge bg-success-lt text-success fs-6 px-3 py-2">
+          🎉 Ready for promotion
+        </span>
+        {# If promotion is manual, give them a one-click request button #}
+        <form method="post" action="{% url 'workforce:request_promotion' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success fw-bold"
+                  style="border-radius:18px;">
+            Request Promotion →
+          </button>
+        </form>
+      {% elif pending_approval %}
+        <span class="badge bg-warning-lt text-warning fs-6 px-3 py-2">
+          ⏳ Awaiting admin approval
+        </span>
+      {% elif enrollment %}
+        <span class="badge bg-blue-lt text-blue fs-6 px-3 py-2">
+          📚 In Training
+        </span>
+        {# Quick-jump to next unlocked module #}
+        {% for item in modules %}
+          {% if not item.is_locked and item.can_submit and not item.submission %}
+            <a href="{% url 'lms:course_detail' enrollment.course.slug %}#module-{{ item.module.id }}"
+               class="btn btn-primary fw-bold" style="border-radius:18px;">
+              Continue Training →
+            </a>
+            {% comment %}Only show the first actionable module{% endcomment %}
+            {% if forloop.first %}{% endif %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+ 
+  {# ── Callout: next action ── #}
+  {% if not is_eligible and enrollment %}
+    {% for item in modules %}
+      {% if not item.is_locked and not item.submission and not item.is_attendance_gate %}
+        <div class="alert d-flex align-items-center gap-3 mb-4"
+             style="border-radius:16px;background:#1e3a5f;border:1px solid #2563eb;">
+          <div style="font-size:1.6rem;">👉</div>
+          <div class="flex-grow-1">
+            <strong>Next step:</strong> Complete
+            <strong>{{ item.module.title }}</strong>
+            {% if item.module.description %} — {{ item.module.description }}{% endif %}
+          </div>
+          <a href="{% url 'lms:course_detail' enrollment.course.slug %}#module-{{ item.module.id }}"
+             class="btn btn-sm btn-primary flex-shrink-0" style="border-radius:12px;">
+            Open Module
+          </a>
+        </div>
+        {% if forloop.first %}{% endif %}
+      {% elif not item.is_locked and item.is_attendance_gate and not item.attendance_satisfied %}
+        <div class="alert d-flex align-items-center gap-3 mb-4"
+             style="border-radius:16px;background:#3a2000;border:1px solid #f59f00;">
+          <div style="font-size:1.6rem;">📋</div>
+          <div class="flex-grow-1">
+            {% if item.covering_sessions %}
+            <strong>Attendance required:</strong> Mark attendance at a
+            <strong>{{ item.module.title }}</strong> training session to unlock this module.
+            {% else %}
+            <strong>Session pending:</strong> A training session must be linked to
+            <strong>{{ item.module.title }}</strong> before this module can unlock.
+            {% endif %}
+          </div>
+          {% if item.covering_sessions %}
+          <a data-bs-toggle="modal" data-bs-target="#dashboardAttendanceModal"
+             class="btn btn-sm btn-warning flex-shrink-0" style="border-radius:12px;">
+            Mark Attendance
+          </a>
+          {% endif %}
+        </div>
+        {% if forloop.first %}{% endif %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+ 
+  <div class="row g-4">
+ 
+    {# ══ LEFT COLUMN ══════════════════════════════════════════════════════════ #}
+    <div class="col-12 col-lg-4">
+ 
+      {# ── Profile & status card ── #}
+      <div class="card bg-dark border-secondary mb-3" style="border-radius:20px;">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            {% if request.user.image %}
+              <img src="{{ request.user.image.url }}" class="rounded-circle"
+                   style="width:52px;height:52px;object-fit:cover;">
+            {% else %}
+              <div class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white"
+                   style="width:52px;height:52px;background:#1f2937;font-size:1.2rem;">
+                {{ request.user.initials }}
+              </div>
+            {% endif %}
+            <div>
+              <div class="fw-semibold">{{ request.user.full_name|default:request.user.username }}</div>
+              <div class="text-muted small">{{ trainee.get_reason_display }}</div>
+            </div>
+          </div>
+ 
+          {% if trainee.preferred_unit %}
+          <div class="mb-2 small d-flex align-items-center justify-content-between">
+            <span class="text-muted">Preferred unit</span>
+            <span class="badge bg-secondary-lt">{{ trainee.preferred_unit.name }}</span>
+          </div>
+          {% endif %}
+ 
+          {% if application %}
+          <div class="small text-muted mb-1">
+            Applied: {{ application.applied_at|date:"d M Y" }}
+          </div>
+          <div>
+            <span class="badge bg-{% if application.status == 'in_training' %}blue{% elif application.status == 'passed' %}success{% else %}secondary{% endif %}-lt">
+              {{ application.get_status_display }}
+            </span>
+          </div>
+          {% endif %}
+ 
+          {# ── Quick links ── #}
+          <div class="mt-3 d-grid gap-2">
+            <a href="{% url 'workforce:member_settings' %}" class="btn btn-sm btn-outline-secondary"
+               style="border-radius:12px;">
+              ✏️ Edit My Profile
+            </a>
+            {% if trainee_membership %}
+            <a data-bs-toggle="modal" data-bs-target="#dashboardAttendanceModal" class="btn btn-sm btn-outline-warning"
+               style="border-radius:12px;">
+              📋 Mark Attendance
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+ 
+      {# ── Induction steps with CTAs ── #}
+      {% if step_progress %}
+      <div class="card bg-dark border-secondary mb-3" style="border-radius:20px;">
+        <div class="card-header border-secondary d-flex align-items-center justify-content-between">
+          <h6 class="fw-bold mb-0">Induction Steps</h6>
+          {% with done_count=step_progress|length %}
+            <span class="badge bg-secondary-lt text-muted">
+              {{ step_progress|length }} step{{ step_progress|pluralize }}
+            </span>
+          {% endwith %}
+        </div>
+        <div class="card-body p-3">
+          {% for prog in step_progress %}
+          <div class="d-flex align-items-start gap-2 mb-3
+               {% if not forloop.last %}pb-3 border-bottom border-secondary{% endif %}">
+            <div class="flex-shrink-0 mt-1">
+              {% if prog.completed %}
+                <div class="text-success" style="font-size:1rem;">✓</div>
+              {% else %}
+                <div class="text-muted" style="font-size:1rem;">○</div>
+              {% endif %}
+            </div>
+            <div class="flex-grow-1">
+              <div class="small fw-semibold
+                   {% if prog.completed %}text-muted text-decoration-line-through{% endif %}">
+                {{ prog.step.name }}
+              </div>
+              {% if prog.step.requirement %}
+              <div class="text-muted" style="font-size:.7rem;">
+                {{ prog.step.requirement.get_requirement_type_display }}
+                {% if prog.step.requirement.requirement_type == 'lms' %}
+                  {% if prog.step.requirement.lms_courses.all %}
+                    {% for course in prog.step.requirement.lms_courses.all %}
+                      <span class="badge bg-blue-lt ms-1" style="font-size:.6rem;">{{ course.title }}</span>
+                    {% empty %}
+                      {% if prog.step.requirement.lms_course %}
+                        <span class="badge bg-blue-lt ms-1" style="font-size:.6rem;">{{ prog.step.requirement.lms_course.title }}</span>
+                      {% endif %}
+                    {% endfor %}
+                  {% elif prog.step.requirement.lms_course %}
+                    <span class="badge bg-blue-lt ms-1" style="font-size:.6rem;">{{ prog.step.requirement.lms_course.title }}</span>
+                  {% endif %}
+                {% endif %}
+              </div>
+              {% endif %}
+            </div>
+ 
+            {# ── Per-step CTA ── #}
+            {% if not prog.completed %}
+              {% with req=prog.step.requirement %}
+                {% if req %}
+                  {% if req.requirement_type == 'attendance' %}
+                    <a href="{% url 'workforce:mark_attendance' %}"
+                       class="btn btn-xs btn-outline-warning flex-shrink-0"
+                       style="border-radius:10px;font-size:.7rem;padding:2px 8px;">
+                      Attend
+                    </a>
+                  {% elif req.requirement_type == 'lms' %}
+                    {% if enrollment %}
+                    <a href="{% url 'lms:course_detail' enrollment.course.slug %}"
+                       class="btn btn-xs btn-outline-primary flex-shrink-0"
+                       style="border-radius:10px;font-size:.7rem;padding:2px 8px;">
+                      Open Course
+                    </a>
+                    {% endif %}
+                  {% elif req.requirement_type == 'form' %}
+                    {% if req.form_url %}
+                    <a href="{{ req.form_url }}"
+                       class="btn btn-xs btn-outline-info flex-shrink-0"
+                       style="border-radius:10px;font-size:.7rem;padding:2px 8px;">
+                      Fill Form
+                    </a>
+                    {% endif %}
+                  {% endif %}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              <span class="text-success flex-shrink-0" style="font-size:.7rem;">Done</span>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+ 
+      {# ── Upcoming sessions with "Add to Calendar" / attendance CTA ── #}
+      {% if upcoming_sessions %}
+      <div class="card bg-dark border-secondary" style="border-radius:20px;">
+        <div class="card-header border-secondary">
+          <h6 class="fw-bold mb-0">Upcoming Classes</h6>
+        </div>
+        <div class="card-body p-3">
+          {% for session in upcoming_sessions %}
+          <div class="mb-3 {% if not forloop.last %}pb-3 border-bottom border-secondary{% endif %}">
+            <div class="fw-semibold small">{{ session.title }}</div>
+            <div class="text-muted small">
+              {{ session.event.date|date:"D, d M Y" }}
+              {% if session.event.time %} · {{ session.event.time|time:"H:i" }}{% endif %}
+            </div>
+            {% if session.event.venue %}<div class="text-muted" style="font-size:.75rem;">📍 {{ session.event.venue }}</div>{% endif %}
+            {% if session.notes %}
+            <div class="text-muted mt-1" style="font-size:.75rem;">{{ session.notes }}</div>
+            {% endif %}
+            <div class="d-flex align-items-center gap-2 mt-2 flex-wrap">
+              {% for mod in session.modules_covered.all %}
+              <span class="badge bg-secondary-lt" style="font-size:.65rem;">{{ mod.title }}</span>
+              {% empty %}
+              <span class="badge bg-secondary-lt" style="font-size:.65rem;">All modules</span>
+              {% endfor %}
+              {# CTA: mark attendance if the event is today #}
+              {% if session.event.date == today %}
+              <a data-bs-toggle="modal" data-bs-target="#dashboardAttendanceModal" data-event-id="{{ session.event.id }}"
+                 class="btn btn-xs btn-warning ms-auto"
+                 style="border-radius:10px;font-size:.7rem;padding:2px 10px;">
+                Mark Now
+              </a>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+ 
+    </div>
+ 
+    {# ══ RIGHT COLUMN — Course modules ════════════════════════════════════════ #}
+    <div class="col-12 col-lg-8">
+ 
+      {% if enrollment %}
+      {# ── Course header row ── #}
+      <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <div>
+          <h5 class="fw-bold mb-0">{{ enrollment.course.title }}</h5>
+          <div class="text-muted small">
+            {{ enrollment.course.get_delivery_mode_display }} ·
+            Pass: {{ enrollment.course.passing_score }}%
+          </div>
+        </div>
+        <a href="{% url 'lms:course_detail' enrollment.course.slug %}"
+          class="btn btn-sm btn-outline-secondary" style="border-radius:12px;">
+          View Full Course →
+        </a>
+      </div>
+      {% endif %}
+ 
+      {# ── Overall progress bar ── #}
+      {% with total=modules|length %}
+      {% if total and enrollment %}
+      {% with passed_n=modules|dictsortreversed:"submission"|length %}
+      <div class="mb-3">
+        <div class="d-flex justify-content-between small text-muted mb-1">
+          <span>Module progress</span>
+          <span>{{ enrollment.get_status_display }}</span>
+        </div>
+        <div class="progress" style="height:6px;border-radius:99px;">
+          <div class="progress-bar bg-success"
+               style="width:{% if enrollment.is_completed %}100{% else %}{% widthratio modules|length total 100 %}{% endif %}%;">
+          </div>
+        </div>
+      </div>
+      {% endwith %}
+      {% endif %}
+      {% endwith %}
+ 
+      {# ══ Canvas-style module cards ══════════════════════════════════════ #}
+      {% for item in modules %}
+      <div class="lms-td-row mb-2" id="tdmod-{{ item.module.id }}"
+           style="border-radius:14px;background:rgba(255,255,255,.032);
+                  border:1px solid rgba(255,255,255,{% if item.is_locked %}0.05{% else %}0.08{% endif %});
+                  {% if item.is_locked %}opacity:.65;{% endif %}
+                  transition:box-shadow .15s;">
+        <div class="d-flex align-items-center gap-3 px-3 py-2">
+
+          {# ── Status / order dot ── #}
+          <div class="flex-shrink-0">
+            {% if item.submission and item.submission.status == 'passed' %}
+              <div class="rounded-circle d-flex align-items-center justify-content-center"
+                   style="width:36px;height:36px;background:rgba(34,197,94,.15);color:#22c55e;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+              </div>
+            {% elif item.submission and item.submission.status == 'submitted' %}
+              <div class="rounded-circle d-flex align-items-center justify-content-center"
+                   style="width:36px;height:36px;background:rgba(245,159,0,.15);color:#f59f00;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2 2"/></svg>
+              </div>
+            {% elif item.submission and item.submission.status == 'failed' %}
+              <div class="rounded-circle d-flex align-items-center justify-content-center"
+                   style="width:36px;height:36px;background:rgba(239,68,68,.15);color:#ef4444;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </div>
+            {% elif item.is_locked %}
+              <div class="rounded-circle d-flex align-items-center justify-content-center"
+                   style="width:36px;height:36px;background:rgba(255,255,255,.06);color:#6c757d;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+            {% elif item.is_attendance_gate and not item.attendance_satisfied %}
+              <div class="rounded-circle d-flex align-items-center justify-content-center"
+                   style="width:36px;height:36px;background:rgba(255,165,0,.12);color:#fd7e14;font-size:1rem;">
+                📋
+              </div>
+            {% else %}
+              <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                   style="width:36px;height:36px;background:rgba(66,153,225,.12);color:#4299e1;font-size:.8rem;">
+                {{ item.module.order }}
+              </div>
+            {% endif %}
+          </div>
+
+          {# ── Module info ── #}
+          <div class="flex-grow-1 min-width-0">
+            <div class="fw-semibold small {% if item.is_locked %}text-muted{% endif %}">
+              {{ item.module.title }}
+            </div>
+            <div class="d-flex gap-2 mt-1 flex-wrap align-items-center">
+              {# Content type badge #}
+              <span class="badge bg-secondary-lt" style="font-size:.6rem;">
+                {% if item.module.content_type == 'video' %}▶ {% elif item.module.content_type == 'audio' %}🎵 {% elif item.module.content_type == 'pdf' %}📄 {% elif item.module.content_type == 'assessment' %}✏ {% elif item.module.content_type == 'practical' %}🔧 {% elif item.module.content_type == 'quiz' %}❓ {% elif item.module.content_type == 'link' %}🔗 {% else %}📝 {% endif %}
+                {{ item.module.get_content_type_display }}
+              </span>
+              {# Estimated time #}
+              {% if item.module.estimated_minutes %}
+              <span class="badge bg-secondary-lt" style="font-size:.6rem;">🕐 ~{{ item.module.estimated_minutes }}m</span>
+              {% endif %}
+              {# Submission status #}
+              {% if item.submission %}
+              <span class="badge bg-{% if item.submission.status == 'passed' %}success{% elif item.submission.status == 'failed' %}danger{% elif item.submission.status == 'submitted' %}warning{% else %}secondary{% endif %}-lt"
+                    style="font-size:.6rem;">
+                {{ item.submission.get_status_display }}{% if item.submission.score is not None %} · {{ item.submission.score }}%{% endif %}
+              </span>
+              {% endif %}
+              {# Attendance gate #}
+              {% if item.is_attendance_gate %}
+                {% if item.attendance_satisfied %}
+                  <span class="badge bg-success-lt text-success" style="font-size:.6rem;">✓ Attended</span>
+                {% else %}
+                  <span class="badge bg-orange-lt text-orange" style="font-size:.6rem;">
+                    {% if item.covering_sessions %}Attend to unlock{% else %}No session scheduled{% endif %}
+                  </span>
+                  {% for cs in item.covering_sessions %}
+                  <span class="badge bg-secondary-lt text-muted" style="font-size:.58rem;" title="{{ cs.title }}">
+                    📅 {{ cs.event.date|date:"d M" }}
+                  </span>
+                  {% endfor %}
+                {% endif %}
+              {% endif %}
+              {# Optional tag #}
+              {% if not item.module.is_required %}
+              <span class="badge bg-secondary-lt" style="font-size:.58rem;opacity:.7;">Optional</span>
+              {% endif %}
+            </div>
+            {% if item.module.description %}
+            <div class="text-muted mt-1" style="font-size:.74rem;line-height:1.4;">{{ item.module.description|truncatechars:100 }}</div>
+            {% endif %}
+          </div>
+
+          {# ── CTA ── #}
+          <div class="flex-shrink-0 text-end" style="min-width:80px;">
+            {% if item.is_locked %}
+              <span class="text-muted small" style="font-size:.72rem;">Locked</span>
+            {% elif item.is_attendance_gate and not item.attendance_satisfied %}
+              {% if item.covering_sessions %}
+              <a data-bs-toggle="modal" data-bs-target="#dashboardAttendanceModal"
+                 class="btn btn-xs btn-outline-warning" style="border-radius:10px;font-size:.72rem;">
+                Mark Attendance
+              </a>
+              {% else %}
+              <span class="text-muted small" style="font-size:.72rem;">Scheduled soon</span>
+              {% endif %}
+            {% elif item.can_submit %}
+              {% if not item.submission %}
+                <a href="{% url 'lms:course_detail' enrollment.course.slug %}#module-{{ item.module.id }}"
+                   class="btn btn-xs btn-primary" style="border-radius:10px;font-size:.72rem;">
+                  Start →
+                </a>
+              {% elif item.submission.status == 'failed' and enrollment.course.allow_retake %}
+                <a href="{% url 'lms:course_detail' enrollment.course.slug %}#module-{{ item.module.id }}"
+                   class="btn btn-xs btn-outline-warning" style="border-radius:10px;font-size:.72rem;">
+                  Retake
+                </a>
+              {% elif item.submission.status == 'returned' %}
+                <a href="{% url 'lms:course_detail' enrollment.course.slug %}#module-{{ item.module.id }}"
+                   class="btn btn-xs btn-outline-danger" style="border-radius:10px;font-size:.72rem;">
+                  Resubmit
+                </a>
+              {% elif item.submission.status == 'submitted' %}
+                <span class="text-muted small" style="font-size:.72rem;">Under review</span>
+              {% elif item.submission.status == 'passed' %}
+                <span class="text-success small" style="font-size:.72rem;">✓ Done</span>
+              {% endif %}
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+      {% endfor %}
+
+      {# ── Completion / promotion CTA ── #}
+      {% if is_eligible and not pending_approval %}
+      <div class="card border-success mt-3" style="border-radius:16px;background:#0a2a0a;">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-start gap-3">
+            <div style="font-size:2rem;">🎉</div>
+            <div class="flex-grow-1">
+              <h6 class="fw-bold text-success">Training Complete!</h6>
+              <p class="mb-3 small text-muted">You've met all induction requirements. Request your promotion to become a full workforce member.</p>
+              <form method="post" action="{% url 'workforce:request_promotion' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success fw-bold" style="border-radius:14px;">Request Promotion →</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% elif pending_approval %}
+      <div class="alert alert-warning d-flex align-items-start gap-3 mt-3" style="border-radius:16px;">
+        <div style="font-size:1.5rem;">⏳</div>
+        <div>
+          <h6 class="fw-bold">Promotion Pending</h6>
+          <p class="mb-0 small">Your application is with the admin for final approval. You'll be notified once it's actioned.</p>
+        </div>
+      </div>
+      {% elif not enrollment %}
+      <div class="card bg-dark border-secondary p-5 text-center" style="border-radius:20px;">
+        <div style="font-size:3rem;" class="mb-3">📚</div>
+        <h5 class="fw-bold">No course assigned yet</h5>
+        <p class="text-muted small mb-4">Your induction course will appear here once your application has been processed.</p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+          <a href="{% url 'workforce:member_settings' %}" class="btn btn-outline-secondary" style="border-radius:14px;">Complete My Profile</a>
+          <a href="{% url 'support:support_bot' %}" class="btn btn-outline-info" style="border-radius:14px;">Contact Support</a>
+        </div>
+      </div>
+      {% endif %}
+
+      {# ══ Multi-course panel — additional enrollments beyond induction ══ #}
+      {% if all_enrollments|length > 1 or all_enrollments and not enrollment %}
+      <div class="mt-4">
+        <h6 class="fw-bold mb-3 text-muted small text-uppercase" style="letter-spacing:.06em;">Other Training Courses</h6>
+        <div class="d-flex flex-column gap-2">
+          {% for enr in all_enrollments %}
+          {% if enr.id != enrollment.id %}
+          <a href="{% url 'lms:course_detail' enr.course.slug %}"
+             class="d-flex align-items-center gap-3 p-3 text-white text-decoration-none"
+             style="border-radius:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);transition:background .15s;">
+            <div style="width:36px;height:36px;border-radius:10px;flex-shrink:0;
+                        background:{% if enr.status == 'passed' %}rgba(34,197,94,.15){% elif enr.status == 'failed' %}rgba(239,68,68,.15){% else %}rgba(66,153,225,.12){% endif %};
+                        display:flex;align-items:center;justify-content:center;font-size:1.1rem;">
+              {% if enr.status == 'passed' %}✓{% elif enr.status == 'failed' %}✗{% else %}📚{% endif %}
+            </div>
+            <div class="flex-grow-1 min-width-0">
+              <div class="fw-semibold small text-truncate">{{ enr.course.title }}</div>
+              <div class="d-flex align-items-center gap-2 mt-1">
+                <div class="progress flex-grow-1" style="height:4px;border-radius:4px;max-width:120px;">
+                  <div class="progress-bar bg-{% if enr.status == 'passed' %}success{% else %}primary{% endif %}"
+                       style="width:{% if enr.module_count %}{% widthratio enr.passed_count enr.module_count 100 %}{% else %}0{% endif %}%;border-radius:4px;"></div>
+                </div>
+                <span class="text-muted" style="font-size:.68rem;">{{ enr.passed_count }}/{{ enr.module_count }} done</span>
+              </div>
+            </div>
+            <span class="badge bg-{% if enr.status == 'passed' %}success{% elif enr.status == 'failed' %}danger{% elif enr.status == 'active' %}primary{% else %}secondary{% endif %}-lt flex-shrink-0" style="font-size:.65rem;">
+              {{ enr.get_status_display }}
+            </span>
+          </a>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+ 
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+
+<script>
+/* Hover lift effect on module rows */
+document.querySelectorAll('.lms-td-row').forEach(row => {
+  row.addEventListener('mouseenter', () => { row.style.boxShadow = '0 4px 20px rgba(0,0,0,.35)'; });
+  row.addEventListener('mouseleave', () => { row.style.boxShadow = ''; });
+});
+</script>
+{% endblock %}

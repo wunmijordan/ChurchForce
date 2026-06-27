@@ -1,77 +1,70 @@
 {% load static %}
-<!doctype html>
+{% load form_tags %}
+{% load widget_tweaks %}
+
+<!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{% block title %}ChurchForce{% endblock %}</title>
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="192x192"
-      href="{% static 'images/icons/icon-192x192.png' %}"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link href="{% static 'vendor/tabler/tabler.min.css' %}" rel="stylesheet" />
-    <link href="{% static 'css/custom.css' %}" rel="stylesheet" />
-    {% block extra_css %}{% endblock %}
-  </head>
-  <body class="d-flex flex-column min-vh-100 bg-dark">
-    <nav
-      class="navbar navbar-dark px-4 py-3"
-      style="border-bottom: 1px solid rgba(255, 255, 255, 0.1)"
-    >
-      <a class="navbar-brand d-flex align-items-center gap-2" href="/">
-        <img
-          src="{% static 'images/icons/icon-192x192.png' %}"
-          alt="ChurchForce"
-          width="36"
-          height="36"
-          style="border-radius: 8px"
-        />
-        <span class="fw-bold" style="color: #ff5e01">ChurchForce</span>
-      </a>
-      <div class="ms-auto d-flex gap-2">
-        <a href="{% url 'login' %}" class="btn btn-sm btn-outline-light"
-          >Sign in</a
-        >
-        <a
-          href="{% url 'tenants:signup' %}"
-          class="btn btn-sm"
-          style="background: #ff5e01; color: #fff; border: none"
-          >Get started free</a
-        >
-      </div>
-    </nav>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}ChurchForce{% endblock %}</title>
 
-    <main class="flex-grow-1">
-      {% if messages %}
-      <div class="container mt-3">
-        {% for message in messages %}
-        <div
-          class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show"
-          role="alert"
-        >
-          {{ message }}
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="alert"
-          ></button>
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+  <meta name="theme-color" content="#2e303e">
+  <link rel="apple-touch-icon" href="{% static 'images/icons/icon-192x192.png' %}">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/icons/icon-192x192.png' %}">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="{% static 'vendor/tabler/tabler.min.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/custom.css' %}" rel="stylesheet" />
+</head>
+<body class="min-vh-100" data-new-gr-c-s-check-loaded="14.1249.0" data-gr-ext-installed="">
+
+  <div class="page page-center">
+    <div class="container mt-6 py-5">
+
+      <!-- Brand -->
+      <div class="text-center mb-4">
+        {% if church and churchsubscription.is_active and church.is_white_label and church.logo %}
+          <img src="{{ church.logo.url }}" alt="{{ church.name }}"
+              style="width:80px;height:80px;border-radius:16px;object-fit:cover;">
+          <h3 class="mt-1 fw-bold mb-0">{{ church.name }}</h3>
+        {% else %}
+          <img src="{% static 'images/icons/icon-192x192.png' %}" alt="ChurchForce"
+              style="width:64px;height:64px;border-radius:14px;">
+          <h3 class="mt-1 fw-bold mb-0">ChurchForce</h3>
+        {% endif %}
+      </div>
+
+      <main class="flex-grow-1">
+        {% if messages %}
+        <div class="container mt-3">
+          {% for message in messages %}
+          <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+          {% endfor %}
         </div>
-        {% endfor %}
+        {% endif %} 
+        {% block content %}{% endblock %}
+      </main>
+
+
+
+      <div class="text-center text-secondary small mt-4">
+        &copy; {% now "Y" %} 
+        <a href="https://churchforce.io" class="text-secondary" target="_blank" rel="noopener">ChurchForce Inc</a>
+        &middot; Built for the Church Workforce
       </div>
-      {% endif %} {% block content %}{% endblock %}
-    </main>
+    </div>
+  </div>
 
-    <footer class="text-center text-secondary py-4 small">
-      &copy; {% now "Y" %} ChurchForce. Built for church teams.
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-    {% block extra_js %}{% endblock %}
-  </body>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{% static 'js/custom.js' %}"></script>
+</body>
 </html>
+
+
+

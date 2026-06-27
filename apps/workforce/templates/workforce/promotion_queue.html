@@ -1,0 +1,197 @@
+{% extends base_template %}
+{% load static access_tags %}
+{% block title %}Promotion Approvals — Training{% endblock %}
+{% block content %}
+<div class="container-xl py-4">
+
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0">Promotion Approvals</h2>
+      <p class="text-muted small mb-0">
+        Members below have completed their induction training and are awaiting promotion
+        to full workforce member.
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      {% if pending_tasks %}
+        <span class="badge bg-warning-lt text-warning fs-6 align-self-center">
+          {{ pending_tasks|length }} pending
+        </span>
+      {% endif %}
+      <a href="{% url 'lms:proctor_queue' %}" class="btn btn-outline-secondary btn-sm">
+        ← Submission Review Queue
+      </a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% else %}success{% endif %} alert-dismissible mb-3">
+        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card bg-dark border-secondary">
+    <div class="table-responsive">
+      <table class="table table-dark table-hover mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Reason</th>
+            <th>Course Completed</th>
+            <th>Preferred Unit</th>
+            <th>Waiting Since</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for task in pending_tasks %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ task.trainee.member }}</div>
+              <div class="text-muted small">{{ task.trainee.member.user.email }}</div>
+            </td>
+            <td>
+              <span class="badge bg-{% if task.trainee.reason == 'induction' %}blue{% else %}orange{% endif %}-lt">
+                {{ task.trainee.get_reason_display }}
+              </span>
+            </td>
+            <td>
+              {% if task.trainee.lms_enrollment %}
+                <div class="fw-semibold small">{{ task.trainee.lms_enrollment.course.title }}</div>
+                <div class="text-muted small">
+                  Score: {{ task.trainee.lms_enrollment.score|default:"—" }}
+                  &nbsp;·&nbsp;
+                  {{ task.trainee.lms_enrollment.get_status_display }}
+                </div>
+              {% else %}
+                <span class="text-muted small">No LMS course</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if task.trainee.preferred_unit %}
+                <span class="badge bg-secondary-lt">{{ task.trainee.preferred_unit.name }}</span>
+              {% else %}
+                <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ task.created_at|date:"d M Y" }}</td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-success"
+                      data-bs-toggle="modal"
+                      data-bs-target="#approveModal{{ task.id }}">
+                Review
+              </button>
+            </td>
+          </tr>
+
+          {# ── Approval modal ──────────────────────────────────────────────── #}
+          <div class="modal fade" id="approveModal{{ task.id }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Promotion Review — {{ task.trainee.member }}</h5>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+
+                  {# Trainee summary #}
+                  <div class="p-3 rounded mb-3" style="background:#0f172a;">
+                    <div class="row g-2 small">
+                      <div class="col-6">
+                        <div class="text-muted">Member</div>
+                        <div class="fw-semibold">{{ task.trainee.member }}</div>
+                      </div>
+                      <div class="col-6">
+                        <div class="text-muted">Reason</div>
+                        <div>{{ task.trainee.get_reason_display }}</div>
+                      </div>
+                      {% if task.trainee.lms_enrollment %}
+                      <div class="col-6">
+                        <div class="text-muted">Course</div>
+                        <div>{{ task.trainee.lms_enrollment.course.title }}</div>
+                      </div>
+                      <div class="col-6">
+                        <div class="text-muted">Final Score</div>
+                        <div class="fw-bold {% if task.trainee.lms_enrollment.score >= task.trainee.lms_enrollment.course.passing_score %}text-success{% else %}text-danger{% endif %}">
+                          {{ task.trainee.lms_enrollment.score|default:"—" }}
+                          {% if task.trainee.lms_enrollment.score %}
+                            / {{ task.trainee.lms_enrollment.course.passing_score }} required
+                          {% endif %}
+                        </div>
+                      </div>
+                      {% endif %}
+                      {% if task.trainee.preferred_unit %}
+                      <div class="col-12">
+                        <div class="text-muted">Will be assigned to</div>
+                        <div>{{ task.trainee.preferred_unit.name }}</div>
+                      </div>
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <p class="text-muted small mb-3">
+                    Approving will promote this member to the
+                    <strong class="text-white">Probationer</strong> stage
+                    and assign them to their preferred unit.
+                    Rejecting keeps them at Inductee stage.
+                  </p>
+
+                  {# Approve form #}
+                  <form method="post" action="{% url 'workforce:approve_promotion' task.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="approve">
+                    <button type="submit" class="btn btn-success w-100 mb-2">
+                      ✓ Approve Promotion
+                    </button>
+                  </form>
+
+                  {# Reject form #}
+                  <form method="post" action="{% url 'workforce:approve_promotion' task.id %}"
+                        id="rejectForm{{ task.id }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reject">
+                    <div class="mb-2" id="rejectReasonBox{{ task.id }}" style="display:none;">
+                      <textarea name="reason" class="form-control bg-dark text-white border-secondary"
+                                rows="2" placeholder="Reason for rejection (optional)"></textarea>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger w-100"
+                            onclick="toggleReject({{ task.id }})">
+                      ✗ Reject
+                    </button>
+                    <button type="submit" class="btn btn-danger w-100 mt-1 d-none"
+                            id="confirmRejectBtn{{ task.id }}">
+                      Confirm Rejection
+                    </button>
+                  </form>
+
+                </div>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-5">
+              <div class="mb-2" style="font-size:2rem;">🎓</div>
+              No promotions pending. All trainees are up to date.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggleReject(taskId) {
+  const box = document.getElementById('rejectReasonBox' + taskId);
+  const btn = document.getElementById('confirmRejectBtn' + taskId);
+  const visible = box.style.display !== 'none';
+  box.style.display = visible ? 'none' : '';
+  btn.classList.toggle('d-none', visible);
+}
+</script>
+{% endblock %}

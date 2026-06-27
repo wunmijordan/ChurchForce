@@ -1,8 +1,1088 @@
-﻿{% extends "base.html" %} {% block title %}Media{% endblock %} {% block content %}
-<div class="container py-4">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h2 class="mb-0 fw-bold">Media Module</h2>
+﻿{% extends base_template %}
+{% load static %}
+{% load access_tags %}
+
+{% block title %}{{ unit.name }} — Service Prep · {{ church.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap');
+
+:root {
+  --ink: #0d1117;
+  --paper: #f6f8fa;
+  --mid: #8b949e;
+  --accent: {{ unit.color_hex|default:'#2563eb' }};
+  --accent2: #7c3aed;
+  --border: #21262d;
+  --surface: #161b22;
+  --surface2: #0d1117;
+  --green: #238636;
+  --amber: #d29922;
+  --red: #da3633;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body, .prep-shell { font-family: 'DM Sans', sans-serif; }
+.prep-shell { background: var(--surface2); color: #c9d1d9; min-height: 100vh; }
+
+/* ── Top bar ───────────────────────────────────────────────── */
+.prep-topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.prep-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: .92rem;
+  color: #e6edf3;
+  flex-shrink: 0;
+}
+.prep-logo-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+.prep-nav {
+  display: flex;
+  gap: 2px;
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 3px;
+}
+.prep-nav-btn {
+  padding: 5px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--mid);
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.prep-nav-btn.active { background: var(--surface); color: #e6edf3; }
+.prep-nav-btn:hover:not(.active) { color: #c9d1d9; }
+
+.prep-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.btn-prep {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: #c9d1d9;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-prep:hover { background: var(--border); color: #e6edf3; }
+.btn-prep.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-prep.primary:hover { filter: brightness(1.1); }
+.btn-prep.accent2 { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+
+/* ── Layout ────────────────────────────────────────────────── */
+.prep-body {
+  display: grid;
+  grid-template-columns: 300px 1fr 280px;
+  height: calc(100vh - 56px);
+  overflow: hidden;
+}
+.prep-sidebar, .prep-right { overflow-y: auto; border-right: 1px solid var(--border); }
+.prep-right { border-right: none; border-left: 1px solid var(--border); }
+.prep-sidebar::-webkit-scrollbar,
+.prep-right::-webkit-scrollbar,
+.prep-main::-webkit-scrollbar { width: 4px; }
+.prep-sidebar::-webkit-scrollbar-thumb,
+.prep-right::-webkit-scrollbar-thumb,
+.prep-main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.prep-main { overflow-y: auto; flex: 1; }
+
+/* ── Sidebar section ───────────────────────────────────────── */
+.sidebar-section { border-bottom: 1px solid var(--border); }
+.sidebar-head {
+  padding: 10px 16px;
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--mid);
+  background: rgba(22,27,34,.7);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  backdrop-filter: blur(4px);
+}
+.sidebar-item {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .1s;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.sidebar-item:hover { background: rgba(255,255,255,.03); }
+.sidebar-item.active { background: rgba(37,99,235,.08); border-left: 2px solid var(--accent); }
+.sidebar-item-title { font-size: .83rem; font-weight: 600; color: #e6edf3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar-item-sub { font-size: .7rem; color: var(--mid); margin-top: 1px; }
+
+/* ── Status badges ─────────────────────────────────────────── */
+.badge-pill {
+  font-size: .62rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  letter-spacing: .04em;
+  flex-shrink: 0;
+}
+.badge-draft   { background: rgba(210,153,34,.12); color: #d29922; border: 1px solid rgba(210,153,34,.3); }
+.badge-ready   { background: rgba(35,134,54,.12);  color: #3fb950; border: 1px solid rgba(35,134,54,.3); }
+.badge-live    { background: rgba(218,54,51,.15);  color: #ff7b72; border: 1px solid rgba(218,54,51,.3); }
+.badge-synced  { background: rgba(88,166,255,.1);  color: #58a6ff; border: 1px solid rgba(88,166,255,.3); }
+
+/* ── Main content area ─────────────────────────────────────── */
+.prep-pane { display: none; padding: 28px; }
+.prep-pane.active { display: block; }
+
+/* ── Service overview card ─────────────────────────────────── */
+.service-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.service-card-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.service-card-body { padding: 20px; }
+.prep-section-label {
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--mid);
+  margin-bottom: 10px;
+}
+
+/* ── Setlist pull panel ────────────────────────────────────── */
+.setlist-pull {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.setlist-pull-head {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.song-prep-row {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.song-prep-row:last-child { border-bottom: none; }
+.song-order-num {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .68rem; font-weight: 700; color: var(--mid);
+  flex-shrink: 0; font-family: 'DM Mono', monospace;
+}
+.song-key-pill {
+  font-size: .65rem; font-weight: 700;
+  padding: 2px 7px; border-radius: 4px;
+  background: var(--surface2); color: #58a6ff;
+  border: 1px solid rgba(88,166,255,.2);
+  font-family: 'DM Mono', monospace;
+  flex-shrink: 0;
+}
+
+/* ── Pastor notes ──────────────────────────────────────────── */
+.pastor-notes-card {
+  background: linear-gradient(135deg, rgba(124,58,237,.08) 0%, rgba(37,99,235,.05) 100%);
+  border: 1px solid rgba(124,58,237,.2);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.pastor-notes-head {
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(124,58,237,.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pastor-note-body {
+  padding: 16px 20px;
+  font-size: .88rem;
+  line-height: 1.7;
+  color: #c9d1d9;
+}
+.pastor-note-meta {
+  padding: 10px 20px;
+  border-top: 1px solid rgba(124,58,237,.1);
+  font-size: .72rem;
+  color: var(--mid);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pastor-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .72rem;
+  font-weight: 600;
+  color: #c084fc;
+  background: rgba(192,132,252,.1);
+  border: 1px solid rgba(192,132,252,.2);
+  padding: 2px 9px;
+  border-radius: 20px;
+}
+.pastor-badge::before {
+  content: '✦';
+  font-size: .65rem;
+}
+
+/* ── Export panel ──────────────────────────────────────────── */
+.export-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.export-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all .15s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.export-card:hover { border-color: var(--accent); background: rgba(37,99,235,.06); }
+.export-card-icon { font-size: 1.4rem; }
+.export-card-title { font-size: .83rem; font-weight: 700; color: #e6edf3; }
+.export-card-desc { font-size: .72rem; color: var(--mid); line-height: 1.4; }
+.export-card-tag {
+  font-size: .62rem; font-weight: 600;
+  padding: 1px 6px; border-radius: 4px;
+  background: rgba(88,166,255,.1); color: #58a6ff;
+  align-self: flex-start;
+}
+
+/* ── Right sidebar — export preview ───────────────────────── */
+.export-preview {
+  padding: 16px;
+}
+.preview-label {
+  font-size: .68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .12em; color: var(--mid); margin-bottom: 12px;
+}
+.export-checklist { list-style: none; }
+.export-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: .8rem;
+  color: #c9d1d9;
+}
+.export-checklist li:last-child { border-bottom: none; }
+.check-icon { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: .6rem; }
+.check-ok   { background: rgba(35,134,54,.2); color: #3fb950; border: 1px solid rgba(35,134,54,.3); }
+.check-warn { background: rgba(210,153,34,.2); color: #d29922; border: 1px solid rgba(210,153,34,.3); }
+.check-no   { background: rgba(139,148,158,.1); color: var(--mid); border: 1px solid var(--border); }
+
+/* ── Readiness ring ────────────────────────────────────────── */
+.readiness-ring-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.ring-svg { transform: rotate(-90deg); }
+.ring-label {
+  font-size: 1.5rem; font-weight: 700; color: #e6edf3;
+  font-family: 'DM Mono', monospace;
+}
+.ring-sublabel { font-size: .72rem; color: var(--mid); margin-top: 2px; }
+
+/* ── Tabs in main area ─────────────────────────────────────── */
+.prep-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  background: var(--surface2);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.prep-tab {
+  padding: 12px 18px;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--mid);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .15s;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.prep-tab.active { color: #e6edf3; border-bottom-color: var(--accent); }
+.prep-tab:hover:not(.active) { color: #c9d1d9; }
+
+/* ── Form elements ─────────────────────────────────────────── */
+.prep-input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: #e6edf3;
+  padding: 8px 12px;
+  font-size: .83rem;
+  font-family: inherit;
+  width: 100%;
+  transition: border-color .15s;
+}
+.prep-input:focus { outline: none; border-color: var(--accent); }
+.prep-textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+/* ── Empty state ───────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--mid);
+}
+.empty-state-icon { font-size: 2.4rem; margin-bottom: 12px; opacity: .5; }
+.empty-state-title { font-size: .95rem; font-weight: 600; color: #8b949e; margin-bottom: 6px; }
+.empty-state-desc { font-size: .8rem; line-height: 1.5; }
+
+/* ── Toast ─────────────────────────────────────────────────── */
+.prep-toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: .83rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 32px #000a;
+  z-index: 999;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all .3s cubic-bezier(.34,1.56,.64,1);
+}
+.prep-toast.show { transform: translateY(0); opacity: 1; }
+.prep-toast.success { border-color: rgba(35,134,54,.4); }
+.prep-toast.success::before { content: '✓'; color: #3fb950; font-weight: 700; }
+
+@media(max-width:1100px){
+  .prep-body { grid-template-columns: 1fr; }
+  .prep-sidebar, .prep-right { display: none; }
+  .export-grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="prep-shell">
+
+  <!-- ── Top bar ── -->
+  <div class="prep-topbar">
+    <div class="prep-logo">
+      <div class="prep-logo-dot"></div>
+      {{ unit.name }}
+    </div>
+    <span style="color:var(--mid);font-size:.8rem;font-weight:600;">Service Prep</span>
+
+    <div class="prep-nav ms-3">
+      <button class="prep-nav-btn active" onclick="switchView('overview', this)">Overview</button>
+      <button class="prep-nav-btn" onclick="switchView('setlist', this)">Setlist</button>
+      <button class="prep-nav-btn" onclick="switchView('pastor', this)">Pastor Notes</button>
+      <button class="prep-nav-btn" onclick="switchView('export', this)">Export</button>
+    </div>
+
+    <div class="prep-topbar-right">
+      {% if live_presentation %}
+      <span class="badge-pill badge-live" style="display:flex;align-items:center;gap:5px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#ff7b72;animation:pulse 1s infinite;"></span>
+        LIVE: {{ live_presentation.title }}
+      </span>
+      {% endif %}
+      <button class="btn-prep" onclick="runExport('bundle')">⬇ Export Bundle</button>
+      {% if can_manage %}
+      <a href="{% url 'media:presentation_new' %}" class="btn-prep primary">+ New Presentation</a>
+      {% endif %}
+    </div>
   </div>
-  <p class="text-secondary">Plan and manage media production and broadcast workflows.</p>
+
+  <!-- ── 3-col body ── -->
+  <div class="prep-body">
+
+    <!-- ═══ LEFT — Presentation library ═══ -->
+    <div class="prep-sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-head">
+          Presentations
+          <span style="font-size:.65rem;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(139,148,158,.1);color:var(--mid);">{{ presentations|length }}</span>
+        </div>
+        {% for pres in presentations %}
+        <div class="sidebar-item {% if forloop.first %}active{% endif %}"
+             onclick="selectPresentation('{{ pres.uid }}', this)">
+          <div style="flex:1;min-width:0;">
+            <div class="sidebar-item-title">{{ pres.title }}</div>
+            <div class="sidebar-item-sub">{{ pres.slides.count }} slides{% if pres.event %} · {{ pres.event.name }}{% endif %}</div>
+          </div>
+          <div>
+            {% if pres.is_live %}<span class="badge-pill badge-live">LIVE</span>
+            {% elif pres.setlist %}<span class="badge-pill badge-synced">Synced</span>{% endif %}
+          </div>
+        </div>
+        {% empty %}
+        <div class="empty-state" style="padding:32px 16px;">
+          <div class="empty-state-icon">📋</div>
+          <div class="empty-state-title">No presentations yet</div>
+          {% if can_manage %}<a href="{% url 'media:presentation_new' %}" class="btn-prep primary" style="margin-top:10px;font-size:.78rem;">Create one →</a>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if ready_setlists %}
+      <div class="sidebar-section">
+        <div class="sidebar-head">Ready to Sync</div>
+        {% for sl in ready_setlists %}
+        <div class="sidebar-item">
+          <div style="flex:1;min-width:0;">
+            <div class="sidebar-item-title">{{ sl.title }}</div>
+            <div class="sidebar-item-sub">{{ sl.songs.count }} songs{% if sl.event %} · {{ sl.event.name }}{% endif %}</div>
+          </div>
+          <form method="post" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="sync_setlist">
+            <input type="hidden" name="setlist_uid" value="{{ sl.uid }}">
+            <button type="submit" class="btn-prep" style="font-size:.7rem;padding:4px 10px;">Sync →</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ═══ CENTRE — Main panes ═══ -->
+    <div class="prep-main">
+
+      <!-- Tab bar -->
+      <div class="prep-tabs">
+        <button class="prep-tab active" id="tab-overview" onclick="showTab('overview',this)">📋 Service Overview</button>
+        <button class="prep-tab" id="tab-setlist" onclick="showTab('setlist',this)">🎼 Music Setlist</button>
+        <button class="prep-tab" id="tab-pastor" onclick="showTab('pastor',this)">✦ Pastor Notes</button>
+        <button class="prep-tab" id="tab-export" onclick="showTab('export',this)">⬇ Export</button>
+      </div>
+
+      <!-- ── Overview pane ── -->
+      <div class="prep-pane active" id="pane-overview" style="padding:28px;">
+
+        {% if presentations %}
+        {% with pres=presentations.0 %}
+        <div class="service-card">
+          <div class="service-card-head">
+            <div style="flex:1;">
+              <div style="font-size:1.1rem;font-weight:700;color:#e6edf3;">{{ pres.title }}</div>
+              {% if pres.event %}
+              <div style="font-size:.8rem;color:var(--mid);margin-top:2px;">{{ pres.event.name }} · {{ pres.event.date|date:"D, N j, Y" }}</div>
+              {% endif %}
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              {% if pres.is_live %}<span class="badge-pill badge-live">LIVE</span>{% endif %}
+              {% if pres.setlist %}<span class="badge-pill badge-synced">Music Synced</span>{% endif %}
+              <a href="{% url 'media:presenter_view' pres.uid %}" class="btn-prep primary" style="font-size:.78rem;">Present →</a>
+            </div>
+          </div>
+
+          <!-- Slide thumbnails -->
+          <div class="service-card-body">
+            <div class="prep-section-label">Slide Order ({{ pres.slides.count }})</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              {% for slide in pres.slides.all|slice:":12" %}
+              <div style="
+                width:88px; height:50px; border-radius:6px;
+                background:var(--surface2); border:1px solid var(--border);
+                display:flex; align-items:center; justify-content:center;
+                font-size:.55rem; text-align:center; padding:4px;
+                position:relative; overflow:hidden; cursor:pointer;
+                {% if slide.slide_type == 'lyric' %}border-color:#6366f1;{% elif slide.slide_type == 'scripture' %}border-color:#22c55e;{% elif slide.slide_type == 'title' %}border-color:#f59f00;{% endif %}
+              " title="{{ slide.content|truncatechars:60 }}">
+                <span style="line-height:1.3;color:#c9d1d9;">{{ slide.content|truncatechars:28|default:slide.get_slide_type_display }}</span>
+                <span style="position:absolute;top:3px;right:3px;
+                  {% if slide.slide_type == 'lyric' %}color:#818cf8;{% elif slide.slide_type == 'scripture' %}color:#4ade80;{% elif slide.slide_type == 'title' %}color:#fbbf24;{% else %}color:var(--mid);{% endif %}
+                  font-size:.5rem;font-weight:700;">
+                  {{ slide.get_slide_type_display|slice:":3"|upper }}
+                </span>
+              </div>
+              {% endfor %}
+              {% if pres.slides.count > 12 %}
+              <div style="width:88px;height:50px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--mid);">
+                +{{ pres.slides.count|add:"-12" }} more
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endwith %}
+        {% endif %}
+
+        <!-- Checklist summary -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+          <div class="service-card">
+            <div class="service-card-head" style="border-bottom:none;padding-bottom:12px;">
+              <div>
+                <div style="font-size:.83rem;font-weight:700;color:#e6edf3;">Music Setlist</div>
+                <div style="font-size:.72rem;color:var(--mid);margin-top:2px;">
+                  {% if active_setlist %}
+                    {{ active_setlist.songs.count }} songs · {% if active_setlist.finalized %}<span style="color:#3fb950;">Finalized</span>{% else %}<span style="color:#d29922;">Draft</span>{% endif %}
+                  {% else %}No active setlist{% endif %}
+                </div>
+              </div>
+              <div style="font-size:1.4rem;">🎼</div>
+            </div>
+            {% if active_setlist %}
+            <div style="padding:0 16px 14px;">
+              {% for ss in active_setlist.songs.all|slice:":4" %}
+              <div style="font-size:.78rem;color:#c9d1d9;padding:3px 0;display:flex;align-items:center;gap:6px;">
+                <span style="color:var(--mid);font-family:'DM Mono',monospace;font-size:.65rem;width:16px;">{{ forloop.counter }}.</span>
+                {{ ss.track.title }}
+                {% if ss.performance_key %}<span style="font-size:.62rem;color:#58a6ff;font-family:'DM Mono',monospace;">{{ ss.performance_key }}</span>{% endif %}
+              </div>
+              {% endfor %}
+              {% if active_setlist.songs.count > 4 %}
+              <div style="font-size:.72rem;color:var(--mid);padding-top:4px;">+{{ active_setlist.songs.count|add:"-4" }} more songs</div>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="service-card">
+            <div class="service-card-head" style="border-bottom:none;padding-bottom:12px;">
+              <div>
+                <div style="font-size:.83rem;font-weight:700;color:#e6edf3;">Pastor Notes</div>
+                <div style="font-size:.72rem;color:var(--mid);margin-top:2px;">
+                  {% if pastor_note %}
+                    Attached by {{ pastor_note.author.user.get_full_name }}
+                  {% else %}Not yet provided{% endif %}
+                </div>
+              </div>
+              <div style="font-size:1.4rem;">✦</div>
+            </div>
+            {% if pastor_note %}
+            <div style="padding:0 16px 14px;font-size:.78rem;color:#c9d1d9;line-height:1.6;">
+              {{ pastor_note.body|truncatechars:140 }}
+            </div>
+            {% else %}
+            <div style="padding:0 16px 14px;font-size:.78rem;color:var(--mid);">
+              {% if is_pastor %}
+              <a href="#" onclick="showTab('pastor',document.getElementById('tab-pastor'));return false;" style="color:var(--accent);">Add message notes →</a>
+              {% else %}
+              Awaiting Pastor message notes
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Quick export -->
+        <div class="service-card">
+          <div class="service-card-head">
+            <div style="font-size:.9rem;font-weight:700;color:#e6edf3;">Quick Export</div>
+            <span style="font-size:.75rem;color:var(--mid);">Send to your projection platform</span>
+          </div>
+          <div class="service-card-body" style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn-prep" onclick="runExport('easyworship')">📺 EasyWorship XML</button>
+            <button class="btn-prep" onclick="runExport('propresenter')">🎬 ProPresenter</button>
+            <button class="btn-prep" onclick="runExport('powerpoint')">📊 PowerPoint</button>
+            <button class="btn-prep" onclick="runExport('pdf')">📄 PDF Summary</button>
+            <button class="btn-prep accent2" onclick="runExport('bundle')" style="margin-left:auto;">⬇ Full Bundle</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Setlist pane ── -->
+      <div class="prep-pane" id="pane-setlist" style="padding:28px;">
+
+        {% if active_setlist %}
+        <div class="setlist-pull">
+          <div class="setlist-pull-head">
+            <div>
+              <div style="font-size:.95rem;font-weight:700;color:#e6edf3;">{{ active_setlist.title }}</div>
+              <div style="font-size:.75rem;color:var(--mid);margin-top:2px;">
+                {% if active_setlist.event %}{{ active_setlist.event.name }} · {% endif %}
+                {% if active_setlist.finalized %}<span style="color:#3fb950;font-weight:600;">Finalized</span>{% else %}<span style="color:#d29922;font-weight:600;">Draft</span>{% endif %}
+                · {{ active_setlist.songs.count }} songs
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              {% if not active_setlist.finalized and can_manage %}
+              <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="finalize_setlist">
+                <input type="hidden" name="setlist_uid" value="{{ active_setlist.uid }}">
+                <button type="submit" class="btn-prep primary">Finalize & Sync →</button>
+              </form>
+              {% endif %}
+              <a href="{% url 'music:setlist_detail' active_setlist.uid %}" class="btn-prep">Open in Music →</a>
+            </div>
+          </div>
+
+          {% for ss in active_setlist.songs.all %}
+          <div class="song-prep-row">
+            <div class="song-order-num">{{ forloop.counter }}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:.88rem;font-weight:600;color:#e6edf3;">{{ ss.track.title }}</div>
+              <div style="font-size:.72rem;color:var(--mid);">{{ ss.track.artist|default:"—" }}{% if ss.notes %} · {{ ss.notes|truncatechars:50 }}{% endif %}</div>
+            </div>
+            {% if ss.performance_key %}<span class="song-key-pill">{{ ss.performance_key }}</span>{% endif %}
+            {% if ss.track.tempo %}<span style="font-size:.68rem;color:var(--mid);font-family:'DM Mono',monospace;flex-shrink:0;">{{ ss.track.tempo }} BPM</span>{% endif %}
+          </div>
+          {% empty %}
+          <div class="empty-state">
+            <div class="empty-state-icon">🎵</div>
+            <div class="empty-state-title">No songs in setlist</div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Other setlists for this event -->
+        {% if other_setlists %}
+        <div class="prep-section-label">Other Setlists</div>
+        {% for sl in other_setlists %}
+        <div class="sidebar-item" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;">
+          <div style="flex:1;">
+            <div class="sidebar-item-title">{{ sl.title }}</div>
+            <div class="sidebar-item-sub">{{ sl.songs.count }} songs · {% if sl.finalized %}Finalized{% else %}Draft{% endif %}</div>
+          </div>
+          <a href="{% url 'music:setlist_detail' sl.uid %}" class="btn-prep" style="font-size:.75rem;padding:4px 10px;">View →</a>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state" style="padding:64px 24px;">
+          <div class="empty-state-icon">🎼</div>
+          <div class="empty-state-title">No setlist linked to this presentation</div>
+          <div class="empty-state-desc" style="margin-bottom:16px;">Link a finalized setlist to automatically pull songs into your presentation.</div>
+          <a href="{% url 'music:index' %}" class="btn-prep primary">Go to Music →</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- ── Pastor Notes pane ── -->
+      <div class="prep-pane" id="pane-pastor" style="padding:28px;">
+
+        {% if pastor_note %}
+        <div class="pastor-notes-card">
+          <div class="pastor-notes-head">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="pastor-badge">Pastor Note</span>
+              <span style="font-size:.88rem;font-weight:600;color:#e6edf3;">{{ pastor_note.title|default:"Message Notes" }}</span>
+            </div>
+            {% if is_pastor or can_manage %}
+            <button class="btn-prep" onclick="toggleEditPastorNote()">Edit</button>
+            {% endif %}
+          </div>
+          <div class="pastor-note-body" id="pastor-note-display">{{ pastor_note.body }}</div>
+          <div class="pastor-note-meta">
+            <span>{{ pastor_note.author.user.get_full_name }}</span>
+            <span>·</span>
+            <span>{{ pastor_note.updated_at|date:"N j, Y · g:i A" }}</span>
+            {% if pastor_note.series_title %}
+            <span>·</span>
+            <span>{{ pastor_note.series_title }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Edit form (hidden by default) -->
+        <div id="pastor-note-edit" style="display:none;">
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_pastor_note">
+            <input type="hidden" name="note_id" value="{{ pastor_note.id }}">
+            <div style="margin-bottom:12px;">
+              <label style="font-size:.78rem;font-weight:600;color:var(--mid);display:block;margin-bottom:6px;">Title</label>
+              <input class="prep-input" name="title" value="{{ pastor_note.title }}" placeholder="Message title or series...">
+            </div>
+            <div style="margin-bottom:12px;">
+              <label style="font-size:.78rem;font-weight:600;color:var(--mid);display:block;margin-bottom:6px;">Series</label>
+              <input class="prep-input" name="series_title" value="{{ pastor_note.series_title|default:'' }}" placeholder="Series name (optional)">
+            </div>
+            <div style="margin-bottom:16px;">
+              <label style="font-size:.78rem;font-weight:600;color:var(--mid);display:block;margin-bottom:6px;">Notes</label>
+              <textarea class="prep-input prep-textarea" name="body" rows="10">{{ pastor_note.body }}</textarea>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button type="submit" class="btn-prep primary">Save Notes</button>
+              <button type="button" class="btn-prep" onclick="toggleEditPastorNote()">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        {% elif is_pastor %}
+        <!-- Pastor can add notes -->
+        <div class="pastor-notes-card">
+          <div class="pastor-notes-head">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="pastor-badge">Pastor Note</span>
+              <span style="font-size:.88rem;font-weight:600;color:#e6edf3;">Add Message Notes</span>
+            </div>
+          </div>
+          <div style="padding:20px;">
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="save_pastor_note">
+              {% if presentations %}<input type="hidden" name="presentation_id" value="{{ presentations.0.id }}">{% endif %}
+              <div style="margin-bottom:12px;">
+                <label style="font-size:.78rem;font-weight:600;color:var(--mid);display:block;margin-bottom:6px;">Message Title</label>
+                <input class="prep-input" name="title" placeholder="e.g. The Power of Faith">
+              </div>
+              <div style="margin-bottom:12px;">
+                <label style="font-size:.78rem;font-weight:600;color:var(--mid);display:block;margin-bottom:6px;">Series Name</label>
+                <input class="prep-input" name="series_title" placeholder="e.g. Foundations (optional)">
+              </div>
+              <div style="margin-bottom:16px;">
+                <label style="font-size:.78rem;font-weight:600;color:var(--mid);display:block;margin-bottom:6px;">Notes</label>
+                <textarea class="prep-input prep-textarea" name="body" rows="12" placeholder="Key scriptures, sermon outline, talking points, scripture references for slides..."></textarea>
+              </div>
+              <button type="submit" class="btn-prep primary">Save Notes</button>
+            </form>
+          </div>
+        </div>
+
+        {% else %}
+        <div class="empty-state" style="padding:64px 24px;">
+          <div class="empty-state-icon">✦</div>
+          <div class="empty-state-title">No pastor notes for this service</div>
+          <div class="empty-state-desc">When the Pastor adds message notes, they will appear here for the media team.</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- ── Export pane ── -->
+      <div class="prep-pane" id="pane-export" style="padding:28px;">
+
+        <div style="margin-bottom:20px;">
+          <div style="font-size:1rem;font-weight:700;color:#e6edf3;margin-bottom:6px;">Export for Your Platform</div>
+          <div style="font-size:.83rem;color:var(--mid);line-height:1.5;">
+            This tool is your preparation hub — not a replacement for EasyWorship, ProPresenter, or any platform you already use.
+            Export your setlist and notes below to bring into your regular workflow.
+          </div>
+        </div>
+
+        <div class="export-grid">
+          <div class="export-card" onclick="runExport('easyworship')">
+            <div class="export-card-icon">📺</div>
+            <div class="export-card-title">EasyWorship</div>
+            <div class="export-card-desc">XML schedule with song order, lyrics, and Bible references</div>
+            <div class="export-card-tag">.xml</div>
+          </div>
+          <div class="export-card" onclick="runExport('propresenter')">
+            <div class="export-card-icon">🎬</div>
+            <div class="export-card-title">ProPresenter</div>
+            <div class="export-card-desc">JSON playlist with sections, keys, and presenter notes</div>
+            <div class="export-card-tag">.json</div>
+          </div>
+          <div class="export-card" onclick="runExport('powerpoint')">
+            <div class="export-card-icon">📊</div>
+            <div class="export-card-title">PowerPoint</div>
+            <div class="export-card-desc">Slide deck with song lyrics, scripture, and sermon outline</div>
+            <div class="export-card-tag">.pptx</div>
+          </div>
+          <div class="export-card" onclick="runExport('pdf')">
+            <div class="export-card-icon">📄</div>
+            <div class="export-card-title">PDF Summary</div>
+            <div class="export-card-desc">Printable service order with setlist and pastor notes</div>
+            <div class="export-card-tag">.pdf</div>
+          </div>
+          <div class="export-card" onclick="runExport('csv')">
+            <div class="export-card-icon">🗂</div>
+            <div class="export-card-title">Setlist CSV</div>
+            <div class="export-card-desc">Song list with keys, BPM, and section data</div>
+            <div class="export-card-tag">.csv</div>
+          </div>
+          <div class="export-card" onclick="runExport('bundle')" style="border-color:var(--accent2);background:rgba(124,58,237,.05);">
+            <div class="export-card-icon">⬇</div>
+            <div class="export-card-title" style="color:#c084fc;">Full Bundle</div>
+            <div class="export-card-desc">All formats in one ZIP — setlist, notes, slides, and assets</div>
+            <div class="export-card-tag" style="background:rgba(192,132,252,.1);color:#c084fc;">all formats</div>
+          </div>
+        </div>
+
+        <!-- Options -->
+        <div class="service-card">
+          <div class="service-card-head">
+            <div style="font-size:.88rem;font-weight:700;color:#e6edf3;">Export Options</div>
+          </div>
+          <div class="service-card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <label style="display:flex;align-items:center;gap:8px;font-size:.83rem;color:#c9d1d9;cursor:pointer;">
+                <input type="checkbox" id="opt-include-pastor" checked style="accent-color:var(--accent);">
+                Include Pastor Notes
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:.83rem;color:#c9d1d9;cursor:pointer;">
+                <input type="checkbox" id="opt-include-lyrics" checked style="accent-color:var(--accent);">
+                Include Lyrics
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:.83rem;color:#c9d1d9;cursor:pointer;">
+                <input type="checkbox" id="opt-include-chords" style="accent-color:var(--accent);">
+                Include Chord Charts
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:.83rem;color:#c9d1d9;cursor:pointer;">
+                <input type="checkbox" id="opt-include-scripture" checked style="accent-color:var(--accent);">
+                Include Scripture Slides
+              </label>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══ RIGHT — Readiness & checklist ═══ -->
+    <div class="prep-right">
+
+      <!-- Readiness ring -->
+      <div class="readiness-ring-wrap">
+        {% with schedule=production_schedule %}
+        {% if schedule %}
+        {% with n_ready=schedule.slides_ready|add:schedule.audio_ready|add:schedule.video_ready|add:schedule.broadcast_ready %}
+        {# Each of the 4 booleans contributes 50 units out of 200 arc length (circumference ≈ 201) #}
+        {# dash = n_ready * 50; we compute it via successive adds #}
+        {% with dash50=50 %}
+        {% with arc=n_ready|add:"0" %}
+        {# arc * 50: use multiply workaround — build the dasharray with widthmap in JS is safest; #}
+        {# but we can do it purely in template by branching on 0-4 #}
+        {% if n_ready == 0 %}{% with ring_dash=0 %}{% endwith %}{% endif %}
+        <svg class="ring-svg" width="80" height="80" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="32" fill="none" stroke="#21262d" stroke-width="6"/>
+          <circle cx="40" cy="40" r="32" fill="none" stroke="var(--accent)" stroke-width="6"
+            stroke-dasharray="{% if schedule.slides_ready and schedule.audio_ready and schedule.video_ready and schedule.broadcast_ready %}201{% elif schedule.slides_ready and schedule.audio_ready and schedule.video_ready %}150{% elif schedule.slides_ready and schedule.audio_ready and schedule.broadcast_ready %}150{% elif schedule.slides_ready and schedule.video_ready and schedule.broadcast_ready %}150{% elif schedule.audio_ready and schedule.video_ready and schedule.broadcast_ready %}150{% elif schedule.slides_ready and schedule.audio_ready %}100{% elif schedule.slides_ready and schedule.video_ready %}100{% elif schedule.slides_ready and schedule.broadcast_ready %}100{% elif schedule.audio_ready and schedule.video_ready %}100{% elif schedule.audio_ready and schedule.broadcast_ready %}100{% elif schedule.video_ready and schedule.broadcast_ready %}100{% elif schedule.slides_ready or schedule.audio_ready or schedule.video_ready or schedule.broadcast_ready %}50{% else %}0{% endif %} 201"
+            stroke-linecap="round"/>
+        </svg>
+        <div class="ring-label" style="margin-top:-6px;">{{ schedule.status|title }}</div>
+        <div class="ring-sublabel">Production status</div>
+        {% endwith %}{% endwith %}{% endwith %}
+        {% else %}
+        <svg class="ring-svg" width="80" height="80" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="32" fill="none" stroke="#21262d" stroke-width="6"/>
+          <circle cx="40" cy="40" r="32" fill="none" stroke="#334155" stroke-width="6" stroke-dasharray="0 200" stroke-linecap="round"/>
+        </svg>
+        <div class="ring-label" style="margin-top:-6px;color:var(--mid);">—</div>
+        <div class="ring-sublabel">No schedule</div>
+        {% endif %}
+        {% endwith %}
+      </div>
+
+      <!-- Checklist -->
+      <div class="export-preview">
+        <div class="preview-label">Service Readiness</div>
+        <ul class="export-checklist">
+          <li>
+            {% if active_setlist and active_setlist.finalized %}
+            <span class="check-icon check-ok">✓</span>
+            {% elif active_setlist %}
+            <span class="check-icon check-warn">!</span>
+            {% else %}
+            <span class="check-icon check-no">○</span>
+            {% endif %}
+            Music Setlist {% if active_setlist and active_setlist.finalized %}Finalized{% elif active_setlist %}Draft{% else %}Missing{% endif %}
+          </li>
+          <li>
+            {% if presentations %}
+            <span class="check-icon check-ok">✓</span>
+            {% else %}
+            <span class="check-icon check-no">○</span>
+            {% endif %}
+            Presentation {% if presentations %}Ready{% else %}None{% endif %}
+          </li>
+          <li>
+            {% if pastor_note %}
+            <span class="check-icon check-ok">✓</span>
+            {% else %}
+            <span class="check-icon check-warn">!</span>
+            {% endif %}
+            Pastor Notes {% if pastor_note %}Attached{% else %}Pending{% endif %}
+          </li>
+          <li>
+            {% if production_schedule.slides_ready %}
+            <span class="check-icon check-ok">✓</span>
+            {% else %}
+            <span class="check-icon check-no">○</span>
+            {% endif %}
+            Slides Ready
+          </li>
+          <li>
+            {% if production_schedule.audio_ready %}
+            <span class="check-icon check-ok">✓</span>
+            {% else %}
+            <span class="check-icon check-no">○</span>
+            {% endif %}
+            Audio Ready
+          </li>
+          <li>
+            {% if production_schedule.broadcast_ready %}
+            <span class="check-icon check-ok">✓</span>
+            {% else %}
+            <span class="check-icon check-no">○</span>
+            {% endif %}
+            Broadcast Ready
+          </li>
+        </ul>
+      </div>
+
+      <!-- Quick links -->
+      <div style="padding:12px 16px;border-top:1px solid var(--border);">
+        <div class="preview-label">Quick Links</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          {% if active_setlist %}
+          <a href="{% url 'music:setlist_detail' active_setlist.uid %}" class="btn-prep" style="justify-content:space-between;font-size:.78rem;">Music Hub <span>→</span></a>
+          {% endif %}
+          <a href="{% url 'media:template_list' %}" class="btn-prep" style="justify-content:space-between;font-size:.78rem;">Slide Templates <span>→</span></a>
+          {% if presentations %}
+          <a href="{% url 'media:presenter_view' presentations.0.uid %}" class="btn-prep primary" style="justify-content:space-between;font-size:.78rem;">Present <span>→</span></a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- Toast -->
+<div class="prep-toast" id="prepToast"></div>
+
+<style>
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+</style>
+
+<script>
+function showTab(name, btn) {
+  document.querySelectorAll('.prep-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.prep-tab').forEach(t => t.classList.remove('active'));
+  const pane = document.getElementById('pane-' + name);
+  if (pane) pane.classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+function switchView(name, btn) {
+  document.querySelectorAll('.prep-nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const tabMap = { overview: 'overview', setlist: 'setlist', pastor: 'pastor', export: 'export' };
+  if (tabMap[name]) {
+    const tab = document.getElementById('tab-' + tabMap[name]);
+    showTab(tabMap[name], tab);
+  }
+}
+
+function selectPresentation(uid, el) {
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
+function toggleEditPastorNote() {
+  const display = document.getElementById('pastor-note-display');
+  const edit = document.getElementById('pastor-note-edit');
+  if (display && edit) {
+    const isEditing = edit.style.display !== 'none';
+    display.style.display = isEditing ? 'block' : 'none';
+    edit.style.display = isEditing ? 'none' : 'block';
+  }
+}
+
+function runExport(format) {
+  const toast = document.getElementById('prepToast');
+  const formatLabels = {
+    easyworship: 'EasyWorship XML',
+    propresenter: 'ProPresenter JSON',
+    powerpoint: 'PowerPoint',
+    pdf: 'PDF Summary',
+    csv: 'Setlist CSV',
+    bundle: 'Full Bundle'
+  };
+  const opts = {
+    include_pastor: document.getElementById('opt-include-pastor')?.checked,
+    include_lyrics: document.getElementById('opt-include-lyrics')?.checked,
+    include_chords: document.getElementById('opt-include-chords')?.checked,
+    include_scripture: document.getElementById('opt-include-scripture')?.checked,
+  };
+
+  // Build export URL
+  const params = new URLSearchParams({ format, ...opts });
+  const presId = document.querySelector('.sidebar-item.active')?.dataset?.presUid;
+  if (presId) params.append('pres', presId);
+
+  const exportUrl = `/media/export/?${params.toString()}`;
+
+  // Show loading toast
+  toast.textContent = `Preparing ${formatLabels[format] || format}…`;
+  toast.className = 'prep-toast show';
+
+  // Trigger download
+  setTimeout(() => {
+    window.location.href = exportUrl;
+    toast.textContent = `${formatLabels[format] || format} ready!`;
+    toast.className = 'prep-toast show success';
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }, 600);
+}
+</script>
 {% endblock %}

@@ -1,0 +1,57 @@
+{% extends "founder/base_founder.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h2 class="fw-bold mb-0">Users <span class="text-muted fs-5">({{ total }})</span></h2>
+</div>
+<div class="stat-card mb-4">
+  <form method="get" class="d-flex gap-2">
+    <input type="text" name="q" value="{{ q }}" placeholder="Name, email, username…"
+           class="form-control form-control-sm" style="background:#0f172a;border-color:#334155;color:#e2e8f0;width:280px;">
+    <button class="btn btn-sm btn-outline-secondary">Search</button>
+    {% if q %}<a href="{% url 'founder:user_list' %}" class="btn btn-sm btn-ghost text-muted">Clear</a>{% endif %}
+  </form>
+</div>
+<div class="stat-card p-0">
+  <table class="table table-dark table-hover mb-0">
+    <thead><tr><th>User</th><th>Email</th><th>Church(es)</th><th>Superuser</th><th>Active</th><th>Joined</th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>
+          <div class="fw-semibold small">{{ u.full_name|default:u.username }}</div>
+          <div class="text-muted" style="font-size:.7rem;">{{ u.username }}</div>
+        </td>
+        <td class="text-muted small">{{ u.email|default:"—" }}</td>
+        <td class="text-muted small">{{ u.church_names|default:"—"|truncatechars:40 }}</td>
+        <td>
+          <button class="btn btn-xs {% if u.is_superuser %}btn-warning{% else %}btn-outline-secondary{% endif %} toggle-su-btn"
+                  data-pk="{{ u.pk }}" data-url="{% url 'founder:toggle_superuser' u.pk %}">
+            {% if u.is_superuser %}Superuser{% else %}Regular{% endif %}
+          </button>
+        </td>
+        <td>{% if u.is_active %}<span class="badge bg-success-lt">Active</span>{% else %}<span class="badge bg-danger-lt">Inactive</span>{% endif %}</td>
+        <td class="text-muted small">{{ u.date_joined|date:"d M Y" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-muted text-center py-4">No users found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<script>
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+document.querySelectorAll('.toggle-su-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (!confirm('Toggle superuser status?')) return;
+    fetch(btn.dataset.url, {method:'POST', headers:{'X-CSRFToken':CSRF}})
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) { alert(d.error); return; }
+        btn.textContent   = d.is_superuser ? 'Superuser' : 'Regular';
+        btn.className = `btn btn-xs ${d.is_superuser ? 'btn-warning' : 'btn-outline-secondary'} toggle-su-btn`;
+      });
+  });
+});
+</script>
+{% endblock %}

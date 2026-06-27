@@ -1,0 +1,261 @@
+{% extends "founder/base_founder.html" %}
+{% block title %}Dashboard
+{# ── Demo church status ── #}
+{% if demo_sub %}
+<div class="row g-4 mt-2">
+  <div class="col-12 col-lg-6">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-semibold mb-0">🎭 Demo Church</h6>
+        <span class="plan-badge plan-founders">auto-reset 3 AM</span>
+      </div>
+      <div class="mb-2">
+        <div class="text-muted small">URL</div>
+        <a href="https://{{ demo_sub }}.workforce.church" target="_blank" class="text-white text-decoration-none fw-semibold small">
+          https://{{ demo_sub }}.workforce.church
+        </a>
+      </div>
+      <div class="mb-2">
+        <div class="text-muted small">Username</div>
+        <code class="text-success small">demo_admin</code>
+      </div>
+      <div class="mb-3">
+        <div class="text-muted small">Password <span class="text-warning small">(from DEMO_PASSWORD env)</span></div>
+        <code class="text-warning small" id="demoPwDisplay">{{ demo_password }}</code>
+      </div>
+      {% if demo_church %}
+      <div class="d-flex gap-2 align-items-center">
+        <span class="badge bg-success-lt small">Church exists</span>
+        <span class="text-muted small">{{ demo_church.name }}</span>
+      </div>
+      {% else %}
+      <div class="text-warning small">⚠ Demo church not seeded yet — use the Seed button below.</div>
+      {% endif %}
+      <div class="mt-3 d-flex gap-2">
+        <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#seedDemoModal">
+          Seed / Reset Demo
+        </button>
+        {% if demo_church %}
+        <a href="https://{{ demo_sub }}.workforce.church" target="_blank" class="btn btn-sm btn-outline-secondary">
+          Open Demo →
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="stat-card">
+      <h6 class="fw-semibold mb-3">Demo Access Instructions</h6>
+      <p class="text-muted small mb-2">
+        Share this with anyone who wants to explore ChurchForce without signing up.
+        The demo resets every night at 3 AM so any changes are wiped.
+      </p>
+      <div class="p-3 rounded" style="background:#0f172a;border:1px solid #334155;font-family:monospace;font-size:.8rem;">
+        <div>🌐 <span class="text-white">https://{{ demo_sub }}.workforce.church</span></div>
+        <div>👤 <span class="text-success">demo_admin</span></div>
+        <div>🔑 <span class="text-warning">{{ demo_password }}</span></div>
+      </div>
+      <div class="mt-2 text-muted" style="font-size:.72rem;">
+        All demo users share the same login — this is intentional.
+        The account has admin-level access to the demo church only, not the platform.
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-0">Platform Dashboard</h2>
+    <div class="text-muted small">founder.workforce.church — superuser only</div>
+  </div>
+  <div class="d-flex gap-2">
+    <button id="seedMusicCatalogBtn" class="btn btn-sm btn-outline-success">Seed Music Catalog (All Churches)</button>
+  </div>
+</div>
+<div id="seedMusicCatalogFeedback" class="text-muted small mb-3"></div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-2">
+    <div class="stat-card"><div class="value text-primary">{{ total_churches }}</div><div class="text-muted small mt-1">Total Churches</div></div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="stat-card"><div class="value text-success">{{ active_churches }}</div><div class="text-muted small mt-1">Active Churches</div></div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="stat-card"><div class="value text-warning">{{ expiring_trials|length }}</div><div class="text-muted small mt-1">Trials Expiring (7d)</div></div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="stat-card"><div class="value text-info">{{ total_users }}</div><div class="text-muted small mt-1">Total Users</div></div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="stat-card"><div class="value text-success" style="font-size:1.4rem;">₦{{ revenue_30d|floatformat:0 }}</div><div class="text-muted small mt-1">Revenue (30d)</div></div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="stat-card"><div class="value" style="font-size:1.4rem;color:#a855f7;">₦{{ revenue_total|floatformat:0 }}</div><div class="text-muted small mt-1">Total Revenue</div></div>
+  </div>
+</div>
+
+{# Revenue chart #}
+{% if revenue_chart %}
+<div class="stat-card mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="fw-semibold mb-0">Monthly Revenue (last 6 months)</h6>
+    <span class="text-muted small">₦ NGN</span>
+  </div>
+  <div style="display:flex;align-items:flex-end;gap:8px;height:80px;">
+    {% for row in revenue_chart %}
+    {% with pct=row.total|default:0 %}
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <div style="font-size:.65rem;color:#64748b;">₦{{ row.total|floatformat:0 }}</div>
+      <div style="width:100%;background:#22c55e;border-radius:4px 4px 0 0;min-height:4px;
+                  height:{% widthratio row.total revenue_total 72 %}px;"></div>
+      <div style="font-size:.6rem;color:#64748b;white-space:nowrap;">{{ row.month }}</div>
+    </div>
+    {% endwith %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+  <div class="col-12 col-lg-4">
+    <div class="stat-card">
+      <h6 class="fw-semibold mb-3">Plan Distribution</h6>
+      {% for row in plan_dist %}
+      <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary">
+        <span class="plan-badge plan-{% if 'founders' in row.plan__name %}founders{% elif row.plan__name == 'saas' %}saas{% elif row.plan__name == 'white_label' %}enterprise{% elif row.plan__name == 'trial' %}trial{% else %}inactive{% endif %}">
+          {{ row.plan__name|default:"—" }}
+        </span>
+        <span class="fw-bold">{{ row.n }}</span>
+      </div>
+      {% empty %}
+      <div class="text-muted small">No subscriptions yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="stat-card">
+      <h6 class="fw-semibold mb-3">Recent Signups</h6>
+      {% for c in recent_churches %}
+      <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary">
+        <div>
+          <a href="{% url 'founder:church_detail' c.pk %}" class="text-white text-decoration-none fw-semibold small">{{ c.name }}</a>
+          <div class="text-muted" style="font-size:.7rem;">{{ c.slug }}</div>
+        </div>
+        <span class="plan-badge plan-{% if c.churchsubscription.plan.name == 'trial' %}trial{% else %}saas{% endif %}">
+          {{ c.churchsubscription.plan.get_name_display|default:"—" }}
+        </span>
+      </div>
+      {% empty %}
+      <div class="text-muted small">No churches yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="stat-card">
+      <h6 class="fw-semibold mb-3 text-warning">⚠ Trials Expiring Soon</h6>
+      {% for sub in expiring_trials %}
+      <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary">
+        <div>
+          <a href="{% url 'founder:church_detail' sub.church.pk %}" class="text-white text-decoration-none fw-semibold small">{{ sub.church.name }}</a>
+          <div class="text-muted" style="font-size:.7rem;">expires {{ sub.trial_expires_at|date:"d M" }}</div>
+        </div>
+        <span class="text-warning small">{{ sub.trial_expires_at|timeuntil }}</span>
+      </div>
+      {% empty %}
+      <div class="text-success small">No trials expiring in 7 days.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{# ── Demo church status ── #}
+{% if demo_sub %}
+<div class="row g-4 mt-2">
+  <div class="col-12 col-lg-6">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-semibold mb-0">🎭 Demo Church</h6>
+        <span class="plan-badge plan-founders">auto-reset 3 AM</span>
+      </div>
+      <div class="mb-2">
+        <div class="text-muted small">URL</div>
+        <a href="https://{{ demo_sub }}.workforce.church" target="_blank" class="text-white text-decoration-none fw-semibold small">
+          https://{{ demo_sub }}.workforce.church
+        </a>
+      </div>
+      <div class="mb-2">
+        <div class="text-muted small">Username</div>
+        <code class="text-success small">demo_admin</code>
+      </div>
+      <div class="mb-3">
+        <div class="text-muted small">Password <span class="text-warning small">(from DEMO_PASSWORD env)</span></div>
+        <code class="text-warning small" id="demoPwDisplay">{{ demo_password }}</code>
+      </div>
+      {% if demo_church %}
+      <div class="d-flex gap-2 align-items-center">
+        <span class="badge bg-success-lt small">Church exists</span>
+        <span class="text-muted small">{{ demo_church.name }}</span>
+      </div>
+      {% else %}
+      <div class="text-warning small">⚠ Demo church not seeded yet — use the Seed button below.</div>
+      {% endif %}
+      <div class="mt-3 d-flex gap-2">
+        <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#seedDemoModal">
+          Seed / Reset Demo
+        </button>
+        {% if demo_church %}
+        <a href="https://{{ demo_sub }}.workforce.church" target="_blank" class="btn btn-sm btn-outline-secondary">
+          Open Demo →
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="stat-card">
+      <h6 class="fw-semibold mb-3">Demo Access Instructions</h6>
+      <p class="text-muted small mb-2">
+        Share this with anyone who wants to explore ChurchForce without signing up.
+        The demo resets every night at 3 AM so any changes are wiped.
+      </p>
+      <div class="p-3 rounded" style="background:#0f172a;border:1px solid #334155;font-family:monospace;font-size:.8rem;">
+        <div>🌐 <span class="text-white">https://{{ demo_sub }}.workforce.church</span></div>
+        <div>👤 <span class="text-success">demo_admin</span></div>
+        <div>🔑 <span class="text-warning">{{ demo_password }}</span></div>
+      </div>
+      <div class="mt-2 text-muted" style="font-size:.72rem;">
+        All demo users share the same login — this is intentional.
+        The account has admin-level access to the demo church only, not the platform.
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById("seedMusicCatalogBtn")?.addEventListener("click", async () => {
+  const feedback = document.getElementById("seedMusicCatalogFeedback");
+  if (feedback) feedback.textContent = "Seeding music catalog...";
+  const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+  const res = await fetch("{% url 'founder:run_seed_music_catalog' %}", {
+    method: "POST",
+    headers: { "X-CSRFToken": csrf },
+  });
+  const data = await res.json();
+  if (feedback) {
+    feedback.textContent = data.ok
+      ? "Music catalog seeded across active churches."
+      : (data.error || "Music catalog seed failed.");
+  }
+});
+</script>
+{% endblock %}

@@ -1,232 +1,575 @@
-{% extends 'base.html' %}
+{% extends base_template %}
 {% load guest_extras %}
 {% load access_tags %}
 {% load static %}
 
 {% block title %}Dashboard — {{ church.name }}{% endblock %}
 
+{% block widget_buttons %}
+{# ── Dashboard-specific widget rail buttons ── #}
+<button type="button" class="dashboard-widget-jump dashboard-tabs-trigger" data-title="Dashboard Tabs">
+  <span>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-layout-sidebar-right-expand">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M18 3a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 3 -3h12z" />
+      <path d="M15 5v14" />
+      <path d="M10 10l-2 2l2 2" />
+    </svg>
+  </span>
+</button>
+{{ block.super }}
+
+{% if nav_is_admin %}
+<button type="button" class="dashboard-widget-jump" data-title="Create" data-target="widget-quick-announcements">
+  <span>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke=" #faa404" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-layout-grid-add">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /><path d="M14 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+      <path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /><path d="M14 17h6m-3 -3v6" />
+    </svg>
+  </span>
+  <span class="small ms-1 text-white">2</span>
+</button>
+{% endif %}
+{% endblock %}
+
+
 {% block content %}
 <div class="page-wrapper">
 
-  <!-- ── Page header ── -->
+  {# ── Page header with tab navigation ── #}
   <div class="page-header d-print-none">
     <div class="container-xl">
       <div class="row g-2 align-items-center">
-        <div class="col">
-          <kbd class="bg-indigo-lt"><h2 class="page-title mb-0">{{ page_title|default:"Dashboard" }}</h2></kbd>
+        <div class="col d-flex align-items-center gap-3">
+          {% if is_campus_church %}
+            <kbd class="d-flex gap-2" style="background:{{ church.primary_color }}0F;box-shadow:0 4px 8px #000000d2;border-radius:24px">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-building-church">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 21l18 0" />
+                <path d="M10 21v-4a2 2 0 0 1 4 0v4" /><path d="M10 5l4 0" /><path d="M12 3l0 5" /><path d="M6 21v-7m-2 2l8 -8l8 8m-2 -2v7" />
+              </svg>
+              <h2 class="page-title mb-0">{{ church.name }}</h2>
+            </kbd>
+          {% endif %}
+          <kbd class="bg-gray-800" style="box-shadow:0 4px 8px #000000d2;border-radius:24px">
+            <h2 class="page-title mb-0">{{ page_title|default:"Dashboard" }}</h2>
+          </kbd>
         </div>
-        <div class="col-auto ms-auto d-print-none">
-          <div class="btn-list">
-            {% if permissions|can:"guests.create" %}
-            <a href="{% url 'guests:create_guest' %}" class="btn btn-gray d-none d-sm-inline-block">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0-8 0"/>
-                <path d="M3 21v-2a4 4 0 0 1 4-4h4c.96 0 1.84.338 2.53.901"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M16 19h6"/><path d="M19 16v6"/>
-              </svg>
-              Add Guest
-            </a>
-            <a href="{% url 'guests:create_guest' %}" class="btn btn-gray d-sm-none btn-icon" aria-label="Add guest">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0-8 0"/>
-                <path d="M16 19h6"/><path d="M19 16v6"/>
-              </svg>
-            </a>
-            {% endif %}
-          </div>
+        <div class="col-auto ms-auto text-end d-grid" style="font-family:monospace">
+          <div id="dashHeaderLiveDate" class="fs-4"></div>
+          <div id="dashHeaderLiveTime" class="fs-4"></div>
         </div>
       </div>
     </div>
   </div>
 
+  <div class="dashboard-tabs-flyout" id="dashboardTabsFlyout" aria-hidden="true">
+    <button class="db-tab-pill active gap-1" data-db-tab="feeds">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgb(53, 245, 5)" stroke-width="2" style="width:22px;height:22px;">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 8l4-4l4 4"/><path d="M7 4v9a3 3 0 0 0 6 0v-1a3 3 0 0 1 6 0v4"/><path d="M20 17l-1 1l1 1"/>
+      </svg>
+      Feeds
+    </button>
+    <button class="db-tab-pill gap-1" data-db-tab="activities">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke=" #17a2b8" stroke-width="2" style="width:22px;height:22px;">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 11l3 3l8-8"/><path d="M20 12v6a2 2 0 0 1-2 2h-12a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2h6"/>
+      </svg>
+      Activities
+    </button>
+    {% if nav_is_admin or can_view_guests %}
+    <button class="db-tab-pill gap-1" data-db-tab="leaders">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke=" #f59f00" stroke-width="2" style="width:22px;height:22px;">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 9m-6 0a6 6 0 1 0 12 0a6 6 0 1 0-12 0"/><path d="M12 3l0 6"/><path d="M6.2 21l3.8-6"/><path d="M17.8 21l-3.8-6"/>
+      </svg>
+      Insights
+    </button>
+    {% endif %}
+    {% if trainee %}
+    <button class="db-tab-pill gap-1" data-db-tab="traineeWorkspace">
+      <a href="#traineeWorkspace">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-graduation-cap" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M22 9l-10 -4l-10 4l10 4l10 -4v6" />
+          <path d="M6 10.6v5.4a6 3 0 0 0 12 0v-5.4" />
+        </svg>
+      </a>
+      Trainee
+    </button>
+    {% endif %}
+  </div>
+
   <div class="page-body">
     <div class="container-xl">
-      <div class="row row-deck row-cards">
 
-        <!-- ── Welcome + team scroll ── -->
-        <div class="col-md-6 col-lg-4 p-4">
-          <div class="row gy-3">
-            <div class="col-12 d-flex flex-column">
-              <span class="typing-text text-secondary">Welcome back,</span>
-              <span style="font-size:3rem;font-weight:bold;line-height:1.1;">
-                <small style="font-size:1.5rem;font-style:italic;">{{ request.user.title|default:"" }}</small><br>
-                {{ request.user.full_name }}
-              </span>
+      {# ══════════════════════════════════════════════════════════════════════ #}
+      {#   TAB 1 — FEEDS #}
+      {#   Profile card (cover + avatar overlay) + feeds timeline + events #}
+      {#   ══════════════════════════════════════════════════════════════════════ #}
+      <div class="db-tab-panel active" id="db-tab-feeds">
+        <div class="row row-deck row-cards">
 
-              <!-- Unit member scroll — rendered server-side by view -->
-              {% if team_member_pairs %}
-              <div class="row g-2 justify-content-center mt-2">
-                {% for unit, members in team_member_pairs %}
-                <div class="w-full mx-auto relative scroll-container mb-1">
-                  <span class="team-name-overlay {{ unit.color_class }}" style="background:#1F2937;">{{ unit.name }}</span>
-                  <div class="scroll-wrapper">
-                    <ul class="scroll-track" data-direction="{% cycle 'left' 'right' %}">
-                      {% for member in members %}
-                        {% include "partials/_user_card.html" with user=member.user show_actions=False %}
-                      {% endfor %}
-                    </ul>
+          {# ── Profile / Welcome card with cover photo ── #}
+          <div class="col-12">
+            <div class="card db-profile-card bg-gray-900" id="dbProfileCard"
+                  style="box-shadow:0 4px 8px #000000d2;border-radius:36px;overflow:hidden;">
+              <div class="card-body p-3">
+
+                {# Cover strip — gradient or actual cover image #}
+                <div class="db-cover-strip" id="dbCoverStrip"
+                    {% if request.user.cover_image %}
+                    style="background-image:url('{{ request.user.cover_image.url }}');box-shadow:0 4px 8px #000000d2;border-radius: 36px;"
+                    {% else %}
+                    style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 40%,#0f2944 70%,#0f172a 100%);box-shadow:0 4px 8px #000000d2;border-radius: 36px;"
+                    {% endif %}>
+                  {# Cover edit button (future) #}
+                </div>
+
+                {# Avatar overlapping cover bottom edge #}
+                <div class="db-profile-body">
+                  <div class="db-profile-avatar-wrap">
+                    {% if request.user.image %}
+                      <span class="avatar avatar-xl"
+                            style="background-image:url('{{ request.user.image.url }}');display:inline-block;
+                                    width:100px;height:100px;border-radius:1rem;background-size:cover;
+                                    background-position:center;box-shadow:0 2px 5px #000000f3;"></span>
+                    {% else %}
+                      <span class="avatar avatar-xl bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                            style="width:100px;height:100px;font-weight:bold;font-size:24px;border-radius:1rem;box-shadow:0 2px 5px #000000f3;">
+                        {{ request.user.initials }}
+                      </span>
+                    {% endif %}
+                    {# Online dot #}
+                    <span class="db-profile-online-dot"></span>
+                  </div>
+
+                  <div class="db-profile-info">
+                    <div class="db-profile-meta typing-text text-warning">Welcome back,</div>
+                    <span style="font-size:1.3rem;font-weight:bold;line-height:1.1;">
+                      <small style="font-size:.85rem;font-style:italic;">{{ request.user.title|default:"" }}</small><br>
+                      {{ request.user.full_name|default:request.user.username }}
+                    </span>
+                    <span>{{ request.user|role_badge }}</span>
+
+                  </div>
+                    
+
+                  {# Quick stats row #}
+                  <div class="db-profile-stats ms-auto d-none d-md-flex gap-3">
+                    {% if can_create_guest %}
+                    <div class="bg-cyan-lt text-center" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;padding: 8px 12px;">
+                      <div class="db-stat-num">{{ total_guests|default:0 }}</div>
+                      <div class="db-stat-label">All Guests</div>
+                    </div>
+                    {% elif can_view_guests %}
+                    <div class="bg-cyan-lt text-center" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;padding: 8px 12px;">
+                      <div class="db-stat-num">{{ user_total_guest_entries|default:0 }}</div>
+                      <div class="db-stat-label">My Guests</div>
+                    </div>
+                    {% endif %}
+                    <div class="bg-cyan-lt text-center" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;padding: 8px 12px;">
+                      <div class="db-stat-num">{{ my_tasks|length }}</div>
+                      <div class="db-stat-label">Tasks</div>
+                    </div>
+                    <div class="bg-cyan-lt text-center" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;padding: 8px 12px;">
+                      <div class="db-stat-num">{{ workforce_announcements|length|add:unit_announcements|length }}</div>
+                      <div class="db-stat-label">Updates</div>
+                    </div>
                   </div>
                 </div>
-                {% endfor %}
-              </div>
-              {% elif other_users %}
-              <div class="scroll-wrapper mt-2">
-                <ul class="scroll-track" data-direction="left">
-                  {% for user in other_users %}
-                    {% include "partials/_user_card.html" with user=user show_actions=False %}
+
+                {# ── Unit member scroll strip (below profile info) ── #}
+                {% if unit_member_pairs %}
+                <div class="row g-2 justify-content-center mt-2">
+                  {% for unit, members in unit_member_pairs %}
+                  <div class="w-full mx-auto relative scroll-container mb-1">
+                    <span class="unit-name-overlay {{ unit.color_class }}" style="background:#1F2937;">{{ unit.name }}</span>
+                    <div class="scroll-wrapper">
+                      <ul class="scroll-track" data-direction="{% cycle 'left' 'right' %}">
+                        {% for member in members %}
+                          {% include "partials/_user_card.html" with user=member.user units=member.units %}
+                        {% endfor %}
+                      </ul>
+                    </div>
+                  </div>
                   {% endfor %}
-                </ul>
-              </div>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Time card + attendance stats ── -->
-        <div class="col-md-12 col-lg-8">
-          <div id="timeCard" class="card p-4" data-user-color="{{ user.color_hex|default:'#22c55e' }}">
-            <div class="card-body p-0">
-              <div class="row g-4 align-items-center">
-
-                <!-- Clock column -->
-                <div class="col-md-6 d-flex flex-column align-items-center justify-content-center text-center">
-                  {% if request|is_admin %}
-                  <div class="mb-2">
-                    <select id="userSelect" class="form-select border-0 text-white"
-                            style="box-shadow:0 4px 8px #000000d2;border-radius:8px;background:#1F2937;width:300px;font-weight:bold;">
-                      <option value="">— Select member to view data —</option>
-                      {% for u in users %}
-                        <option value="{{ u.id }}">{{ u.title|default:"" }} {{ u.full_name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                  {% endif %}
-                  <div id="liveDate" class="fw-bold mb-1" style="font-size:1.2rem;letter-spacing:.05em;"></div>
-                  <canvas id="analogClock" width="220" height="220" class="mb-1"></canvas>
-                  <div id="digitalClock" class="fw-bold" style="font-size:3.5rem;letter-spacing:.1em;font-family:monospace;"></div>
                 </div>
-
-                <!-- Stats column (hidden for admin until user selected) -->
-                <div id="summaryColumn" class="col-md-6 d-flex flex-column gap-3"
-                     {% if request|is_admin %}style="display:none;"{% endif %}>
-
-                  <!-- Next event countdown -->
-                  {% if next_events_for_week %}
-                  <div id="weeklyEventsContainer" class="flex-fill p-3 text-center"
-                       style="border-radius:12px;background:#111827;box-shadow:0 4px 8px #000000d2;">
-                    <div id="eventDisplayArea" class="fw-bold text-warning text-center" style="font-size:1.05rem;">
-                      {% for event in next_events_for_week %}
-                      <div class="weekly-event-item {% if not forloop.first %}d-none{% endif %}"
-                           data-datetime="{{ event.datetime_iso }}"
-                           data-postponed="{{ event.postponed|yesno:'true,false' }}">
-                        <div class="d-flex justify-content-center align-items-center mb-1">
-                          <span class="ms-2 text-white fw-bold">{{ event.name }}</span>
-                          {% if event.team_name %}
-                            <span class="badge ms-2 {{ event.team_color_class }}">{{ event.team_name }}</span>
-                          {% else %}
-                            <span class="badge ms-2 bg-indigo-lt">ChurchForce</span>
-                          {% endif %}
-                        </div>
-                        {% if event.postponed %}
-                          <small class="text-danger fst-italic">
-                            Postponed → {% if event.date %}{{ event.date }}{% else %}Date TBD{% endif %}
-                          </small>
-                        {% else %}
-                          <small class="text-secondary">{{ event.date|date:"D, M j Y" }} • {{ event.time|default:"TBA" }}</small>
-                        {% endif %}
-                        <div class="countdown fw-semibold mt-1"><span class="countdown-text">Loading…</span></div>
-                      </div>
-                      {% endfor %}
-                    </div>
-                  </div>
-                  {% else %}
-                  <div class="p-3 text-center text-muted small" style="border-radius:12px;background:#111827;">No events this week.</div>
-                  {% endif %}
-
-                  <!-- Clock-in stats row -->
-                  <div class="d-flex gap-2">
-                    <div class="flex-fill p-3 text-center" style="border-radius:12px;background:#1F2937;box-shadow:0 4px 8px #000000d2;">
-                      <div class="text-white small">Clock In</div>
-                      <h1 id="totalClockIn" class="fw-bold text-warning" style="font-family:monospace;">{{ total_clock_in|default:"--" }}</h1>
-                    </div>
-                    <div class="flex-fill p-3 text-center" style="border-radius:12px;background:#1F2937;box-shadow:0 4px 8px #000000d2;">
-                      <div class="text-white small">Clock Out</div>
-                      <h1 id="totalClockOut" class="fw-bold text-purple" style="font-family:monospace;">{{ total_clock_out|default:"--" }}</h1>
-                    </div>
-                  </div>
-
-                  <!-- Attendance summary -->
-                  <div class="d-flex gap-2">
-                    <div class="flex-fill p-3 text-center" style="border-radius:12px;background:#1F2937;box-shadow:0 4px 8px #000000d2;">
-                      <div class="text-white small">Present</div>
-                      <h1 id="summaryPresent" class="fw-bold text-success" style="font-family:monospace;">--</h1>
-                    </div>
-                    <div class="flex-fill p-3 text-center" style="border-radius:12px;background:#1F2937;box-shadow:0 4px 8px #000000d2;">
-                      <div class="text-white small">Excused</div>
-                      <h1 id="summaryExcused" class="fw-bold text-blue" style="font-family:monospace;">--</h1>
-                    </div>
-                    <div class="flex-fill p-3 text-center" style="border-radius:12px;background:#1F2937;box-shadow:0 4px 8px #000000d2;">
-                      <div class="text-white small">Absent</div>
-                      <h1 id="summaryAbsent" class="fw-bold text-red" style="font-family:monospace;">--</h1>
-                    </div>
-                  </div>
-
-                  <!-- Clock-in button -->
-                  <div class="d-flex justify-content-center m-3">
-                    <button id="clockInBtn" data-bs-toggle="modal" data-bs-target="#dashboardAttendanceModal"
-                            class="btn flex-fill py-3 fw-bold border-0" style="border-radius:12px;background:#1F2937;box-shadow:0 4px 8px #000000d2;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon me-2">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M20.984 12.535a9 9 0 1 0-8.431 8.448"/>
-                        <path d="M12 7v5l3 3"/><path d="M19 16v6"/><path d="M22 19l-3 3l-3-3"/>
-                      </svg>
-                      Clock In
-                    </button>
-                  </div>
+                {% elif other_users %}
+                <div class="scroll-wrapper mt-2">
+                  <ul class="scroll-track" data-direction="left">
+                    {% for user in other_users %}
+                      {% include "partials/_user_card.html" with user=user units=user.units %}
+                    {% endfor %}
+                  </ul>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Calendar ── -->
-        <div class="col-md-12 col-lg-8">
-          <div id="calendar"></div>
-        </div>
-
-        <!-- ── Upcoming events carousel ── -->
-        <div class="col-md-6 col-lg-4 p-4">
-          <h1 class="card-title fw-bold mt-4">Upcoming Events</h1>
-          {% if available_events %}
-          <div id="dashboardEventCarousel" class="vertical-carousel">
-            {% for event in available_events %}
-            <div class="team-slide">
-              <div class="event-card overflow-hidden shadow-sm" style="height:min-content;min-width:400px;border-radius:14px;">
-                {% if event.event_image %}
-                  <img src="{{ event.event_image.url }}" alt="{{ event.name }}" style="object-fit:cover;width:350px;height:350px;">
-                {% else %}
-                  <img src="{% static 'images/event-placeholder.png' %}" alt="{{ event.name }}" style="object-fit:cover;width:350px;height:350px;">
                 {% endif %}
               </div>
-              <div class="left-badge badge fw-semibold" style="color:{{ event.team_color_hex }};">{{ event.team_name }}</div>
-              <div class="right-badge badge text-white fw-bold">{{ event.name }} — {{ event.date }}</div>
-            </div>
-            {% endfor %}
+            </div>{# /db-profile-card #}
           </div>
-          {% else %}
-          <p class="text-muted small">No upcoming events.</p>
+
+          <div class="col-12">
+            <div class="card" style="background:{{ church.primary_color }}22;box-shadow:0 4px 8px #000000d2;border-radius:36px;">
+              <div class="card-body p-3 p-lg-4">
+                <div class="row g-4">
+                  <div class="col-12 col-xl-8">
+                    <div class="card mb-3" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      <div class="card-body p-3">
+                        <div class="d-flex gap-3 align-items-start">
+                          <div class="flex-shrink-0">
+                            {% if request.user.image %}
+                              <span class="avatar avatar-sm"
+                                    style="background-image:url('{{ request.user.image.url }}');display:inline-block;
+                                            width:50px;height:50px;border-radius:1rem;background-size:cover;
+                                            background-position:center;box-shadow:0 2px 5px #000000f3;"></span>
+                            {% else %}
+                              <span class="avatar avatar-sm bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                                    style="width:50px;height:50px;font-weight:bold;font-size:24px;border-radius:1rem;box-shadow:0 2px 5px #000000f3;">
+                                {{ request.user.initials }}
+                              </span>
+                            {% endif %}
+                          </div>
+                          <div class="flex-grow-1">
+                            <textarea id="dbFeedsComposeText" class="db-feeds-compose-input ps-4"
+                                      placeholder="What's on your heart today?…" rows="2"></textarea>
+                            <div class="d-flex align-items-center gap-2 mt-2 flex-wrap">
+                              <select id="dbFeedsScopeSelect" class="feeds-scope-select">
+                                <option value="general">{{ church.name }} Workforce</option>
+                              </select>
+                              <div class="d-flex gap-1 ms-auto">
+                                <button type="button" class="feeds-media-btn" id="dbFeedsImgBtn" title="Image">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 8h.01"/><path d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-12a3 3 0 0 1-3-3v-12z"/><path d="M3 16l5-5c.928-.893 2.072-.893 3 0l5 5"/><path d="M14 14l1-1c.928-.893 2.072-.893 3 0l3 3"/></svg>
+                                </button>
+                                <button type="button" class="feeds-media-btn" id="dbFeedsVideoBtn" title="Video">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 10l4.553-2.277a1 1 0 0 1 1.447.894v6.766a1 1 0 0 1-1.447.894l-4.553-2.277v-4z"/><path d="M3 6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-12z"/></svg>
+                                </button>
+                                <button type="button" class="feeds-media-btn" id="dbFeedsAudioBtn" title="Audio">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 18v-12a3 3 0 0 1 6 0v12a3 3 0 0 1-6 0"/><path d="M6 16a6 6 0 0 0 12 0"/></svg>
+                                </button>
+                                <input type="file" id="dbFeedsImgInput" accept="image/*" multiple hidden>
+                                <input type="file" id="dbFeedsVideoInput" accept="video/*" hidden>
+                                <input type="file" id="dbFeedsAudioInput" accept="audio/*" hidden>
+                                <button type="button" id="dbFeedsPostBtn" class="feeds-post-btn">Post</button>
+                              </div>
+                            </div>
+                            <div id="dbFeedsMediaPreview" class="feeds-media-preview"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div id="dbFeedsGeneralList" class="feeds-list">
+                      <div class="feeds-skeleton" id="dbFeedsGeneralSkeleton">
+                        <div class="skel-line"></div>
+                        <div class="skel-line short"></div>
+                        <div class="skel-line"></div>
+                      </div>
+                    </div>
+                    <button class="feeds-load-more" id="dbFeedsLoadMoreBtn" style="display:none">Load more</button>
+                  </div>
+
+                  <div class="col-12 col-xl-4">
+                    <div class="card mb-3" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      <div class="card-header py-2">
+                        <h3 class="mb-0 fw-bold">Feed Spaces</h3>
+                      </div>
+                      <div class="card-body py-3">
+                        <div class="db-feed-filter-strip mb-3" id="dbFeedFilterStrip">
+                          <button type="button" class="feeds-unit-chip active" data-feed-filter="general">
+                            General Workforce
+                          </button>
+                          <div class="feeds-unit-selector" id="dbFeedsUnitSelector">
+                            <div class="text-muted small">Loading…</div>
+                          </div>
+                        </div>
+                        <p class="text-muted small mb-0">
+                          Choose a space above to read its posts, then use the composer to post to General Workforce or one of your units.
+                        </p>
+                      </div>
+                    </div>
+
+                    {% if available_events %}
+                    <div class="card" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      <div class="card-header py-2">
+                        <h3 class="mb-0 fw-bold">Upcoming Events</h3>
+                      </div>
+                      <div class="card-body p-2">
+                        <div id="dashboardEventCarousel" class="vertical-carousel">
+                          {% for event in available_events %}
+                          <div class="unit-slide">
+                            <div class="card py-1 justify-content-center" style="height:min-content;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                              {% if event.event_image %}
+                                <img src="{{ event.event_image.url }}" alt="{{ event.name }}" style="object-fit:cover;width:100%;height:min-content;">
+                              {% else %}
+                                <img src="{% static 'images/event-placeholder.png' %}" alt="{{ event.name }}" style="object-fit:cover;width:100%;height:min-content;">
+                              {% endif %}
+                            </div>
+                            <div class="top-badge badge fw-semibold" style="color:{{ event.unit_color_hex }};">{{ event.unit_name }}</div>
+                            <div class="right-badge badge text-white fw-bold">{{ event.name }} — {{ event.date }}</div>
+                          </div>
+                          {% endfor %}
+                        </div>
+                      </div>
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>{# /row feeds tab #}
+      </div>{# /db-tab-feeds #}
+
+
+      {# ══════════════════════════════════════════════════════════════════════ #}
+      {#   TAB 2 — ACTIVITIES #}
+      {#   Tasks, Announcements, AI Insight, Guest Map #}
+      {#   ══════════════════════════════════════════════════════════════════════ #}
+      <div class="db-tab-panel" id="db-tab-activities">
+        <div class="row g-3">
+          <div class="col-lg-6" id="widget-announcements">
+            {% include "dashboard/widgets/_announcements.html" %}
+          </div>
+          <div class="col-lg-6" id="widget-tasks">
+            {% include "dashboard/widgets/_tasks.html" %}
+          </div>
+          <div class="col-lg-6" id="widget-analysis">
+            {% include "dashboard/widgets/_analysis.html" %}
+          </div>
+          <div class="col-lg-6" id="widget-map">
+            {% include "dashboard/widgets/_guest_map.html" %}
+          </div>
+          <div class="col-lg-6">
+            {% include "bible/widgets/_bible_widget.html" %}
+          </div>
+          {% if nav_is_admin %}
+          <div class="col-lg-6">
+            {% include "bible/widgets/_provider_analytics.html" %}
+          </div>
           {% endif %}
         </div>
+      </div>{# /db-tab-activities #}
 
-        <!-- ── Guest stats (only for members with guests.view permission) ── -->
-        {% if permissions|can:"guests.view" %}
 
-        <!-- Personal stats row -->
-        <div class="col-sm-6 col-lg-3">
-          <div class="card">
-            <div class="card-body">
+      {# ══════════════════════════════════════════════════════════════════════ #}
+      {#   TAB 3 — ADMIN / LEADERS INSIGHTS #}
+      {#   Admin quick actions + guest analytics + research #}
+      {#   ══════════════════════════════════════════════════════════════════════ #}
+      {% if nav_is_admin or can_view_guests %}
+      <div class="db-tab-panel" id="db-tab-leaders">
+        <div class="row g-3">
+
+          {% if can_view_attendance_summary %}
+          <div class="container-xl mt-3">
+            <div class="col-12 mb-4">
+              <div class="card" style="box-shadow:0 4px 8px #000000d2;border-radius:36px;">
+                <div class="card-header">
+                  <h3 class="card-title">Attendance Summary</h3>
+                </div>
+                <div class="card-body table-responsive" style="max-height: 300px; overflow-y: auto;">
+                  <table class="table table-dark table-hover" style="border-radius:36px;">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Event</th>
+                        <th>User</th>
+                        <th>Unit</th>
+                        <th>Status</th>
+                        <th>Site</th>
+                        <th>Clock In</th>
+                        <th>Clock Out</th>
+                        <th>Remarks</th>
+                      </tr>
+                    </thead>
+                    <tbody id="attendanceTableBody">
+                      {% for r in records %}
+                        <tr>
+                          <td>{{ r.date }}</td>
+                          <td>{{ r.event.name }}</td>
+                          <td>
+                            {% if trainee %}
+                              {{ r.user.user.title|default:"" }} {{ r.user.user.full_name|default:r.user.user.username }}
+                              <span class="badge bg-info-lt ms-1" style="font-size:.6rem;">Trainee</span>
+                            {% elif r.user %}
+                              {{ r.user.user.title|default:"" }} {{ r.user.user.full_name|default:r.user.user.username }}
+                            {% else %}
+                              —
+                            {% endif %}
+                          </td>
+                          <td>{{ r.event.unit.name|default:"Workforce" }}</td>
+                          <td>
+                            {% if r.status == "present" %}
+                              <span class="badge bg-success-lt">Present</span>
+                            {% elif r.status == "late" %}
+                              <span class="badge bg-danger-lt">Late</span>
+                            {% elif r.status == "excused" %}
+                              <span class="badge bg-warning-lt">Excused</span>
+                            {% else %}
+                              <span class="badge bg-secondary-lt">Absent</span>
+                            {% endif %}
+                          </td>
+                          <td>
+                            {% if r.location_tag %}
+                              <span class="badge {% if r.location_tag == 'offsite' %}bg-warning-lt text-warning{% elif r.location_tag == 'virtual' %}bg-blue-lt text-blue{% else %}bg-success-lt text-success{% endif %}">
+                                {{ r.location_tag|capfirst }}
+                              </span>
+                            {% else %}
+                              —
+                            {% endif %}
+                          </td>
+                          <td>{{ r.clock_in_time|default:"—" }}</td>
+                          <td>{{ r.clock_out_time|default:"—" }}</td>
+                          <td>{{ r.remarks|default:"—" }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {# ── Admin quick-action widgets ── #}
+          {% if nav_is_admin %}
+          <div class="col-12 col-xl-4" id="widget-research">
+            <div class="card bg-cyan-lt h-100" style="box-shadow:0 4px 8px #000000d2;border-radius:36px;">
+              <div class="card-header d-flex align-items-center gap-2 py-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <span class="fw-semibold">🗺️ Evangelism Research</span>
+                <div class="ms-auto badge" style="background:#22c55e22;color:#4ade80;font-size:.6rem;">AI · Missionary Intel</div>
+              </div>
+              <div class="card-body py-3">
+                <div id="researchOutput" class="text-muted small mb-2" style="min-height:40px;font-size:.82rem;line-height:1.6;">Click to generate a 90-day missionary research brief.</div>
+                <button id="loadResearchBtn" class="btn btn-sm bg-success-lt w-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;font-size:.78rem;">
+                  Generate Research Brief
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-xl-4" id="widget-quick-announcements">
+            <div class="card bg-cyan-lt h-100" style="border-radius:36px;">
+              <div class="card-header d-flex align-items-center gap-2 py-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2"><path d="M22 8.5c0 2.5-2.5 7.5-10 7.5S2 11 2 8.5s2.5-7.5 10-7.5 10 5 10 7.5z"/><path d="M6 12v2a6 6 0 0 0 12 0v-2"/></svg>
+                <span class="fw-semibold">📢 Post Announcement</span>
+              </div>
+              <div class="card-body py-3">
+                <form id="quickAnnounceForm" class="d-flex flex-column gap-2">
+                  {% csrf_token %}
+                  <input type="text" name="title" class="form-control form-control-sm bg-gray-900 text-white" placeholder="Title…" required style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+                  <textarea name="body" class="form-control form-control-sm bg-gray-900 text-white" rows="2" placeholder="Message…" required style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;resize:none;"></textarea>
+                  <div class="d-flex gap-2">
+                    <select name="priority" class="form-select form-select-sm bg-gray-900 text-white" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                      <option value="low">Low</option>
+                    </select>
+                    <div class="form-check form-switch d-flex align-items-center gap-1 mb-0 ms-1">
+                      <input class="form-check-input" type="checkbox" name="is_banner" id="isBannerChk">
+                      <label class="form-check-label small text-muted" for="isBannerChk">Banner</label>
+                    </div>
+                  </div>
+                  <details class="multi-select-dropdown" data-multiselect>
+                    <summary style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">Choose units</summary>
+                    <div class="multi-select-menu">
+                      <label class="multi-select-option">
+                        <input type="checkbox" value="all" data-select-all="unit_ids">
+                        <span>All units</span>
+                      </label>
+                      {% for unit in available_units %}
+                      <label class="multi-select-option">
+                        <input type="checkbox" name="unit_ids" value="{{ unit.id }}">
+                        <span>{{ unit.name }}</span>
+                      </label>
+                      {% endfor %}
+                    </div>
+                  </details>
+                  <details class="multi-select-dropdown" data-multiselect>
+                    <summary style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">Choose members</summary>
+                    <div class="multi-select-menu">
+                      <label class="multi-select-option">
+                        <input type="checkbox" value="all" data-select-all="member_ids">
+                        <span>All members</span>
+                      </label>
+                      {% for membership in assignable_memberships %}
+                      <label class="multi-select-option">
+                        <input type="checkbox" name="member_ids" value="{{ membership.id }}">
+                        <span>{{ membership.workforce_member.member.user.full_name|default:membership.workforce_member.member.user.username }} · {{ membership.unit.name }}</span>
+                      </label>
+                      {% endfor %}
+                    </div>
+                  </details>
+                  <button type="submit" class="btn btn-sm bg-warning-lt w-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">Post</button>
+                  <div id="announceFeedback" class="text-success small text-center"></div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-xl-4" id="widget-quick-tasks">
+            <div class="card bg-cyan-lt h-100" style="box-shadow:0 4px 8px #000000d2;border-radius:36px;">
+              <div class="card-header border-secondary d-flex align-items-center gap-2 py-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <span class="fw-semibold">✅ Assign Task</span>
+              </div>
+              <div class="card-body py-3">
+                <form id="quickTaskForm" class="d-flex flex-column gap-2">
+                  {% csrf_token %}
+                  <input type="text" name="title" class="form-control form-control-sm bg-gray-900 text-white" placeholder="Task title…" required style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+                  <textarea name="description" class="form-control form-control-sm bg-gray-900 text-white" rows="2" placeholder="Details (optional)…" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;resize:none;"></textarea>
+                  <div class="d-flex gap-2">
+                    <select name="priority" class="form-select form-select-sm bg-gray-900 text-white" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                      <option value="low">Low</option>
+                    </select>
+                    <input type="date" name="due_date" class="form-control form-control-sm bg-gray-900 text-white" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" title="Due date (optional)">
+                  </div>
+                  <details class="multi-select-dropdown" data-multiselect>
+                    <summary style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">Choose units</summary>
+                    <div class="multi-select-menu">
+                      <label class="multi-select-option">
+                        <input type="checkbox" value="all" data-select-all="unit_ids">
+                        <span>All units</span>
+                      </label>
+                      {% for unit in available_units %}
+                      <label class="multi-select-option">
+                        <input type="checkbox" name="unit_ids" value="{{ unit.id }}">
+                        <span>{{ unit.name }}</span>
+                      </label>
+                      {% endfor %}
+                    </div>
+                  </details>
+                  <details class="multi-select-dropdown" data-multiselect>
+                    <summary style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">Choose members</summary>
+                    <div class="multi-select-menu">
+                      <label class="multi-select-option">
+                        <input type="checkbox" value="all" data-select-all="member_ids">
+                        <span>All members</span>
+                      </label>
+                      {% for membership in assignable_memberships %}
+                      <label class="multi-select-option">
+                        <input type="checkbox" name="member_ids" value="{{ membership.id }}">
+                        <span>{{ membership.workforce_member.member.user.full_name|default:membership.workforce_member.member.user.username }} · {{ membership.unit.name }}</span>
+                      </label>
+                      {% endfor %}
+                    </div>
+                  </details>
+                  <button type="submit" class="btn btn-sm bg-indigo-lt w-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">Create Task</button>
+                  <div id="taskFeedback" class="text-success small text-center"></div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endif %}{# /nav_is_admin #}
+
+          {# ── Guest analytics (for anyone with guest.view) ── #}
+          {% if can_view_guests %}
+
+          {# Personal stats #}
+          <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body">
               <div class="subheader">My Guest Entries</div>
               <div class="d-flex align-items-baseline">
                 <div class="h3 me-2">{{ user_total_guest_entries }}</div>
@@ -237,327 +580,1828 @@
                 </div>
               </div>
               <div class="progress progress-sm">
-                <div class="progress-bar {% if user_guest_entry_diff_positive %}bg-success{% else %}bg-danger{% endif %}"
-                     style="width:{{ user_guest_entry_diff_percent }}%" role="progressbar"></div>
+                <div class="progress-bar {% if user_guest_entry_diff_positive %}bg-success{% else %}bg-danger{% endif %}" style="width:{{ user_guest_entry_diff_percent }}%"></div>
               </div>
-            </div>
+            </div></div>
           </div>
-        </div>
 
-        <div class="col-sm-6 col-lg-3">
-          <div class="card">
-            <div class="card-body">
+          <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body">
               <div class="subheader">Planted Guest Rate</div>
               <div class="d-flex align-items-baseline">
                 <div class="h3 me-2">{{ user_planted_total }}%</div>
-                <span class="{% if planted_growth_change >= 0 %}text-green{% else %}text-red{% endif %} small">
-                  {{ planted_growth_change }}%
-                </span>
+                <span class="{% if planted_growth_change >= 0 %}text-green{% else %}text-red{% endif %} small">{{ planted_growth_change }}%</span>
               </div>
               <div class="progress progress-sm">
-                <div class="progress-bar {% if planted_growth_rate >= 0 %}bg-success{% else %}bg-danger{% endif %}"
-                     style="width:{{ planted_growth_rate }}%" role="progressbar"></div>
+                <div class="progress-bar {% if planted_growth_rate >= 0 %}bg-success{% else %}bg-danger{% endif %}" style="width:{{ planted_growth_rate }}%"></div>
               </div>
-            </div>
+            </div></div>
           </div>
-        </div>
 
-        <!-- Church-wide stats (admin or view_all) -->
-        {% if permissions|can:"guests.view_all" %}
-        <div class="col-sm-6 col-lg-3">
-          <div class="card">
-            <div class="card-body">
+          {% if can_view_all_guests %}
+          <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body">
               <div class="subheader">Total Guests</div>
               <div class="d-flex align-items-baseline">
                 <div class="h1 mb-0 me-2">{{ total_guests }}</div>
-                <span class="{% if increase_rate >= 0 %}text-green{% else %}text-red{% endif %} small">
-                  {{ increase_rate }}%
-                </span>
+                <span class="{% if increase_rate >= 0 %}text-green{% else %}text-red{% endif %} small">{{ increase_rate }}%</span>
               </div>
-              <div class="text-secondary mt-2 small">
-                {{ percent_change }}% {% if increase_rate >= 0 %}increase{% else %}decrease{% endif %} vs last month
-              </div>
-            </div>
+              <div class="text-secondary mt-2 small">{{ percent_change }}% {% if increase_rate >= 0 %}increase{% else %}decrease{% endif %} vs last month</div>
+            </div></div>
           </div>
-        </div>
-
-        <div class="col-sm-6 col-lg-3">
-          <div class="card">
-            <div class="card-body">
+          <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body">
               <div class="subheader">Most Attended Service</div>
               <div class="d-flex align-items-baseline mb-2">
                 <div class="h1 mb-0 me-2">{{ most_attended_count }}</div>
                 <span class="text-green small">{{ attendance_rate }}%</span>
               </div>
               <div class="text-secondary small">{{ most_attended_service }}</div>
-            </div>
+            </div></div>
           </div>
-        </div>
-        {% endif %}
+          {% endif %}
 
-        <!-- Visit type breakdown -->
-        <div class="col-sm-6 col-lg-3">
-          <div class="card"><div class="card-body">
-            <div class="d-flex align-items-center mb-2">
-              <div class="subheader mb-0">Home Church</div>
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ms-auto">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M21 12l-9-9l-9 9h2v7a2 2 0 0 0 2 2h6"/>
-                <path d="M9 21v-6a2 2 0 0 1 2-2h2c.39 0 .754.112 1.061.304"/>
-                <path d="M19 21.5l2.518-2.58a1.74 1.74 0 0 0 0-2.413a1.627 1.627 0 0 0-2.346 0l-.168.172l-.168-.172a1.627 1.627 0 0 0-2.346 0a1.74 1.74 0 0 0 0 2.412l2.51 2.59z"/>
-              </svg>
-            </div>
-            <div class="h1 mb-2">{{ home_church_count }}</div>
-            <div class="progress progress-sm mb-2"><div class="progress-bar bg-primary" style="width:{{ home_church_percentage }}%"></div></div>
-            <div id="chart-home-church" style="min-height:100px;"></div>
-          </div></div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-          <div class="card"><div class="card-body">
-            <div class="subheader">Occasional Visits</div>
-            <div class="h1 mb-2">{{ occasional_visit_count }}</div>
-            <div class="progress progress-sm mb-2"><div class="progress-bar bg-primary" style="width:{{ occasional_visit_percentage }}%"></div></div>
-            <div id="chart-occasional-visit" style="min-height:100px;"></div>
-          </div></div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-          <div class="card"><div class="card-body">
-            <div class="subheader">One-Time Visits</div>
-            <div class="h1 mb-2">{{ one_time_visit_count }}</div>
-            <div class="progress progress-sm mb-2"><div class="progress-bar bg-primary" style="width:{{ one_time_visit_percentage }}%"></div></div>
-            <div id="chart-one-time-visit" style="min-height:100px;"></div>
-          </div></div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-          <div class="card"><div class="card-body">
-            <div class="subheader">Special Programme</div>
-            <div class="h1 mb-2">{{ special_programme_count }}</div>
-            <div class="progress progress-sm mb-2"><div class="progress-bar bg-primary" style="width:{{ special_programme_percentage }}%"></div></div>
-            <div id="chart-special-programme" style="min-height:100px;"></div>
-          </div></div>
-        </div>
-
-        <!-- Status breakdown mini-cards -->
-        <div class="col-12">
-          <div class="row row-cards">
-            {% for status in guest_statuses %}
-            <div class="col-sm-6 col-lg-3">
-              <div class="card card-sm">
-                <div class="card-body">
-                  <div class="row align-items-center">
-                    <div class="col-auto">
-                      <span class="avatar bg-{{ status.color }}-lt text-{{ status.color }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                          <path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/>
-                          <path d="M8 21v-1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1"/>
-                        </svg>
-                      </span>
+          {# Guest analytics consolidated #}
+          <div class="col-12">
+            <div class="card" style="box-shadow:0 4px 8px #000000d2;border-radius:36px;">
+              <div class="card-header"><h3 class="card-title">Guest Analytics Insight</h3></div>
+              <div class="card-body">
+                <div class="row g-2">
+                  {% if channel_stats.items %}
+                  <div class="col-sm-6 col-lg-3">
+                    <div class="card bg-cyan-lt" style="box-shadow:inset 0 2px 2px #000000d2;border-radius:24px;">
+                      <div class="card-body">
+                        <h4 class="mb-2">Channel of Visit</h4>
+                        <table class="table table-sm table-vcenter mb-0">
+                          <thead><tr><th>Channel</th><th>Guests</th><th class="w-50">Progress</th></tr></thead>
+                          <tbody id="channelProgressTableBody">
+                            {% for channel in channel_stats.items %}
+                            <tr>
+                              <td>{{ channel.channel }}</td>
+                              <td>{{ channel.count }}</td>
+                              <td class="w-50">
+                                <div class="progress progress-xs">
+                                  <div class="progress-bar bg-primary" style="width:{{ channel.percent }}%"></div>
+                                </div>
+                              </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-muted">No data.</td></tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                    <div class="col">
-                      <div class="font-weight-medium">{{ status.name }}</div>
-                      <div class="text-secondary">{{ status.count }} guests</div>
+                  </div>
+                  {% endif %}
+                  {% if purpose_stats.items %}
+                  <div class="col-sm-6 col-lg-3">
+                    <div class="card bg-cyan-lt" style="box-shadow:inset 0 2px 2px #000000d2;border-radius:24px;">
+                      <div class="card-body">
+                        <h4 class="mb-2">Purpose of Visit</h4>
+                        {% for purpose, stat in purpose_stats.items %}
+                        <div class="d-flex flex-column gap-2">
+                          <div class="p-2 bg-gray-900" style="box-shadow:0 2px 2px #000000d2;border-radius:12px">
+                            <div class="d-flex justify-content-between">
+                              <span class="text-muted">{{ purpose }}</span>
+                              <span class="text-muted">{{ stat.count }} ({{ stat.percentage }}%)</span>
+                            </div>
+                            <div class="progress progress-xs mt-1">
+                              <div class="progress-bar bg-green" style="width:{{ stat.percentage }}%"></div>
+                            </div>
+                          </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-muted small">No purpose data.</div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </div>
+                  {% endif %}
+                  <div class="col-lg-6">
+                    <div class="card bg-cyan-lt" style="box-shadow:inset 0 2px 2px #000000d2;border-radius:24px;">
+                      <div class="card-body">
+                        <h4 class="mb-2">Top Services Attended</h4>
+                        <div id="topServicesProgress" class="progress progress-separated mb-3" style="height:24px;"></div>
+                        <div id="topServicesLabels" class="row g-2"></div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            {% endfor %}
           </div>
-        </div>
 
-        <!-- Guest Entry Summary chart -->
-        <div class="col-lg-6">
-          <div class="card">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="card-title mb-0">
-                  Guest Entry Summary
-                  <small class="text-white ms-2" id="totalGuestYear">(Total: {{ summary_data.total_count }})</small>
-                </h3>
-                <select id="guestEntrySummaryYearFilter" class="form-select form-select-sm" style="width:auto;">
-                  {% for year in available_years %}
-                    <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>{{ year }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="mb-3">
-                <div class="d-flex justify-content-between">
-                  <span class="text-secondary small">Peak month</span>
-                  <span class="text-success fw-bold small">{{ summary_data.max_month }} ({{ summary_data.max_count }}) · {{ summary_data.max_percent }}%</span>
-                </div>
-                <div class="progress progress-sm mt-1">
-                  <div class="progress-bar bg-success" style="width:{{ summary_data.max_percent }}%"></div>
-                </div>
-              </div>
-              <div class="mb-3">
-                <div class="d-flex justify-content-between">
-                  <span class="text-secondary small">Lowest month</span>
-                  <span class="text-danger fw-bold small">{{ summary_data.min_month }} ({{ summary_data.min_count }}) · {{ summary_data.min_percent }}%</span>
-                </div>
-                <div class="progress progress-sm mt-1">
-                  <div class="progress-bar bg-danger" style="width:{{ summary_data.min_percent }}%"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Channel of visit table -->
-        <div class="col-12">
-          <div class="card">
-            <div class="card-header"><h3 class="card-title">Channel of Visit</h3></div>
-            <table class="table card-table table-vcenter">
-              <thead>
-                <tr><th>Channel</th><th>Guests</th><th class="w-50">Progress</th></tr>
-              </thead>
-              <tbody id="channelProgressTableBody">
-                {% for channel in channel_stats %}
-                <tr>
-                  <td>{{ channel.channel }}</td>
-                  <td>{{ channel.count }}</td>
-                  <td class="w-50">
-                    <div class="progress progress-xs">
-                      <div class="progress-bar bg-primary" style="width:{{ channel.percent }}%"></div>
+          {# Status breakdown mini-cards #}
+          <div class="col-12">
+            <div class="row row-cards">
+              {% for status in guest_statuses %}
+              <div class="col-sm-6 col-lg-3">
+                <div class="card card-sm">
+                  <div class="card-body">
+                    <div class="row align-items-center">
+                      <div class="col-auto">
+                        <span class="avatar bg-{{ status.color }}-lt text-{{ status.color }}">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M8 21v-1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1"/></svg>
+                        </span>
+                      </div>
+                      <div class="col">
+                        <div class="font-weight-medium">{{ status.name }}</div>
+                        <div class="text-secondary">{{ status.count }} guests</div>
+                      </div>
                     </div>
-                  </td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="3" class="text-center text-muted">No data.</td></tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Top services chart -->
-        <div class="col-12">
-          <div class="card">
-            <div class="card-body">
-              <p class="mb-3">Top 10 Services Attended</p>
-              <div id="topServicesProgress" class="progress progress-separated mb-3" style="height:24px;"></div>
-              <div id="topServicesLabels" class="row g-2"></div>
-            </div>
-          </div>
-        </div>
-
-        {% endif %}{# end permissions|can:"guests.view" #}
-
-      </div>{# row #}
-    </div>
-  </div>
-</div>
-
-<!-- ── Attendance modal ── -->
-<div class="modal modal-blur fade" id="dashboardAttendanceModal" tabindex="-1">
-  <div class="modal-dialog modal-xl modal-dialog-centered" style="border-radius:24px;">
-    <div class="modal-content bg-dark text-white border-0 rounded-3 shadow-lg">
-      <div class="modal-header border-0 d-flex justify-content-between align-items-center">
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="d-flex px-4">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2" style="width:48px;height:48px;">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-          <path d="M21 12a9 9 0 1 0-9.972 8.948c.32.034.644.052.972.052"/>
-          <path d="M12 7v5l2 2"/><path d="M18.42 15.61a2.1 2.1 0 0 1 2.97 2.97l-3.39 3.42h-3v-3l3.42-3.39z"/>
-        </svg>
-        <div class="ms-auto">
-          <span id="modalLiveDate" class="text-muted small me-2"></span>
-          <span class="text-muted">—</span>
-          <span id="modalLiveTime" class="text-muted small ms-2"></span>
-        </div>
-      </div>
-      <form id="dashboardAttendanceForm" method="POST" action="{% url 'workforce:mark_attendance' %}">
-        {% csrf_token %}
-        <div class="modal-body">
-          <!-- Unit selection buttons -->
-          <div id="teamSelectionRow" class="d-flex flex-wrap gap-2 mb-3 justify-content-center">
-            <button type="button" class="btn px-3 py-2 team-btn text-warning border-0"
-                    data-team-id="null" style="border-radius:12px;background:#111827;">
-              Church
-            </button>
-            {% for unit in user_units %}
-            <button type="button" class="btn px-3 py-2 team-btn text-white border-0 {{ unit.color_class }}"
-                    data-team-id="{{ unit.id }}" style="border-radius:12px;background:#1F2937;">
-              {{ unit.name }}
-            </button>
-            {% endfor %}
-          </div>
-
-          <!-- Event carousel -->
-          <div id="eventCarouselWrapper" class="mb-4" style="display:none;">
-            <div id="eventCarousel" class="carousel slide" data-bs-ride="carousel">
-              <div class="carousel-inner" id="eventCarouselInner"></div>
-              <button class="carousel-control-prev" type="button" data-bs-target="#eventCarousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon"></span>
-              </button>
-              <button class="carousel-control-next" type="button" data-bs-target="#eventCarousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon"></span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Clock/event display -->
-          <div class="d-flex flex-column align-items-center text-center">
-            <div id="clockSection">
-              <div id="modalAnalogClockWrapper">
-                <div id="modalLiveDateMini" class="fw-bold mb-2" style="font-size:1.1rem;"></div>
-                <canvas id="modalAnalogClock" width="200" height="200" class="mb-3"></canvas>
-                <div id="modalDigitalClock" class="fw-bold" style="font-size:2.5rem;letter-spacing:.05em;font-family:monospace;"></div>
+                  </div>
+                </div>
               </div>
+              {% endfor %}
             </div>
-            <div id="eventModeSection" class="text-center" style="display:none;">
-              <h2 id="eventNameDisplay" class="fw-bold mb-1"></h2>
-              <div id="eventTypeDisplay" class="text-secondary mb-2"></div>
-              <div id="eventCountdown" class="fw-bold mb-2" style="font-size:2rem;font-family:monospace;"></div>
-              <div id="eventLocationStatus" class="small mb-3"></div>
-              <textarea name="remarks" class="form-control border-0 mb-3" rows="2"
-                        placeholder="Optional remarks (e.g. attended virtually)…"></textarea>
-              <div class="d-flex justify-content-center gap-2 flex-wrap">
-                <button type="button" class="btn btn-success px-3 py-2 mark-btn" data-status="present">Present</button>
-                <button type="button" class="btn btn-warning px-3 py-2 mark-btn" data-status="excused">Excused</button>
-                <button type="button" class="btn btn-danger px-3 py-2 mark-btn" data-status="absent">Absent</button>
-                <button type="button" id="clockOutBtn" class="btn btn-secondary px-3 py-2 d-none" data-status="clock_out">Clock Out</button>
+          </div>
+
+          {# Guest Entry Summary chart #}
+          <div class="col-lg-6">
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h3 class="card-title mb-0">
+                    Guest Entry Summary
+                    <small class="text-white ms-2" id="totalGuestYear">(Total: {{ summary_data.total_count }})</small>
+                  </h3>
+                  <select id="guestEntrySummaryYearFilter" class="form-select form-select-sm" style="width:auto;">
+                    {% for year in available_years %}
+                      <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <div class="d-flex justify-content-between">
+                    <span class="text-secondary small">Peak month</span>
+                    <span class="text-success fw-bold small">{{ summary_data.max_month }} ({{ summary_data.max_count }}) · {{ summary_data.max_percent }}%</span>
+                  </div>
+                  <div class="progress progress-sm mt-1">
+                    <div class="progress-bar bg-success" style="width:{{ summary_data.max_percent }}%"></div>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <div class="d-flex justify-content-between">
+                    <span class="text-secondary small">Lowest month</span>
+                    <span class="text-danger fw-bold small">{{ summary_data.min_month }} ({{ summary_data.min_count }}) · {{ summary_data.min_percent }}%</span>
+                  </div>
+                  <div class="progress progress-sm mt-1">
+                    <div class="progress-bar bg-danger" style="width:{{ summary_data.min_percent }}%"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <input type="hidden" name="event_id" id="eventIdField">
-          <input type="hidden" name="latitude" id="latitude">
-          <input type="hidden" name="longitude" id="longitude">
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
+          {% endif %}{# /can_view_guests #}
+
+        </div>{# /row leaders tab #}
+      </div>{# /db-tab-leaders #}
+      {% endif %}{# /nav_is_admin or can_view_guests #}
+
+    </div>{# /container-xl #}
+  </div>{# /page-body #}
+</div>{# /page-wrapper #}
 {% endblock %}
 
+
 {% block extra_js %}
+<script src="{% static 'js/reactions.js' %}"></script>
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// DASHBOARD TABS
+// ════════════════════════════════════════════════════════════════════════════
+document.addEventListener("DOMContentLoaded", function() {
+  const tabPills = document.querySelectorAll(".db-tab-pill");
+  const tabPanels = document.querySelectorAll(".db-tab-panel");
+  const tabsFlyout = document.getElementById("dashboardTabsFlyout");
+  const tabsTrigger = document.querySelector(".dashboard-tabs-trigger");
+
+  function closeTabsFlyout() {
+    if (!tabsFlyout) {
+      return;
+    }
+
+    tabsFlyout.classList.remove("open");
+    tabsFlyout.setAttribute("aria-hidden", "true");
+  }
+
+  function openTabsFlyout() {
+    if (!tabsFlyout) {
+      return;
+    }
+
+    tabsFlyout.classList.add("open");
+    tabsFlyout.setAttribute("aria-hidden", "false");
+  }
+
+  function toggleTabsFlyout() {
+    if (!tabsFlyout) {
+      return;
+    }
+
+    if (tabsFlyout.classList.contains("open")) {
+      closeTabsFlyout();
+      return;
+    }
+
+    openTabsFlyout();
+  }
+
+  function switchDbTab(tabId) {
+    tabPills.forEach((pill) => {
+      pill.classList.toggle("active", pill.dataset.dbTab === tabId);
+    });
+
+    tabPanels.forEach((panel) => {
+      panel.classList.toggle("active", panel.id === `db-tab-${tabId}`);
+    });
+
+    closeTabsFlyout();
+
+    try {
+      sessionStorage.setItem("db_active_tab", tabId);
+    } catch (error) {
+      console.warn("Unable to persist dashboard tab", error);
+    }
+  }
+
+  tabsTrigger?.addEventListener("click", (event) => {
+    event.preventDefault();
+    toggleTabsFlyout();
+  });
+
+  tabPills.forEach((pill) => {
+    pill.addEventListener("click", () => switchDbTab(pill.dataset.dbTab));
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!tabsFlyout?.classList.contains("open")) {
+      return;
+    }
+
+    if (
+      event.target.closest(".dashboard-tabs-trigger") ||
+      tabsFlyout.contains(event.target)
+    ) {
+      return;
+    }
+
+    closeTabsFlyout();
+  });
+
+  try {
+    const savedTab = sessionStorage.getItem("db_active_tab");
+
+    if (savedTab && document.getElementById(`db-tab-${savedTab}`)) {
+      switchDbTab(savedTab);
+    }
+  } catch (error) {
+    console.warn("Unable to restore dashboard tab", error);
+  }
+
+  document.querySelectorAll(".dashboard-widget-jump[data-target]").forEach((button) => {
+    button.addEventListener("click", function() {
+      const target = document.getElementById(this.dataset.target);
+
+      if (!target) {
+        return;
+      }
+
+      const panel = target.closest(".db-tab-panel");
+
+      if (panel) {
+        const tabId = panel.id.replace("db-tab-", "");
+        switchDbTab(tabId);
+
+        setTimeout(() => {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 80);
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-select-all]").forEach((input) => {
+    input.addEventListener("change", function() {
+      const name = this.dataset.selectAll;
+
+      this.closest("form")
+        ?.querySelectorAll(`input[name="${name}"]`)
+        .forEach((checkbox) => {
+          checkbox.checked = this.checked;
+        });
+    });
+  });
+
+  // ── Upcoming events carousel auto-rotate ──────────────────────────────────
+  const slides=document.querySelectorAll(".unit-slide");
+  if(slides.length>1){let cur=0;slides[cur].classList.add("active");setInterval(()=>{slides[cur].classList.remove("active");cur=(cur+1)%slides.length;slides[cur].classList.add("active");},7000);}
+
+  // ── Member scroll strip ───────────────────────────────────────────────────
+  document.querySelectorAll(".scroll-track").forEach(track=>{
+    const wrapper=track.parentElement;
+    if(track.scrollWidth>wrapper.offsetWidth){
+      if(!track.dataset.cloned){track.innerHTML+=track.innerHTML;track.dataset.cloned="1";}
+      const dur=(track.scrollWidth/2)/50;
+      const dir=track.dataset.direction==="right"?"reverse":"normal";
+      track.style.animation=`scroll-marquee ${dur}s linear infinite ${dir}`;
+      wrapper.addEventListener("mouseenter",()=>track.style.animationPlayState="paused");
+      wrapper.addEventListener("mouseleave",()=>track.style.animationPlayState="running");
+    }
+  });
+
+  // ── Announce / Task quick forms ───────────────────────────────────────────
+  const announceForm = document.getElementById("quickAnnounceForm");
+  if (announceForm) {
+    announceForm.addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      fetch("{% url 'dashboard:announce_create' %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCsrf(),
+        },
+        body: new FormData(announceForm),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (!data.ok) {
+            return;
+          }
+
+          announceForm.reset();
+          const feedback = document.getElementById("announceFeedback");
+
+          if (feedback) {
+            feedback.textContent = "✅ Announcement posted.";
+            setTimeout(() => {
+              feedback.textContent = "";
+            }, 3000);
+          }
+        });
+    });
+  }
+
+  const taskForm = document.getElementById("quickTaskForm");
+  if (taskForm) {
+    taskForm.addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      fetch("{% url 'dashboard:task_create' %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCsrf(),
+        },
+        body: new FormData(taskForm),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (!data.ok) {
+            return;
+          }
+
+          taskForm.reset();
+          const feedback = document.getElementById("taskFeedback");
+
+          if (feedback) {
+            feedback.textContent = "✅ Task created.";
+            setTimeout(() => {
+              feedback.textContent = "";
+            }, 3000);
+          }
+        });
+    });
+  }
+
+}); // end DOMContentLoaded
+
+// ════════════════════════════════════════════════════════════════════════════
+// FEEDS (inline timeline — Tab 1)
+// ════════════════════════════════════════════════════════════════════════════
+const IS_ADMIN_USER        = {{ nav_is_admin|yesno:"true,false" }};
+const CURRENT_USER_FEEDS_ID = {{ request.user.id|default:"null" }};
+
+(function () {
+  "use strict";
+
+  const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+  const FEEDS_BASE_URL = "{% url 'feeds:list' %}".replace(/list\/?$/, "");
+  const feedUrl = (path) => FEEDS_BASE_URL + String(path || "").replace(/^\/+/, "");
+
+  // SVG map — set by reactions.js before this file loads
+  const EMOJI_MAP = window.CHURCHFORCE_REACTION_MAP || {};
+  const REACTION_KEYS = (window.CHURCHFORCE_REACTIONS || []).map((r) => r.key);
+
+  let loadingFeeds = false;
+  let feedSocket   = null;
+  let selectedFiles = [];
+  let activeFeedFilter = { scope: "general", unitId: null, page: 1 };
+
+  const $id = (id) => document.getElementById(id);
+  const dbFeedsList   = $id("dbFeedsGeneralList");
+  const dbFeedsSkel   = $id("dbFeedsGeneralSkeleton");
+  const dbLoadMore    = $id("dbFeedsLoadMoreBtn");
+  const dbUnitSel     = $id("dbFeedsUnitSelector");
+  const dbComposeText = $id("dbFeedsComposeText");
+  const dbPostBtn     = $id("dbFeedsPostBtn");
+  const dbScopeSelect = $id("dbFeedsScopeSelect");
+  const dbMediaPreview = $id("dbFeedsMediaPreview");
+  const generalFilterBtn = document.querySelector('[data-feed-filter="general"]');
+  const mediaInputs  = [$id("dbFeedsImgInput"), $id("dbFeedsVideoInput"), $id("dbFeedsAudioInput")];
+  const mediaButtons = [$id("dbFeedsImgBtn"),   $id("dbFeedsVideoBtn"),   $id("dbFeedsAudioBtn")];
+
+  /* ── Utilities ──────────────────────────────────────────────────── */
+
+  function feedTimestamp(item) { return item?.created_label || item?.created_at || ""; }
+  function feedDateLabel(item) { return item?.created_date_label || ""; }
+
+  function escHtml(v) {
+    if (!v) return "";
+    return String(v)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function truncateFeedBody(t, max) {
+    const s = String(t || "").trim();
+    if (!s) return "";
+    if (s.length <= max) return escHtml(s);
+    return escHtml(s.slice(0, max - 1)) + "…";
+  }
+
+  const FEEDS_REPOST_BANNER_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0-15.5-2m-.5-4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>`;
+
+  function showToast2(message, type = "success") {
+    const toast = document.createElement("div");
+    toast.style.cssText = `
+      position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+      z-index:9999;padding:8px 20px;border-radius:20px;font-size:.82rem;
+      font-weight:600;box-shadow:0 4px 16px #000a;
+      background:${type === "danger" ? "#ef4444" : "#22c55e"};color:#fff;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
+  }
+
+  async function fetchJson(url, options = {}) {
+    const res  = await fetch(url, options);
+    const raw  = await res.text();
+    let data   = {};
+    try { data = raw ? JSON.parse(raw) : {}; }
+    catch { data = { error: res.ok ? "Unexpected response." : raw || "Request failed." }; }
+    if (!res.ok) throw new Error(data.error || "Request failed.");
+    return data;
+  }
+
+  function bindTextareaSend(textarea, sendFn) {
+    textarea?.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" || (!e.shiftKey && !e.ctrlKey)) return;
+      e.preventDefault();
+      sendFn(e);
+    });
+  }
+
+  /* ── Avatar helpers ─────────────────────────────────────────────── */
+
+  function avatarHtml(author, size = 38) {
+    const radius = "0.9rem";
+    const style  = `display:inline-block;width:${size}px;height:${size}px;border-radius:${radius};background-size:cover;background-position:center;box-shadow:0 2px 5px #00000040;flex-shrink:0;`;
+    if (author.image) {
+      return `<span class="avatar feeds-card-avatar" style="background-image:url('${author.image}');${style}"></span>`;
+    }
+    return `<span class="feeds-card-avatar feeds-avatar-text bg-grey text-white d-inline-flex align-items-center justify-content-center" style="${style}font-weight:700;font-size:.8rem;">${escHtml(author.initials)}</span>`;
+  }
+
+  function commentAvatarHtml(author, size = 38) {
+    const radius = "0.9rem";
+    const style  = `display:inline-block;width:${size}px;height:${size}px;border-radius:${radius};background-size:cover;background-position:center;box-shadow:0 2px 5px #00000040;flex-shrink:0;`;
+    if (author.image) {
+      return `<span class="avatar avatar-sm" style="background-image:url('${author.image}');${style}"></span>`;
+    }
+    return `<span class="avatar avatar-sm bg-grey text-white d-inline-flex align-items-center justify-content-center" style="${style}font-weight:700;font-size:.8rem;">${escHtml(author.initials)}</span>`;
+  }
+
+  /* ── Media ──────────────────────────────────────────────────────── */
+
+  function buildMediaHTML(media) {
+    if (!media?.length) return "";
+    const items = media.map((m) => {
+      if (m.type === "image") return `<img src="${m.url}" class="feeds-media-item feeds-media-image" loading="lazy">`;
+      if (m.type === "video") return `<video src="${m.url}" class="feeds-media-item" controls preload="none"></video>`;
+      if (m.type === "audio") return `<audio src="${m.url}" class="feeds-media-item" controls></audio>`;
+      return "";
+    }).join("");
+    const cls = media.length === 1 ? "feeds-media-single" : media.length === 2 ? "feeds-media-grid-2" : "feeds-media-grid";
+    return `<div class="feeds-media-wrap ${cls}">${items}</div>`;
+  }
+
+  /* ── Reaction summary (SVG icons at 16px) ───────────────────────── */
+
+  function buildReactionSummary(summary, total) {
+    const summaryObj = summary || {};
+    // Only reactions that have a count > 0, in permanent original-declaration order
+    const usedKeys = REACTION_KEYS.filter((k) => Number(summaryObj[k] || 0) > 0);
+    if (!usedKeys.length) return "";
+
+    const count = total || usedKeys.reduce((s, k) => s + Number(summaryObj[k] || 0), 0);
+
+    // Always show up to first 3 in original order — never shifts on new reactions
+    const displayKeys = usedKeys.slice(0, 3);
+    const icons = displayKeys.map((reaction) => {
+      const svg = EMOJI_MAP[reaction] || "";
+      return `<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-left:-4px;border-radius:999px;background:#161b22;border:1px solid #30363d;">${svg.replace(/width="20" height="20"/, 'width="14" height="14"')}</span>`;
+    }).join("");
+
+    return `<span class="feeds-reaction-icons" style="margin-left:0;display:inline-flex;align-items:center;">${icons}</span><span class="feeds-reaction-total" style="margin-left:4px;">${count}</span>`;
+  }
+
+  /* ── Per-reaction count badges inside the picker ────────────────── */
+
+  function buildPickerCounts(summary) {
+    // Returns a map of key → count string (empty string if 0)
+    const s = summary || {};
+    return Object.fromEntries(REACTION_KEYS.map((k) => [k, Number(s[k] || 0) || ""]));
+  }
+
+  function updatePickerCounts(picker, summary) {
+    const counts = buildPickerCounts(summary);
+    picker.querySelectorAll(".feeds-emoji-btn").forEach((btn) => {
+      const k = btn.dataset.reaction;
+      let badge = btn.querySelector(".feeds-emoji-count");
+      const val = counts[k];
+      if (!badge) {
+        badge = document.createElement("span");
+        badge.className = "feeds-emoji-count";
+        badge.style.cssText = "position:absolute;top:-5px;right:-5px;font-size:.55rem;font-weight:700;background:#1f6feb;color:#fff;border-radius:999px;min-width:14px;height:14px;display:flex;align-items:center;justify-content:center;padding:0 2px;pointer-events:none;";
+        btn.style.position = "relative";
+        btn.appendChild(badge);
+      }
+      badge.textContent = val;
+      badge.style.display = val ? "flex" : "none";
+    });
+  }
+
+  function buildFeedCard(feed) {
+
+    // ─────────────────────────────────────────────────────────────
+    // PLAN DISCUSSION DETECTION
+    // plan_disc is set by the server (_serialize_feed) when the post
+    // was created via ajax_create_plan_discussion. feed.body is
+    // already the stripped user text (sentinel removed server-side).
+    // Legacy fallback: if plan_disc is absent, try parsing the
+    // %%PLAN_DISC%% sentinel from the raw body (older posts).
+    // ─────────────────────────────────────────────────────────────
+    const PLAN_DISCUSSION_SENTINEL = "%%PLAN_DISC%%";
+
+    let isPlanDiscussion = false;
+    let planDiscussionHtml = "";
+
+    if (feed.plan_disc || (typeof feed.body === "string" && feed.body.startsWith(PLAN_DISCUSSION_SENTINEL))) {
+      try {
+        isPlanDiscussion = true;
+
+        let meta, questionText;
+        if (feed.plan_disc) {
+          // New path: server parsed and stripped sentinel; body is the user's question
+          meta = feed.plan_disc;
+          meta.ref      = meta.ref      || meta.passage_reference || "";
+          meta.title    = meta.title    || meta.plan_title        || "";
+          meta.devtitle = meta.devtitle || meta.devotional_title  || "";
+          meta.date     = meta.date     || meta.scheduled_date    || "";
+          questionText  = feed.body || "";
+        } else {
+          // Legacy: sentinel still in body — parse inline
+          const raw    = feed.body.slice(PLAN_DISCUSSION_SENTINEL.length);
+          const sepIdx = raw.indexOf("\n\n");
+          const metaRaw = sepIdx !== -1 ? raw.slice(0, sepIdx) : raw;
+          questionText  = sepIdx !== -1 ? raw.slice(sepIdx + 2) : "";
+          try {
+            meta = JSON.parse(metaRaw);
+            meta.ref      = meta.ref      || meta.passage_reference || "";
+            meta.title    = meta.title    || meta.plan_title        || "";
+            meta.devtitle = meta.devtitle || meta.devotional_title  || "";
+            meta.date     = meta.date     || meta.scheduled_date    || "";
+          } catch (_e) {
+            // Oldest pipe format: plan_id=1|title=…|ref=…
+            meta = Object.fromEntries(
+              metaRaw.split("|").map(p => { const eq = p.indexOf("="); return [p.slice(0, eq), p.slice(eq + 1)]; })
+            );
+          }
+        }
+
+        const authorLabel = feed.is_admin_post ? "shared a discourse" : "asked";
+
+        planDiscussionHtml = `
+          <div class="feeds-plan-discussion">
+            <div class="feeds-plan-discussion-top">
+              <span class="feeds-plan-discussion-label">
+                💬 ${escHtml(feed.author.name)} ${authorLabel}
+              </span>
+            </div>
+
+            ${questionText ? `<div class="feeds-plan-discussion-question">${escHtml(questionText)}</div>` : ""}
+
+            <div class="feeds-plan-discussion-ref-card">
+              <div class="feeds-plan-discussion-ref-top">
+                <span class="feeds-plan-discussion-icon">📖</span>
+                <span class="feeds-plan-discussion-ref">${escHtml(meta.ref)}</span>
+              </div>
+              ${meta.devtitle ? `<div class="feeds-plan-discussion-devotional">${escHtml(meta.devtitle)}</div>` : ""}
+              ${meta.title    ? `<div class="feeds-plan-discussion-title">Plan: ${escHtml(meta.title)}</div>` : ""}
+              ${meta.date     ? `<div class="feeds-plan-discussion-date">${escHtml(meta.date)}</div>` : ""}
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        console.warn("Plan discussion parse failed:", err);
+        isPlanDiscussion = false;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // EXISTING FEED CARD LOGIC
+    // ─────────────────────────────────────────────────────────────
+
+    const card    = document.createElement("article");
+    const summary = buildReactionSummary(feed.reaction_summary, feed.total_reactions);
+
+    const myReactions   = feed.my_reactions || (feed.my_reaction ? [feed.my_reaction] : []);
+    const myReactionSvg = myReactions.length > 0
+      ? (EMOJI_MAP[myReactions[0]] || "")
+      : (EMOJI_MAP["like"] || "");
+
+    const isQuoteRepost = !!(feed.repost && feed.repost_original);
+    const isBareRepost  = !!(feed.repost && !feed.repost_original);
+
+    const repostMetaTag = isBareRepost
+      ? `<span class="feeds-repost-tag">
+          <span class="feeds-repost-actor">${escHtml(feed.repost.user_name)}</span>
+          Reposted
+        </span>`
+      : "";
+
+    const repostBanner = isQuoteRepost
+      ? `<div class="feeds-repost-banner">
+          <span class="feeds-repost-banner-icon">${FEEDS_REPOST_BANNER_ICON}</span>
+          <span class="feeds-repost-banner-text">
+            <span class="feeds-repost-actor">${escHtml(feed.repost.user_name)}</span>
+            Reposted
+          </span>
+
+          <span style="margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <span class="feeds-card-time">${feedTimestamp(feed)}</span>
+
+            ${
+              IS_ADMIN_USER
+                ? `<button type="button"
+                            class="feeds-more-btn"
+                            data-id="${feed.id}"
+                            aria-label="Post actions">⋯</button>`
+                : ""
+            }
+          </span>
+        </div>`
+      : "";
+
+    const authorNameHtml = isQuoteRepost
+      ? ""
+      : `<span class="feeds-card-author">
+          ${escHtml(feed.author.name)}
+        </span>`;
+
+    const mainBody = !isPlanDiscussion && feed.body
+      ? `<div class="feeds-card-body">${escHtml(feed.body)}</div>`
+      : "";
+
+    const mainCover = (!isQuoteRepost && feed.cover_image)
+      ? `
+        <div class="feeds-cover-img-wrap">
+          <img src="${feed.cover_image}"
+              class="feeds-cover-img"
+              loading="lazy"
+              alt="">
+        </div>`
+      : "";
+
+    const quoteEmbed = isQuoteRepost && feed.repost_original
+      ? `
+        <div class="feeds-quote-embed">
+
+          <div class="feeds-quote-head">
+            ${avatarHtml(feed.repost_original.author, 32)}
+
+            <span class="feeds-quote-name">
+              ${escHtml(feed.repost_original.author.name)}
+            </span>
+          </div>
+
+          <div class="feeds-quote-body">
+            ${truncateFeedBody(feed.repost_original.body, 280)}
+          </div>
+
+          ${
+            feed.repost_original.cover_image
+              ? `
+                <div class="feeds-quote-cover">
+                  <img src="${feed.repost_original.cover_image}"
+                      class="feeds-cover-img"
+                      loading="lazy"
+                      alt="">
+                </div>`
+              : ""
+          }
+
+          ${buildMediaHTML(feed.repost_original.media)}
+
+        </div>`
+      : "";
+
+    const repostActive = feed.has_my_repost ? " active" : "";
+
+    card.className = [
+      "feeds-card",
+      feed.is_pinned ? "feeds-card-pinned" : "",
+      feed.is_admin_post ? "feeds-card-admin" : "",
+      isQuoteRepost ? "feeds-card-repost-quote" : "",
+      isPlanDiscussion ? "feeds-card-plan-discussion" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    card.id = `feed-card-${feed.id}`;
+    card.dataset.authorId = feed.author?.id || "";
+
+    card.innerHTML = `
+      <div class="feeds-card-thread-line"></div>
+
+      <div class="feeds-card-inner">
+
+        <div class="feeds-card-left">
+          ${avatarHtml(feed.author)}
+
+          <div class="feeds-card-vertical-line"></div>
+        </div>
+
+        <div class="feeds-card-right">
+
+          ${repostBanner}
+
+          ${isQuoteRepost ? "" : `
+            <div class="feeds-card-meta">
+
+              ${authorNameHtml}
+
+              ${
+                feed.is_admin_post
+                  ? '<span class="feeds-admin-badge">👑 Leader</span>'
+                  : ""
+              }
+
+              ${
+                feed.is_pinned
+                  ? '<span class="feeds-pin-badge">📌 Pinned</span>'
+                  : ""
+              }
+
+              ${repostMetaTag}
+
+              ${
+                feed.unit_name
+                  ? `<span class="feeds-unit-badge">
+                      ${escHtml(feed.unit_name)}
+                    </span>`
+                  : ""
+              }
+
+              <div class="feeds-meta-end">
+
+                <span class="feeds-card-time">
+                  ${feedTimestamp(feed)}
+                </span>
+
+                ${
+                  IS_ADMIN_USER
+                    ? `<button type="button"
+                              class="feeds-more-btn"
+                              data-id="${feed.id}"
+                              aria-label="Post actions">⋯</button>`
+                    : ""
+                }
+
+              </div>
+
+            </div>
+          `}
+
+          ${mainCover}
+
+          ${isPlanDiscussion ? planDiscussionHtml : mainBody}
+
+          ${quoteEmbed}
+
+          ${buildMediaHTML(feed.media)}
+
+          <div class="feeds-card-actions">
+
+            <div class="feeds-reaction-wrap" data-id="${feed.id}">
+
+              <button class="feeds-react-main${myReactions.length ? " reacted" : ""}"
+                      data-id="${feed.id}"
+                      data-my-reaction="${myReactions.join(",")}">
+
+                ${myReactionSvg}
+
+                <span class="feeds-count">
+                  ${feed.total_reactions || ""}
+                </span>
+
+              </button>
+
+              <div class="feeds-reaction-picker"
+                  style="display:none;"
+                  data-id="${feed.id}">
+
+                ${REACTION_KEYS.map((key) => `
+                  <button class="feeds-emoji-btn"
+                          data-id="${feed.id}"
+                          data-reaction="${key}"
+                          title="${key}">
+                    ${EMOJI_MAP[key] || ""}
+                  </button>
+                `).join("")}
+
+              </div>
+
+              <span class="feeds-reaction-summary">
+                ${summary}
+              </span>
+
+            </div>
+
+            <button class="feeds-action-btn feeds-comment-toggle"
+                    data-id="${feed.id}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 20l1.3-3.9c-2.324-3.437-1.426-7.872 2.1-10.374c3.526-2.502 8.59-2.502 12.1 0c3.512 2.502 4.41 6.938 2.1 10.374c-2.31 3.436-7.135 4.933-11.35 3.4l-4.254.5z"/></svg>
+              <span class="feeds-count">${feed.comment_count}</span>
+            </button>
+
+            <button class="feeds-action-btn feeds-repost-btn${repostActive}"
+                    data-id="${feed.id}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0-15.5-2m-.5-4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
+              <span class="feeds-count">${feed.repost_count}</span>
+            </button>
+
+            ${
+              IS_ADMIN_USER
+                ? `<button class="feeds-action-btn feeds-pin-btn"
+                          data-id="${feed.id}">
+                    ${feed.is_pinned ? "📌" : "📍"}
+                  </button>`
+                : ""
+            }
+
+          </div>
+
+          <div class="feeds-comments-area"
+              id="comments-${feed.id}"
+              style="display:none;"></div>
+
+        </div>
+
+      </div>
+    `;
+
+    feed.reaction_summary = feed.reaction_summary || {};
+
+    attachCardEvents(card, feed);
+
+    return card;
+  }
+
+  /* ── Card event wiring ──────────────────────────────────────────── */
+
+  function attachCardEvents(card, feed) {
+    const wrap     = card.querySelector(".feeds-reaction-wrap");
+    const picker   = card.querySelector(".feeds-reaction-picker");
+    const reactBtn = card.querySelector(".feeds-react-main");
+    let pressTimer = null;
+
+    if (wrap && picker) {
+      // Initialise per-reaction count badges in the picker
+      updatePickerCounts(picker, feed.reaction_summary);
+
+      wrap.addEventListener("mouseenter", () => picker.style.display = "flex");
+      wrap.addEventListener("mouseleave", () => { pressTimer = setTimeout(() => picker.style.display = "none", 400); });
+      picker.addEventListener("mouseenter", () => clearTimeout(pressTimer));
+      picker.addEventListener("mouseleave", () => { pressTimer = setTimeout(() => picker.style.display = "none", 400); });
+
+      // Main button: click always opens/shows the picker so the user picks a reaction.
+      // Multiple reactions are allowed — each emoji btn is independent add/remove.
+      reactBtn?.addEventListener("click", () => {
+        picker.style.display = picker.style.display === "none" ? "flex" : "none";
+      });
+
+      picker.querySelectorAll(".feeds-emoji-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          picker.style.display = "none";
+          doReact(feed.id, btn.dataset.reaction, card);
+        });
+      });
+
+      reactBtn?.addEventListener("touchstart", () => { pressTimer = setTimeout(() => picker.style.display = "flex", 500); }, { passive: true });
+      reactBtn?.addEventListener("touchend", () => clearTimeout(pressTimer), { passive: true });
+    }
+
+    card.querySelector(".feeds-comment-toggle")?.addEventListener("click", () => toggleComments(feed.id, card));
+    card.querySelector(".feeds-pin-btn")?.addEventListener("click", () => doPin(feed.id, card));
+  }
+
+  /* ── Reactions ──────────────────────────────────────────────────── */
+
+  async function doReact(feedId, reaction, card) {
+    try {
+      const data = await fetchJson(feedUrl(`${feedId}/react/`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF() },
+        body: JSON.stringify({ reaction: reaction || "like" }),
+      });
+      const btn         = card.querySelector(".feeds-react-main");
+      const picker      = card.querySelector(".feeds-reaction-picker");
+      const summaryNode = card.querySelector(".feeds-reaction-summary");
+
+      // my_reactions is now an array of all reactions this user has applied
+      const myReactions = data.my_reactions || (data.my_reaction ? [data.my_reaction] : []);
+      const hasAny      = myReactions.length > 0;
+      // Show first active reaction on the main button, or default like icon
+      const displayKey  = myReactions[0] || "like";
+
+      if (btn) {
+        btn.dataset.myReaction = myReactions.join(",");
+        btn.classList.toggle("reacted", hasAny);
+        btn.innerHTML = `${EMOJI_MAP[displayKey] || ""}<span class="feeds-count">${data.total || ""}</span>`;
+      }
+      if (picker) updatePickerCounts(picker, data.summary || {});
+      if (summaryNode) summaryNode.innerHTML = buildReactionSummary(data.summary || {}, data.total || 0);
+    } catch (e) { console.warn(e); }
+  }
+
+  /* ── Comments ───────────────────────────────────────────────────── */
+
+  async function toggleComments(feedId, card) {
+    const area = card.querySelector(".feeds-comments-area");
+    if (!area) return;
+    if (area.style.display !== "none") { area.style.display = "none"; return; }
+    area.style.display = "";
+    if (area.dataset.loaded) return;
+
+    area.innerHTML = '<div class="text-muted small text-center py-2">Loading…</div>';
+    try {
+      const data    = await fetchJson(feedUrl(`${feedId}/comments/`));
+      const compose = document.createElement("div");
+      area.innerHTML = "";
+      area.dataset.loaded = "1";
+      compose.className = "feeds-comment-compose";
+      compose.innerHTML = `
+        <textarea class="feeds-comment-input" rows="1" placeholder="Add a reply…"></textarea>
+        <button type="button" class="feeds-comment-send">↑</button>`;
+      area.appendChild(compose);
+      (data.comments || []).forEach((c) => area.appendChild(buildCommentNode(c, feedId)));
+
+      compose.querySelector(".feeds-comment-send")?.addEventListener("click", async () => {
+        const input = compose.querySelector("textarea");
+        const body  = input?.value.trim();
+        if (!body) return;
+        const result = await fetchJson(feedUrl(`${feedId}/comment/`), {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF() },
+          body: JSON.stringify({ body }),
+        });
+        if (result.comment) {
+          area.appendChild(buildCommentNode(result.comment, feedId));
+          input.value = "";
+          const countEl = card.querySelector(".feeds-comment-toggle .feeds-count");
+          if (countEl) countEl.textContent = parseInt(countEl.textContent || "0", 10) + 1;
+        }
+      });
+      bindTextareaSend(compose.querySelector("textarea"), () => compose.querySelector(".feeds-comment-send")?.click());
+    } catch {
+      area.innerHTML = '<div class="text-danger small text-center py-2">Unable to load comments.</div>';
+    }
+  }
+
+  function buildCommentNode(comment, feedId) {
+    const node = document.createElement("div");
+    node.className = "feeds-comment";
+    node.id = `comment-${comment.id}`;
+
+    const repliesHtml = (comment.replies || []).map((reply) => `
+      <div class="feeds-comment feeds-reply">
+        <div class="feeds-comment-left">${commentAvatarHtml(reply.author)}</div>
+        <div class="feeds-comment-body-wrap">
+          <span class="feeds-comment-author">${escHtml(reply.author.name)}</span>
+          <span class="feeds-comment-time">${feedTimestamp(reply)}</span>
+          <div class="feeds-comment-text">${escHtml(reply.body)}</div>
+        </div>
+      </div>`).join("");
+
+    node.innerHTML = `
+      <div class="feeds-comment-left">${commentAvatarHtml(comment.author)}</div>
+      <div class="feeds-comment-body-wrap">
+        <span class="feeds-comment-author">${escHtml(comment.author.name)}</span>
+        <span class="feeds-comment-time">${feedTimestamp(comment)}</span>
+        <div class="feeds-comment-text">${escHtml(comment.body)}</div>
+        <button class="feeds-reply-toggle">Reply</button>
+        <div class="feeds-replies">${repliesHtml}</div>
+        <div class="feeds-reply-compose" style="display:none;">
+          <textarea class="feeds-comment-input" rows="1" placeholder="Reply…"></textarea>
+          <button type="button" class="feeds-comment-send feeds-reply-send">↑</button>
+        </div>
+      </div>`;
+
+    node.querySelector(".feeds-reply-toggle")?.addEventListener("click", () => {
+      const compose = node.querySelector(".feeds-reply-compose");
+      compose.style.display = compose.style.display === "none" ? "" : "none";
+    });
+
+    node.querySelector(".feeds-reply-send")?.addEventListener("click", async () => {
+      const input = node.querySelector(".feeds-reply-compose textarea");
+      const body  = input?.value.trim();
+      if (!body) return;
+      const result = await fetchJson(feedUrl(`${feedId}/comment/`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF() },
+        body: JSON.stringify({ body, parent_id: comment.id }),
+      });
+      if (result.comment) {
+        node.querySelector(".feeds-replies")?.insertAdjacentHTML("beforeend", `
+          <div class="feeds-comment feeds-reply">
+            <div class="feeds-comment-left">${commentAvatarHtml(result.comment.author)}</div>
+            <div class="feeds-comment-body-wrap">
+              <span class="feeds-comment-author">${escHtml(result.comment.author.name)}</span>
+              <div class="feeds-comment-text">${escHtml(result.comment.body)}</div>
+            </div>
+          </div>`);
+        input.value = "";
+        node.querySelector(".feeds-reply-compose").style.display = "none";
+      }
+    });
+    bindTextareaSend(node.querySelector(".feeds-reply-compose textarea"), () => node.querySelector(".feeds-reply-send")?.click());
+    return node;
+  }
+
+  /* ── More menu (three-dot ⋯) ────────────────────────────────────── */
+  
+  function openFeedsMoreMenu(feedId, card, anchor) {
+    document.getElementById("_FeedsMenu")?.remove();
+  
+    const menu = document.createElement("div");
+    menu.id = "_FeedsMenu";
+  
+    menu.style.cssText = [
+      "position:fixed",
+      "z-index:10800",
+      "background:#161b22",
+      "border:1px solid #30363d",
+      "border-radius:12px",
+      "overflow:hidden",
+      "min-width:170px",
+      "box-shadow:0 8px 24px #000a",
+    ].join(";");
+  
+    const items = [];
+  
+    if (IS_ADMIN_USER) {
+      items.push({
+        label: "📌 Pin / Unpin",
+        action: () => doPin(feedId, card),
+      });
+    }
+  
+    const isOwner =
+      String(card.dataset.authorId || "") === String(CURRENT_USER_FEEDS_ID);
+  
+    if (IS_ADMIN_USER || isOwner) {
+      items.push({
+        label: "🗑 Delete post",
+        action: () => doDelete(feedId, card),
+        danger: true,
+      });
+    }
+  
+    items.forEach(({ label, action, danger }) => {
+      const btn2 = document.createElement("button");
+  
+      btn2.type = "button";
+  
+      btn2.style.cssText = `
+        display:block;
+        width:100%;
+        background:transparent;
+        border:none;
+        color:${danger ? "#ef4444" : "#c9d1d9"};
+        font-size:.82rem;
+        padding:9px 14px;
+        text-align:left;
+        cursor:pointer;
+      `;
+  
+      btn2.textContent = label;
+  
+      btn2.addEventListener("mouseenter", () => {
+        btn2.style.background = "#21262d";
+      });
+  
+      btn2.addEventListener("mouseleave", () => {
+        btn2.style.background = "transparent";
+      });
+  
+      btn2.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        menu.remove();
+        action();
+      });
+  
+      menu.appendChild(btn2);
+    });
+  
+    document.body.appendChild(menu);
+  
+    const rect = anchor.getBoundingClientRect();
+    const mw   = menu.offsetWidth  || 170;
+    const mh   = menu.offsetHeight || 80;
+  
+    menu.style.top =
+      `${Math.min(window.innerHeight - mh - 8, rect.bottom + 4)}px`;
+  
+    menu.style.left =
+      `${Math.max(8, rect.right - mw)}px`;
+  
+    const onDoc = (ev) => {
+      if (menu.contains(ev.target)) return;
+  
+      menu.remove();
+      document.removeEventListener("click", onDoc, true);
+    };
+  
+    requestAnimationFrame(() => {
+      document.addEventListener("click", onDoc, true);
+    });
+  }
+
+  /* ── Repost menu: bare repost vs repost with comment ────────────── */
+  
+  function openRepostMenu(feedId, card, anchor) {
+    document.getElementById("_RepostMenu")?.remove();
+  
+    const menu = document.createElement("div");
+    menu.id = "_RepostMenu";
+  
+    menu.style.cssText = [
+      "position:fixed",
+      "z-index:10800",
+      "background:#161b22",
+      "border:1px solid #30363d",
+      "border-radius:12px",
+      "overflow:hidden",
+      "min-width:190px",
+      "box-shadow:0 8px 24px #000a",
+    ].join(";");
+  
+    const makeBtn = (label, action) => {
+      const b = document.createElement("button");
+  
+      b.type = "button";
+  
+      b.style.cssText = `
+        display:block;
+        width:100%;
+        background:transparent;
+        border:none;
+        color:#c9d1d9;
+        font-size:.82rem;
+        padding:9px 14px;
+        text-align:left;
+        cursor:pointer;
+      `;
+  
+      b.textContent = label;
+  
+      b.addEventListener("mouseenter", () => {
+        b.style.background = "#21262d";
+      });
+  
+      b.addEventListener("mouseleave", () => {
+        b.style.background = "transparent";
+      });
+  
+      b.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        menu.remove();
+        action();
+      });
+  
+      return b;
+    };
+  
+    menu.appendChild(
+      makeBtn("🔁 Repost", () => doBareRepost(feedId, card))
+    );
+  
+    menu.appendChild(
+      makeBtn("✍️ Repost with comment", () => openQuoteRepostModal(feedId, card))
+    );
+  
+    document.body.appendChild(menu);
+  
+    const rect = anchor.getBoundingClientRect();
+    const mh   = menu.offsetHeight || 80;
+  
+    menu.style.top =
+      `${Math.min(window.innerHeight - mh - 8, rect.bottom + 4)}px`;
+  
+    menu.style.left =
+      `${Math.max(8, rect.left)}px`;
+  
+    const onDoc = (ev) => {
+      if (menu.contains(ev.target)) return;
+  
+      menu.remove();
+      document.removeEventListener("click", onDoc, true);
+    };
+  
+    requestAnimationFrame(() => {
+      document.addEventListener("click", onDoc, true);
+    });
+  }
+
+  /* ── Bare repost ────────────────────────────────────────────────── */
+
+  async function doBareRepost(feedId, card) {
+    try {
+      const data = await fetchJson(feedUrl(`${feedId}/repost/`), {
+        method: "POST",
+        headers: { "X-CSRFToken": CSRF() },
+      });
+      const btn = card.querySelector(".feeds-repost-btn");
+      if (btn) {
+        btn.classList.toggle("active", !!data.reposted);
+        const cnt = btn.querySelector(".feeds-count");
+        if (cnt) cnt.textContent = data.repost_count ?? "";
+      }
+      if (data.feed && feedMatchesActiveFilter(data.feed)) prependFeed(data.feed);
+      showToast2(data.reposted ? "Reposted ✓" : "Repost removed");
+    } catch { showToast2("Unable to repost right now.", "danger"); }
+  }
+
+  /* ── Quote repost modal ─────────────────────────────────────────── */
+
+  function openQuoteRepostModal(feedId, card) {
+    document.getElementById("_feedsQuoteRepostModal")?.remove();
+
+    // Grab the original post's text and author for the preview embed
+    const bodyEl   = card.querySelector(".feeds-card-body");
+    const origText = bodyEl ? bodyEl.textContent.trim().slice(0, 200) : "";
+    const authorEl = card.querySelector(".feeds-card-author");
+    const author   = authorEl ? authorEl.textContent.trim() : "Original post";
+
+    const modal = document.createElement("div");
+    modal.id = "_feedsQuoteRepostModal";
+    modal.style.cssText = [
+      "position:fixed",
+      "inset:0",
+      "z-index:19000",
+      "display:flex",
+      "align-items:center",
+      "justify-content:center",
+      "background:#000000bb",
+    ].join(";");
+
+    modal.innerHTML = `
+      <div style="background:#1f2937;border-radius:24px;padding:20px 22px;
+                  width:min(94vw,480px);box-shadow:0 16px 40px #000;
+                  display:flex;flex-direction:column;gap:12px;">
+        <h4 style="color:#e2e8f0;font-weight:700;margin:0;">Repost with comment</h4>
+
+        <!-- Original post embed preview -->
+        <div style="background:#111827;border-radius:14px;padding:10px 12px;
+                    border-left:3px solid #374151;">
+          <div style="font-size:.72rem;color:#58a6ff;font-weight:600;margin-bottom:4px;">
+            ↩ ${escHtml(author)}
+          </div>
+          <div style="font-size:.8rem;color:#94a3b8;white-space:pre-wrap;word-break:break-word;">
+            ${escHtml(origText)}${origText.length >= 200 ? "…" : ""}
+          </div>
+        </div>
+
+        <!-- Compose area -->
+        <textarea id="_feedsQuoteText" rows="3"
+          placeholder="Add your comment… (Ctrl+Enter to post)"
+          style="width:100%;background:#111827;border:1px solid #374151;border-radius:12px;
+                 color:#e2e8f0;font-size:.88rem;padding:10px;resize:vertical;
+                 box-sizing:border-box;outline:none;min-height:80px;"></textarea>
+
+        <div style="display:flex;gap:10px;">
+          <button id="_feedsQuoteSubmit"
+            style="flex:1;background:#238636;border:none;color:#fff;font-weight:700;
+                   font-size:.85rem;padding:9px 16px;border-radius:16px;cursor:pointer;
+                   transition:background .15s;">
+            Repost with comment
+          </button>
+          <button id="_feedsQuoteCancel"
+            style="flex:1;background:#374151;border:none;color:#e2e8f0;font-weight:600;
+                   font-size:.85rem;padding:9px 16px;border-radius:16px;cursor:pointer;
+                   transition:background .15s;">
+            Cancel
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector("#_feedsQuoteText").focus();
+
+    // Hover states
+    const submitBtn = modal.querySelector("#_feedsQuoteSubmit");
+    const cancelBtn = modal.querySelector("#_feedsQuoteCancel");
+    submitBtn.addEventListener("mouseenter", () => submitBtn.style.background = "#2ea043");
+    submitBtn.addEventListener("mouseleave", () => submitBtn.style.background = "#238636");
+    cancelBtn.addEventListener("mouseenter", () => cancelBtn.style.background = "#4b5563");
+    cancelBtn.addEventListener("mouseleave", () => cancelBtn.style.background = "#374151");
+
+    cancelBtn.addEventListener("click", () => modal.remove());
+    modal.addEventListener("click", (ev) => { if (ev.target === modal) modal.remove(); });
+
+    // Ctrl/Cmd+Enter submits
+    modal.querySelector("#_feedsQuoteText").addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
+        ev.preventDefault();
+        submitBtn.click();
+      }
+      if (ev.key === "Escape") modal.remove();
+    });
+
+    submitBtn.addEventListener("click", async () => {
+      const body = modal.querySelector("#_feedsQuoteText").value.trim();
+      if (!body) {
+        modal.querySelector("#_feedsQuoteText").style.borderColor = "#ef4444";
+        return;
+      }
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Posting…";
+      try {
+        const data = await fetchJson(feedUrl(`${feedId}/repost/`), {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF() },
+          body: JSON.stringify({ quote_body: body }),
+        });
+        // Update repost count on the original card
+        const btn = card.querySelector(".feeds-repost-btn");
+        if (btn) {
+          btn.classList.toggle("active", !!data.reposted);
+          const cnt = btn.querySelector(".feeds-count");
+          if (cnt) cnt.textContent = data.repost_count ?? "";
+        }
+        // Prepend the new quoted repost card if it matches the active filter
+        if (data.feed && feedMatchesActiveFilter(data.feed)) prependFeed(data.feed);
+        showToast2("Reposted with comment ✓");
+        modal.remove();
+      } catch (err) {
+        showToast2(err.message || "Repost failed.", "danger");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Repost with comment";
+      }
+    });
+  }
+
+  /* ── Pin ────────────────────────────────────────────────────────── */
+
+  async function doPin(feedId, card) {
+    if (!IS_ADMIN_USER) return;
+    try {
+      const data = await fetchJson(feedUrl(`${feedId}/pin/`), {
+        method: "POST",
+        headers: { "X-CSRFToken": CSRF() },
+      });
+      card.classList.toggle("feeds-card-pinned", !!data.is_pinned);
+      const btn = card.querySelector(".feeds-pin-btn");
+      if (btn) btn.textContent = data.is_pinned ? "📌" : "📍";
+
+      // Update the pinned badge in card meta
+      const meta  = card.querySelector(".feeds-card-meta");
+      let badge   = card.querySelector(".feeds-pin-badge");
+      if (data.is_pinned) {
+        if (!badge && meta) {
+          badge = document.createElement("span");
+          badge.className = "feeds-pin-badge";
+          badge.textContent = "📌 Pinned";
+          const authorEl = meta.querySelector(".feeds-card-author");
+          if (authorEl) authorEl.after(badge);
+        }
+      } else {
+        badge?.remove();
+      }
+      showToast2(data.is_pinned ? "Post pinned" : "Post unpinned");
+    } catch { showToast2("Unable to update pin state.", "danger"); }
+  }
+
+  /* ── Delete ─────────────────────────────────────────────────────── */
+
+  function doDelete(feedId, card) {
+    // Use custom confirm modal if chat_room.js exposed it, else fallback
+    const confirmed = async () => {
+      try {
+        await fetchJson(feedUrl(`${feedId}/delete/`), {
+          method: "POST",
+          headers: { "X-CSRFToken": CSRF() },
+        });
+        card.remove();
+        showToast2("Post deleted");
+      } catch { showToast2("Unable to delete post.", "danger"); }
+    };
+
+    // Custom inline confirm modal — no native browser dialog
+    const overlay = document.createElement("div");
+    overlay.style.cssText = "position:fixed;inset:0;z-index:29000;display:flex;align-items:center;justify-content:center;background:#000000bb;";
+    overlay.innerHTML = `
+      <div style="background:#1f2937;border-radius:20px;padding:24px 22px;width:min(90vw,360px);box-shadow:0 16px 40px #000;display:flex;flex-direction:column;gap:14px;">
+        <div style="font-size:.97rem;font-weight:700;color:#e2e8f0;">Delete this post?</div>
+        <div style="font-size:.83rem;color:#94a3b8;">This action <strong style="color:#ef4444;">cannot</strong> be undone.</div>
+        <div style="display:flex;gap:10px;">
+          <button id="_feedsDelConfirm" style="flex:1;background:#ef4444;border:none;color:#fff;font-weight:700;font-size:.85rem;padding:9px 16px;border-radius:14px;cursor:pointer;">Delete</button>
+          <button id="_feedsDelCancel"  style="flex:1;background:#374151;border:none;color:#e2e8f0;font-weight:600;font-size:.85rem;padding:9px 16px;border-radius:14px;cursor:pointer;">Cancel</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector("#_feedsDelCancel").onclick  = () => overlay.remove();
+    overlay.addEventListener("click", (ev) => { if (ev.target === overlay) overlay.remove(); });
+    overlay.querySelector("#_feedsDelConfirm").onclick = () => { overlay.remove(); confirmed(); };
+  }
+
+  /* ── Delegated feeds menus ───────────────────────────────────── */
+
+  document.addEventListener("click", (e) => {
+    const moreBtn = e.target.closest(".feeds-more-btn");
+
+    if (moreBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Toggle: if the menu is already open for this button, close it
+      const existing = document.getElementById("_FeedsMenu");
+      if (existing && existing.dataset.forId === moreBtn.dataset.id) {
+        existing.remove();
+        return;
+      }
+
+      const card   = moreBtn.closest(".feeds-card");
+      const feedId = moreBtn.dataset.id;
+
+      if (card && feedId) {
+        openFeedsMoreMenu(feedId, card, moreBtn);
+        // Tag the menu with which button opened it
+        const menu = document.getElementById("_FeedsMenu");
+        if (menu) menu.dataset.forId = feedId;
+      }
+
+      return;
+    }
+
+    const repostBtn = e.target.closest(".feeds-repost-btn");
+
+    if (repostBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const card   = repostBtn.closest(".feeds-card");
+      const feedId = repostBtn.dataset.id;
+
+      if (card && feedId) {
+        openRepostMenu(feedId, card, repostBtn);
+      }
+    }
+  }, true);
+
+  /* ── Render list ────────────────────────────────────────────────── */
+
+  function renderFeedItems(feeds, reset = false) {
+    if (!dbFeedsList) return;
+    if (reset) dbFeedsList.innerHTML = "";
+    if (!feeds.length && reset) {
+      dbFeedsList.innerHTML = `<div class="text-center text-muted small py-5">No posts yet. Be the first to share!</div>`;
+      return;
+    }
+    feeds.forEach((feed) => {
+      if (document.getElementById(`feed-card-${feed.id}`)) return;
+      const dateLabel = feedDateLabel(feed);
+      const hasDivider = dateLabel && [...dbFeedsList.querySelectorAll(".feeds-date-divider")].some((d) => d.dataset.feedDate === dateLabel);
+      if (dateLabel && !hasDivider) {
+        const divider = document.createElement("div");
+        divider.className = "feeds-date-divider";
+        divider.dataset.feedDate = dateLabel;
+        divider.innerHTML = `<span>${escHtml(dateLabel)}</span>`;
+        dbFeedsList.appendChild(divider);
+      }
+      dbFeedsList.appendChild(buildFeedCard(feed));
+    });
+  }
+
+  function prependFeed(feed) {
+    if (!dbFeedsList || document.getElementById(`feed-card-${feed.id}`)) return;
+    const card      = buildFeedCard(feed);
+    const dateLabel = feedDateLabel(feed);
+    if (!dateLabel) { dbFeedsList.insertBefore(card, dbFeedsList.firstChild); return; }
+    let divider = [...dbFeedsList.querySelectorAll(".feeds-date-divider")].find((n) => n.dataset.feedDate === dateLabel);
+    if (!divider) {
+      divider = document.createElement("div");
+      divider.className = "feeds-date-divider";
+      divider.dataset.feedDate = dateLabel;
+      divider.innerHTML = `<span>${escHtml(dateLabel)}</span>`;
+      dbFeedsList.insertBefore(divider, dbFeedsList.firstChild);
+    }
+    dbFeedsList.insertBefore(card, divider.nextSibling);
+  }
+
+  function feedMatchesActiveFilter(feed) {
+    if (activeFeedFilter.scope === "general") return feed.scope === "general";
+    return feed.scope === "unit" && String(feed.unit_id) === String(activeFeedFilter.unitId);
+  }
+
+  function markActiveFeedFilterChip() {
+    document.querySelectorAll(".feeds-unit-chip").forEach((chip) => {
+      const chipScope  = chip.dataset.feedFilter || "unit";
+      const chipUnitId = chip.dataset.unitId || null;
+      const isActive   =
+        (chipScope === "general" && activeFeedFilter.scope === "general") ||
+        (chipScope === "unit" && activeFeedFilter.scope === "unit" && String(chipUnitId) === String(activeFeedFilter.unitId));
+      chip.classList.toggle("active", isActive);
+    });
+  }
+
+  /* ── Load feeds ─────────────────────────────────────────────────── */
+
+  async function loadFeeds(reset = false) {
+    if (loadingFeeds) return;
+    if (reset) { activeFeedFilter.page = 1; dbFeedsList.innerHTML = ""; }
+    loadingFeeds = true;
+    try {
+      const params = new URLSearchParams({ scope: activeFeedFilter.scope, page: String(activeFeedFilter.page) });
+      if (activeFeedFilter.scope === "unit" && activeFeedFilter.unitId) params.set("unit_id", activeFeedFilter.unitId);
+      const data = await fetchJson(feedUrl(`list/?${params}`));
+      dbFeedsSkel?.remove();
+      renderFeedItems(data.feeds || [], reset);
+      activeFeedFilter.page += 1;
+      if (dbLoadMore) dbLoadMore.style.display = data.has_next ? "" : "none";
+    } catch (e) { console.warn(e); showToast2("Unable to load feeds right now.", "danger"); }
+    finally { loadingFeeds = false; }
+  }
+
+  function activateFeedFilter(scope, unitId = null) {
+    activeFeedFilter = { scope, unitId, page: 1 };
+    markActiveFeedFilterChip();
+    return loadFeeds(true);
+  }
+
+  function requestedFeedFilter() {
+    const params = new URLSearchParams(window.location.search);
+    const scope = params.get("feed_scope") || "general";
+    const unitId = params.get("unit_id") || null;
+    return scope === "unit" && unitId ? { scope: "unit", unitId } : { scope: "general", unitId: null };
+  }
+
+  function scrollToRequestedFeed() {
+    if (!window.location.hash) return;
+    const card = document.querySelector(window.location.hash);
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  /* ── Load units ─────────────────────────────────────────────────── */
+
+  async function loadUnits() {
+    const scopeSelect = $id("dbFeedsScopeSelect") || dbScopeSelect;
+    try {
+      const data  = await fetchJson(feedUrl("units/"));
+      const units = data.units || [];
+
+      if (scopeSelect) {
+        [...scopeSelect.options].filter((o) => o.dataset.unit).forEach((o) => o.remove());
+        units.forEach((unit) => {
+          const opt = document.createElement("option");
+          opt.value = `unit_${unit.id}`;
+          opt.dataset.unit = unit.id;
+          opt.textContent = `${unit.name}`;
+          scopeSelect.appendChild(opt);
+        });
+      }
+
+      if (!dbUnitSel) return;
+      dbUnitSel.innerHTML = "";
+      if (!units.length) { dbUnitSel.innerHTML = '<div class="text-muted small">No units found.</div>'; return; }
+      units.forEach((unit) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "feeds-unit-chip";
+        btn.dataset.feedFilter = "unit";
+        btn.dataset.unitId = unit.id;
+        btn.textContent = unit.name;
+        btn.addEventListener("click", () => activateFeedFilter("unit", unit.id));
+        dbUnitSel.appendChild(btn);
+      });
+      markActiveFeedFilterChip();
+    } catch (e) {
+      console.warn(e);
+      if (dbUnitSel) dbUnitSel.innerHTML = '<div class="text-danger small">Unable to load units.</div>';
+    }
+  }
+
+  /* ── Compose post ───────────────────────────────────────────────── */
+
+  function addSelectedFile(file) {
+    const type = file.type.startsWith("video") ? "video" : file.type.startsWith("audio") ? "audio" : "image";
+    const url  = URL.createObjectURL(file);
+    const wrap = document.createElement("div");
+    const rm   = document.createElement("button");
+    selectedFiles.push({ file, type });
+    wrap.className = "feeds-preview-item";
+    wrap.innerHTML = type === "image" ? `<img src="${url}" class="feeds-preview-thumb">` : '<div class="feeds-preview-audio">🎵</div>';
+    rm.className = "feeds-preview-remove";
+    rm.textContent = "✕";
+    rm.addEventListener("click", () => { selectedFiles = selectedFiles.filter((i) => i.file !== file); wrap.remove(); URL.revokeObjectURL(url); });
+    wrap.appendChild(rm);
+    dbMediaPreview?.appendChild(wrap);
+  }
+
+  async function submitFeedPost() {
+    const body = dbComposeText?.value.trim() || "";
+    if (!body && !selectedFiles.length) return;
+    dbPostBtn.disabled = true;
+    dbPostBtn.textContent = "Posting…";
+    const formData   = new FormData();
+    const scopeValue = ($id("dbFeedsScopeSelect") || dbScopeSelect)?.value || "general";
+    formData.append("body", body);
+    if (scopeValue.startsWith("unit_")) {
+      formData.append("scope", "unit");
+      formData.append("unit_id", scopeValue.replace("unit_", ""));
+    } else {
+      formData.append("scope", "general");
+    }
+    selectedFiles.forEach(({ file }) => formData.append("files", file));
+    try {
+      const data = await fetchJson(feedUrl("create/"), {
+        method: "POST", headers: { "X-CSRFToken": CSRF() }, body: formData,
+      });
+      dbComposeText.value = "";
+      dbComposeText.style.height = "";
+      selectedFiles = [];
+      if (dbMediaPreview) dbMediaPreview.innerHTML = "";
+      if (data.feed) {
+        if (!feedMatchesActiveFilter(data.feed)) activateFeedFilter(data.feed.scope, data.feed.unit_id || null);
+        else prependFeed(data.feed);
+      }
+      showToast2("Posted ✓");
+    } catch (e) { showToast2(e.message || "Post failed", "danger"); }
+    finally { dbPostBtn.disabled = false; dbPostBtn.textContent = "Post"; }
+  }
+
+  /* ── WebSocket ──────────────────────────────────────────────────── */
+
+  function initFeedsSocket() {
+    if (feedSocket?.readyState === WebSocket.OPEN) return;
+    const scheme = location.protocol === "https:" ? "wss" : "ws";
+    feedSocket = new WebSocket(`${scheme}://${location.host}/ws/feeds/`);
+
+    feedSocket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        const evtType = message.event_type || message.type;
+
+        if (evtType === "new_feed" && message.payload && feedMatchesActiveFilter(message.payload)) {
+          if (!document.getElementById(`feed-card-${message.payload.id}`)) prependFeed(message.payload);
+        }
+        if (evtType === "react" && message.payload) {
+          const card = document.getElementById(`feed-card-${message.payload.feed_id}`);
+          if (card) {
+            const countEl = card.querySelector(".feeds-react-main .feeds-count");
+            if (countEl) countEl.textContent = message.payload.total || "";
+            const summaryNode = card.querySelector(".feeds-reaction-summary");
+            if (summaryNode) summaryNode.innerHTML = buildReactionSummary(message.payload.summary || {}, message.payload.total || 0);
+          }
+        }
+        if (evtType === "repost" && message.payload) {
+          const btn = document.querySelector(`#feed-card-${message.payload.feed_id} .feeds-repost-btn`);
+          if (btn) { const c = btn.querySelector(".feeds-count"); if (c) c.textContent = message.payload.repost_count || ""; }
+        }
+        if (evtType === "pin" && message.payload) {
+          const card = document.getElementById(`feed-card-${message.payload.feed_id}`);
+          if (card) {
+            card.classList.toggle("feeds-card-pinned", !!message.payload.is_pinned);
+            const pinBtn = card.querySelector(".feeds-pin-btn");
+            if (pinBtn) pinBtn.textContent = message.payload.is_pinned ? "📌" : "📍";
+            const meta = card.querySelector(".feeds-card-meta");
+            let badge = card.querySelector(".feeds-pin-badge");
+            if (message.payload.is_pinned) {
+              if (!badge && meta) {
+                badge = document.createElement("span");
+                badge.className = "feeds-pin-badge";
+                badge.textContent = "📌 Pinned";
+                const author = meta.querySelector(".feeds-card-author");
+                if (author) author.after(badge);
+              }
+            } else {
+              badge?.remove();
+            }
+          }
+        }
+        if (evtType === "delete" && message.payload) {
+          document.getElementById(`feed-card-${message.payload.feed_id}`)?.remove();
+        }
+      } catch (e) { console.warn("Feed socket parse failed", e); }
+    };
+
+    feedSocket.onclose = () => setTimeout(initFeedsSocket, 4000);
+  }
+
+  /* ── Event bindings ─────────────────────────────────────────────── */
+
+  dbComposeText?.addEventListener("input", () => {
+    dbComposeText.style.height = "auto";
+    dbComposeText.style.height = `${Math.min(dbComposeText.scrollHeight, 150)}px`;
+  });
+  mediaButtons.forEach((btn, i) => btn?.addEventListener("click", () => mediaInputs[i]?.click()));
+  mediaInputs.forEach((input) => input?.addEventListener("change", (e) => { [...e.target.files].forEach(addSelectedFile); input.value = ""; }));
+  generalFilterBtn?.addEventListener("click", () => activateFeedFilter("general"));
+  dbPostBtn?.addEventListener("click", (e) => { e.preventDefault(); submitFeedPost(); });
+  bindTextareaSend(dbComposeText, submitFeedPost);
+  dbLoadMore?.addEventListener("click", () => loadFeeds());
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    await loadUnits();
+    const initialFilter = requestedFeedFilter();
+    await activateFeedFilter(initialFilter.scope, initialFilter.unitId);
+    setTimeout(scrollToRequestedFeed, 150);
+    initFeedsSocket();
+  });
+})();
+
+// ════════════════════════════════════════════════════════════════════════════
+// ATTENDANCE MODAL
+// ════════════════════════════════════════════════════════════════════════════
+(function () {
+  "use strict";
+
+  // ── Refresh attendance table via AJAX ──────────────────────────────────
+  function refreshAttendanceTable() {
+    const tbody = document.getElementById("attendanceTableBody");
+    if (!tbody) return;
+    fetch("{% url 'workforce:attendance_summary' %}?format=json", {
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.records) return;
+      tbody.innerHTML = data.records.map(r => `
+        <tr>
+          <td>${r.date}</td>
+          <td>${r.event}</td>
+          <td>${r.unit}</td>
+          <td>${r.user}</td>
+          <td><span class="badge ${r.status === "present" ? "bg-success-lt" : r.status === "late" ? "bg-danger-lt" : r.status === "excused" ? "bg-warning-lt" : "bg-secondary-lt"}">${r.status.charAt(0).toUpperCase() + r.status.slice(1)}</span></td>
+          <td>${r.location_label ? `<span class="badge ${r.location_label === "Offsite" ? "bg-warning-lt text-warning" : r.location_label === "Virtual" ? "bg-blue-lt text-blue" : "bg-success-lt text-success"}">${r.location_label}</span>` : "—"}</td>
+          <td>${r.clock_in}</td>
+          <td>${r.clock_out}</td>
+          <td>${r.remarks}</td>
+        </tr>`).join("");
+    })
+    .catch(() => {});
+  }
+})();
+
+// ── Evangelism research ────────────────────────────────────────────────────
+document.getElementById("loadResearchBtn")?.addEventListener("click",async function(){
+  this.disabled=true;this.textContent="Generating…";
+  const out=document.getElementById("researchOutput");
+  if(out)out.textContent="";
+  try{
+    const r=await fetch("{% url 'dashboard:evangelism_research' %}",{method:"POST",headers:{"X-CSRFToken":getCsrf()}});
+    const d=await r.json();
+    if(out)out.innerHTML=d.html||d.text||"No research available.";
+  }catch(e){if(out)out.textContent="Error generating research.";}
+  this.disabled=false;this.textContent="Generate Research Brief";
+});
+</script>
+
+{# ── Bible slash trigger for feeds composer ──────────────────── #}
+{# The modal itself is injected by base.html; we just need to ensure  #}
+{# the feeds textarea (added dynamically) gets the slash trigger.     #}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const calendarEl = document.getElementById("calendar");
-  if (calendarEl && typeof FullCalendar !== "undefined") {
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: "dayGridMonth",
-      height: "auto",
-      expandRows: true,
-      timeZone: "local",
-      themeSystem: "bootstrap5",
-      headerToolbar: {
-        left: "prev,next today",
-        center: "title",
-        right: "dayGridMonth,dayGridWeek,dayGridDay",
-      },
-      buttonText: { today: "Today", month: "Month", week: "Week", day: "Day" },
-      events: "{% url 'workforce:api_events' %}",
-      eventContent: function (arg) {
-        const bgColor = arg.event.extendedProps.color || "#4dabf7";
-        const strip = document.createElement("div");
-        strip.style.cssText = `background:${bgColor};height:6px;border-radius:3px;width:100%;`;
-        return { domNodes: [strip] };
-      },
-    });
-    calendar.render();
+  // Main feeds composer
+  var feedsTA = document.getElementById("dbFeedsComposeText");
+  if (feedsTA && window.setupBibleSlashTrigger) {
+    window.setupBibleSlashTrigger(feedsTA);
   }
 });
 </script>
+
 {% endblock %}

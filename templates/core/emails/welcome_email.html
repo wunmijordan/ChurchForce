@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -20,14 +20,25 @@
             <td style="padding: 40px 30px;">
                 <p style="font-size: 18px; margin-top: 0;">Hi {{ admin_name }},</p>
                 <p style="line-height: 1.6; font-size: 16px;">
-                    We are thrilled to have you join the <strong>ChurchForce</strong> family. Your 14-day free trial has officially started, and your workspace for <strong>{{ church_name }}</strong> is ready for action.
+                    We are thrilled to have you join the <strong>ChurchForce</strong> family. Your free workspace for <strong>{{ church_name }}</strong> is ready — choose your routing style anytime from Account settings.
                 </p>
                 
                 <p style="line-height: 1.6; font-size: 16px;">
-                    Our goal is to help you streamline your workforce, manage your units, and engage your guests more effectively so you can focus on what matters most—ministry.
+                    Our goal is to help you streamline your workforce, manage your units, and engage your guests more effectively so you can focus on what matters mostâ€”ministry.
                 </p>
 
-                <!-- CTA Button -->
+
+                {% if username and password %}
+                <div style="background-color: #f5f7fb; border: 1px solid #e3e8f0; border-radius: 8px; padding: 16px; margin: 18px 0;">
+                    <p style="margin: 0 0 6px; font-size: 14px; color: #666;">Username</p>
+                    <p style="margin: 0 0 12px; font-size: 16px; font-weight: bold;">{{ username }}</p>
+                    <p style="margin: 0 0 6px; font-size: 14px; color: #666;">Password</p>
+                    <p style="margin: 0; font-size: 16px; font-weight: bold;">{{ password }}</p>
+                </div>
+                <p style="line-height: 1.6; font-size: 13px; color: #666;">
+                    For security, please change your password after your first login.
+                </p>
+                {% endif %}                <!-- CTA Button -->
                 <div style="text-align: center; margin: 40px 0;">
                     <a href="{{ login_url }}" style="background-color: #ff5e01; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px; display: inline-block;">
                         Enter Your Dashboard
@@ -36,9 +47,9 @@
 
                 <p style="line-height: 1.6; font-size: 14px; color: #666;">
                     <strong>Next Steps:</strong><br>
-                    • Complete your church profile.<br>
-                    • Invite your first team member.<br>
-                    • Check out the Workforce module to set up your units.
+                    â€¢ Complete your church profile.<br>
+                    â€¢ Invite your first Workforce Member.<br>
+                    â€¢ Check out the Workforce module to set up your units.
                 </p>
             </td>
         </tr>
@@ -53,3 +64,4 @@
     </table>
 </body>
 </html>
+

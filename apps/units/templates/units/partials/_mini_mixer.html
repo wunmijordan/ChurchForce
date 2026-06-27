@@ -1,0 +1,339 @@
+{% load static %}
+{# ── Mini Mixer  ─── drop-in partial for unit_detail.html ────────────────── #}
+{# Context: music_current_setlist, music_upcoming_rehearsal, unit              #}
+
+{% if music_current_setlist %}
+<div class="mt-3">
+<div style="
+  background:#0d1117;border:1px solid #21262d;border-radius:20px;
+  overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.6);
+  font-family:'Geist',system-ui,sans-serif;
+">
+
+  <!-- Header -->
+  <div style="padding:13px 18px;border-bottom:1px solid #21262d;display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#0d1117 60%,{{ unit.color_hex|default:'#22c55e' }}18);">
+    <div style="width:9px;height:9px;border-radius:50%;background:{{ unit.color_hex|default:'#22c55e' }};box-shadow:0 0 8px {{ unit.color_hex|default:'#22c55e' }};flex-shrink:0;"></div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:.85rem;font-weight:700;color:#e6edf3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ music_current_setlist.title }}</div>
+      <div style="font-size:.68rem;color:#5a6580;margin-top:1px;">
+        {{ music_current_setlist.songs.count }} song{{ music_current_setlist.songs.count|pluralize }}
+        {% if music_current_setlist.finalized %}&nbsp;·&nbsp;<span style="color:#22c55e;font-weight:600;">Finalized</span>{% else %}&nbsp;·&nbsp;<span style="color:#d29922;">Draft</span>{% endif %}
+        {% if music_current_setlist.event %}&nbsp;·&nbsp;{{ music_current_setlist.event.name }}{% endif %}
+        {% if music_upcoming_rehearsal %}&nbsp;·&nbsp;Rehearsal: {{ music_upcoming_rehearsal.event.date|date:"N j" }}{% if music_upcoming_rehearsal.event.prepares_for_service %} → <span style="color:#c9d1d9;">{{ music_upcoming_rehearsal.event.prepares_for_service.name }}</span>{% endif %}{% endif %}
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+      <button onclick="mmPrev()" style="width:28px;height:28px;border-radius:50%;border:1px solid #21262d;background:#161b22;color:#8b949e;cursor:pointer;font-size:.7rem;display:flex;align-items:center;justify-content:center;">⏮</button>
+      <button onclick="mmToggle()" id="mmPlayBtn" style="width:34px;height:34px;border-radius:50%;border:none;background:{{ unit.color_hex|default:'#22c55e' }};color:#fff;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;">▶</button>
+      <button onclick="mmNext()" style="width:28px;height:28px;border-radius:50%;border:1px solid #21262d;background:#161b22;color:#8b949e;cursor:pointer;font-size:.7rem;display:flex;align-items:center;justify-content:center;">⏭</button>
+    </div>
+    <a href="{% url 'units:unit_music' unit.slug %}" style="font-size:.72rem;padding:5px 13px;border-radius:8px;border:1px solid #21262d;background:#161b22;color:#8b949e;text-decoration:none;white-space:nowrap;">Open Music →</a>
+  </div>
+
+  <!-- Progress -->
+  <div style="padding:9px 18px 5px;background:#090d13;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px;">
+      <div id="mmNowPlaying" style="font-size:.8rem;font-weight:600;color:#5a6580;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Select a song to play</div>
+      <div id="mmTimeDisplay" style="font-size:.65rem;color:#3f4a5c;font-family:'IBM Plex Mono',monospace;flex-shrink:0;">—</div>
+    </div>
+    <div id="mmProgressBar" onclick="mmSeek(event)" style="height:3px;background:#21262d;border-radius:2px;cursor:pointer;overflow:hidden;">
+      <div id="mmProgressFill" style="height:100%;width:0%;background:linear-gradient(90deg,{{ unit.color_hex|default:'#22c55e' }},#3b82f6);border-radius:2px;transition:width .08s linear;"></div>
+    </div>
+  </div>
+
+  <!-- Song pills + stem panel -->
+  <div style="display:flex;overflow:hidden;border-top:1px solid #161b22;">
+    <div style="flex:1;overflow-x:auto;overflow-y:hidden;">
+      <div style="display:flex;min-width:max-content;" id="mmSongRow">
+        {% for ss in music_current_setlist.songs.all %}
+        <button class="mm-pill-{{ unit.slug|default:'u' }}"
+          data-idx="{{ forloop.counter0 }}"
+          data-uid="{{ ss.track.uid }}"
+          data-title="{{ ss.track.title|escapejs }}"
+          data-artist="{{ ss.track.artist|escapejs }}"
+          data-audio="{% if ss.track.audio_file %}{{ ss.track.audio_file.url }}{% endif %}"
+          data-key="{{ ss.performance_key|default:ss.track.original_key }}"
+          data-tempo="{{ ss.track.tempo|default:'' }}"
+          data-stems='[{% for st in ss.track.stems.all %}{"id":{{ st.id }},"name":"{{ st.name|escapejs }}","family":"{{ st.family }}","url":"{% if st.audio_file %}{{ st.audio_file.url }}{% endif %}","gain":{{ st.default_gain }},"muted":{{ st.default_muted|yesno:"true,false" }}}{% if not forloop.last %},{% endif %}{% endfor %}]'
+          onclick="mmSelectSong(this)"
+          style="padding:10px 14px;border-right:1px solid #161b22;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:108px;max-width:140px;background:transparent;border-top:none;border-bottom:none;border-left:none;text-align:left;position:relative;">
+          <span style="font-size:.62rem;color:#3f4a5c;font-family:'IBM Plex Mono',monospace;">{{ forloop.counter }}</span>
+          <span style="font-size:.76rem;font-weight:600;color:#c9d1d9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:120px;">{{ ss.track.title|truncatechars:17 }}</span>
+          <span style="font-size:.62rem;color:#5a6580;display:flex;align-items:center;gap:4px;">
+            {% if ss.performance_key %}<span style="color:#58a6ff;font-family:'IBM Plex Mono',monospace;">{{ ss.performance_key }}</span>{% endif %}
+            {% if ss.track.audio_file %}<span style="color:#22c55e;">▶</span>{% endif %}
+            {% if ss.track.stems.count %}<span style="color:#a78bfa;">⊕{{ ss.track.stems.count }}</span>{% endif %}
+          </span>
+          <span style="position:absolute;top:4px;right:5px;width:5px;height:5px;border-radius:50%;background:{% if ss.track.audio_file %}#22c55e;box-shadow:0 0 4px #22c55e{% else %}#3f4a5c{% endif %};"></span>
+        </button>
+        {% empty %}
+        <div style="padding:14px 20px;font-size:.78rem;color:#5a6580;">No songs yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+    <div id="mmStemPanel" style="width:0;overflow:hidden;transition:width .2s;border-left:1px solid #21262d;background:#090d13;flex-shrink:0;">
+      <div style="width:190px;padding:8px 12px;">
+        <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#3f4a5c;margin-bottom:6px;">Stems</div>
+        <div id="mmStemRows"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="padding:8px 18px;border-top:1px solid #21262d;display:flex;align-items:center;gap:12px;background:#090d13;">
+    <span style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#3f4a5c;">Vol</span>
+    <input type="range" id="mmMasterVol" min="0" max="1" step="0.01" value="1" oninput="mmSetVol(this.value)"
+      style="-webkit-appearance:none;height:3px;border-radius:2px;background:#21262d;width:72px;cursor:pointer;accent-color:{{ unit.color_hex|default:'#22c55e' }};">
+    <span id="mmVolLabel" style="font-size:.62rem;color:#5a6580;font-family:'IBM Plex Mono',monospace;">1.0</span>
+    <div style="flex:1;"></div>
+    <span id="mmEngineStatus" style="font-size:.65rem;color:#3f4a5c;">● Engine off</span>
+    {% if music_current_setlist.songs.first %}
+    <a href="{% url 'music:mixer' music_current_setlist.songs.first.track.uid %}" style="font-size:.7rem;padding:4px 11px;border-radius:6px;border:1px solid #21262d;background:transparent;color:#8b949e;text-decoration:none;">Full Mixer →</a>
+    {% endif %}
+    {% if music_upcoming_rehearsal %}
+    <a href="{% url 'music:rehearsal_detail' uid=music_upcoming_rehearsal.uid %}" style="font-size:.7rem;padding:4px 11px;border-radius:6px;border:1px solid #21262d;background:transparent;color:#8b949e;text-decoration:none;">Rehearsal →</a>
+    {% endif %}
+  </div>
+
+</div>
+</div>
+
+<script>
+(function(){
+  var songs=[];
+  document.querySelectorAll('[class^="mm-pill-"]').forEach(function(el){
+    var s={};try{s=JSON.parse(el.dataset.stems||'[]');}catch(e){s=[];}
+    songs.push({idx:parseInt(el.dataset.idx,10),uid:el.dataset.uid,title:el.dataset.title,artist:el.dataset.artist,audioUrl:el.dataset.audio||'',key:el.dataset.key,tempo:el.dataset.tempo,stems:s,el:el});
+  });
+  var cur=-1,playing=false,aud=null,ctx=null,masterG=null;
+  function $i(id){return document.getElementById(id);}
+  var pb=$i('mmPlayBtn'),np=$i('mmNowPlaying'),td=$i('mmTimeDisplay'),pf=$i('mmProgressFill'),pr=$i('mmProgressBar'),sp=$i('mmStemPanel'),sr=$i('mmStemRows'),es=$i('mmEngineStatus');
+
+  function initCtx(){
+    if(ctx)return;
+    try{
+      ctx=new(window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
+      masterG=ctx.createGain();masterG.gain.value=parseFloat($i('mmMasterVol').value||1);
+      masterG.connect(ctx.destination);
+      es.textContent='● Engine ready';es.style.color='#22c55e';
+    }catch(e){es.textContent='● No Web Audio';}
+  }
+  function resume(){if(ctx&&ctx.state==='suspended')ctx.resume();}
+  function fmt(s){s=Math.floor(s);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+
+  function stopAud(){
+    if(aud){aud.pause();aud.src='';aud=null;}
+    playing=false;pb.textContent='▶';pf.style.width='0%';td.textContent='—';
+  }
+
+  function loadAud(url){
+    stopAud();initCtx();resume();
+    aud=new Audio();aud.crossOrigin='anonymous';aud.src=url;aud.preload='auto';
+    aud.onloadedmetadata=function(){if(isFinite(aud.duration))td.textContent=fmt(0)+' / '+fmt(aud.duration);};
+    aud.ontimeupdate=function(){if(!aud||!isFinite(aud.duration))return;pf.style.width=(aud.currentTime/aud.duration*100).toFixed(1)+'%';td.textContent=fmt(aud.currentTime)+' / '+fmt(aud.duration);};
+    aud.onended=function(){playing=false;pb.textContent='▶';mmNext();};
+    aud.onerror=function(){np.style.color='#ef4444';np.textContent+='  (load error)';};
+    aud.play().then(function(){
+      playing=true;pb.textContent='⏸';
+      if(ctx){try{var s=ctx.createMediaElementSource(aud);s.connect(masterG);}catch(e){}}
+    }).catch(function(){np.textContent+='  (click ▶ to start)';});
+  }
+
+  window.mmSelectSong=function(el){
+    cur=parseInt(el.dataset.idx,10);
+    document.querySelectorAll('[class^="mm-pill-"]').forEach(function(p){
+      p.style.background='transparent';p.style.borderBottom='none';
+    });
+    el.style.background='rgba(34,197,94,.06)';
+    el.style.borderBottom='2px solid {{ unit.color_hex|default:"#22c55e" }}';
+    var song=songs[cur];if(!song)return;
+    np.style.color='#c9d1d9';
+    np.textContent=song.title+(song.artist?' — '+song.artist:'')+(song.key?'  ['+song.key+']':'')+(song.tempo?'  '+song.tempo+' BPM':'');
+    renderStems(song.stems);
+    if(song.audioUrl){loadAud(song.audioUrl);}
+    else{np.textContent+='  (no audio file)';np.style.color='#5a6580';}
+  };
+
+  window.mmToggle=function(){
+    if(!aud){var f=songs.find(function(s){return!!s.audioUrl;});if(f)mmSelectSong(f.el);return;}
+    resume();
+    if(playing){aud.pause();playing=false;pb.textContent='▶';}
+    else{aud.play().catch(function(){});playing=true;pb.textContent='⏸';}
+  };
+
+  window.mmPrev=function(){
+    var i=cur-1;
+    while(i>=0){if(songs[i]&&songs[i].audioUrl){mmSelectSong(songs[i].el);return;}i--;}
+    if(cur>0)mmSelectSong(songs[cur-1].el);
+  };
+
+  window.mmNext=function(){
+    var i=cur+1;
+    while(i<songs.length){if(songs[i]&&songs[i].audioUrl){mmSelectSong(songs[i].el);return;}i++;}
+  };
+
+  window.mmSeek=function(e){
+    if(!aud||!isFinite(aud.duration))return;
+    var r=pr.getBoundingClientRect();
+    aud.currentTime=((e.clientX-r.left)/r.width)*aud.duration;
+  };
+
+  window.mmSetVol=function(v){
+    v=parseFloat(v);
+    if(masterG)masterG.gain.value=v;else if(aud)aud.volume=v;
+    $i('mmVolLabel').textContent=v.toFixed(1);
+  };
+
+  function renderStems(stems){
+    if(!stems||!stems.length){sp.style.width='0';sr.innerHTML='';return;}
+    sp.style.width='192px';
+    var fc={vox:'#a78bfa',drums:'#f59f00',bass:'#22c55e',keys:'#3b82f6',guitar:'#f97316',fx:'#ec4899',click:'#94a3b8',other:'#64748b'};
+    sr.innerHTML=stems.map(function(st){
+      var c=fc[st.family]||'#64748b',has=!!st.url;
+      return '<div style="display:flex;align-items:center;gap:5px;padding:2px 0;">'
+        +'<div style="width:6px;height:6px;border-radius:50%;background:'+c+';flex-shrink:0;"></div>'
+        +'<span style="font-size:.62rem;color:#8b949e;width:40px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+st.name+'</span>'
+        +'<input type="range" min="0" max="1" step="0.01" value="'+st.gain+'"'
+          +' style="-webkit-appearance:none;flex:1;height:3px;background:#21262d;cursor:'+(has?'pointer':'not-allowed')+';accent-color:'+c+';"'
+          +(has?' oninput="mmStemGain('+st.id+',this.value)"':' disabled title=\'No stem audio\'')+' >'
+        +'<button onclick="mmStemMute('+st.id+',this)" style="width:18px;height:18px;border-radius:3px;border:1px solid #21262d;background:'+(st.muted?'rgba(239,68,68,.15)':'transparent')+';color:'+(st.muted?'#ef4444':'#5a6580')+';font-size:.52rem;font-weight:700;cursor:pointer;font-family:inherit;">M</button>'
+        +'</div>';
+    }).join('');
+  }
+
+  window.mmStemGain=function(id,v){/* full stem routing needs mixer page */};
+  window.mmStemMute=function(id,btn){
+    var m=btn.style.color!=='rgb(239, 68, 68)';
+    btn.style.color=m?'#ef4444':'#5a6580';
+    btn.style.background=m?'rgba(239,68,68,.15)':'transparent';
+    btn.style.borderColor=m?'rgba(239,68,68,.3)':'#21262d';
+  };
+})();
+</script>
+
+{# ── Music Overview ─────────────────────────────────────────────────────────── #}
+<div style="
+  margin-top:10px;
+  background:#0d1117;border:1px solid #21262d;border-radius:20px;
+  overflow:hidden;font-family:'Geist',system-ui,sans-serif;
+  box-shadow:0 2px 12px rgba(0,0,0,.4);
+">
+
+  {# Header row #}
+  <div style="padding:11px 18px;border-bottom:1px solid #21262d;display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#0d1117 60%,{{ unit.color_hex|default:'#22c55e' }}10);">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="{{ unit.color_hex|default:'#22c55e' }}" stroke-width="2.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    <span style="font-size:.78rem;font-weight:700;color:#e6edf3;flex:1;">Music Overview</span>
+    <a href="{% url 'units:unit_music' unit.slug %}" style="font-size:.7rem;color:#5a6580;text-decoration:none;">Full Hub →</a>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
+
+    {# Left col — setlist status #}
+    <div style="padding:14px 18px;border-right:1px solid #21262d;">
+      <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#3f4a5c;margin-bottom:10px;">Current Setlist</div>
+
+      {# Finalized / Draft badge #}
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:{% if music_current_setlist.finalized %}#22c55e{% else %}#d29922{% endif %};flex-shrink:0;"></span>
+        <span style="font-size:.82rem;font-weight:700;color:#c9d1d9;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ music_current_setlist.title }}</span>
+        <span style="font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:20px;
+          {% if music_current_setlist.finalized %}background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.25);
+          {% else %}background:rgba(210,153,34,.1);color:#d29922;border:1px solid rgba(210,153,34,.25);{% endif %}
+          flex-shrink:0;">
+          {% if music_current_setlist.finalized %}Finalized{% else %}Draft{% endif %}
+        </span>
+      </div>
+
+      {# Song list #}
+      {% for ss in music_current_setlist.songs.all|slice:":6" %}
+      <div style="display:flex;align-items:center;gap:7px;padding:3px 0;border-bottom:1px solid #161b22;">
+        <span style="font-size:.6rem;color:#3f4a5c;font-family:'IBM Plex Mono',monospace;width:14px;flex-shrink:0;">{{ forloop.counter }}.</span>
+        <span style="font-size:.75rem;color:#c9d1d9;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ ss.track.title }}</span>
+        {% if ss.performance_key or ss.track.original_key %}
+        <span style="font-size:.6rem;color:#58a6ff;font-family:'IBM Plex Mono',monospace;flex-shrink:0;">{{ ss.performance_key|default:ss.track.original_key }}</span>
+        {% endif %}
+        <span style="width:5px;height:5px;border-radius:50%;flex-shrink:0;
+          background:{% if ss.track.audio_file %}#22c55e{% elif ss.track.stems.count %}#a78bfa{% else %}#3f4a5c{% endif %};"></span>
+      </div>
+      {% endfor %}
+      {% if music_current_setlist.songs.count > 6 %}
+      <div style="font-size:.68rem;color:#3f4a5c;padding-top:5px;">+{{ music_current_setlist.songs.count|add:"-6" }} more songs</div>
+      {% endif %}
+
+      {# Audio readiness summary #}
+      {% with total=music_current_setlist.songs.count %}
+      {% if total %}
+      <div style="margin-top:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:.62rem;color:#3f4a5c;">Audio coverage</span>
+          <span style="font-size:.62rem;color:#5a6580;font-family:'IBM Plex Mono',monospace;">
+            {# Count tracks with audio files #}
+            {% with has_audio=music_current_setlist.songs.all %}
+            {{ total }} songs
+            {% endwith %}
+          </span>
+        </div>
+        {# Legend #}
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:.62rem;color:#5a6580;display:flex;align-items:center;gap:3px;"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;"></span>Audio</span>
+          <span style="font-size:.62rem;color:#5a6580;display:flex;align-items:center;gap:3px;"><span style="width:5px;height:5px;border-radius:50%;background:#a78bfa;"></span>Stems only</span>
+          <span style="font-size:.62rem;color:#5a6580;display:flex;align-items:center;gap:3px;"><span style="width:5px;height:5px;border-radius:50%;background:#3f4a5c;"></span>No file</span>
+        </div>
+      </div>
+      {% endif %}
+      {% endwith %}
+    </div>
+
+    {# Right col — rehearsal + recent history #}
+    <div style="padding:14px 18px;">
+
+      {# Next rehearsal #}
+      <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#3f4a5c;margin-bottom:10px;">Next Rehearsal</div>
+      {% if music_upcoming_rehearsal %}
+      <div style="background:#161b22;border:1px solid #21262d;border-radius:10px;padding:10px 12px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span style="font-size:.8rem;font-weight:700;color:#c9d1d9;">{{ music_upcoming_rehearsal.event.date|date:"D, N j" }}</span>
+        </div>
+        {% if music_upcoming_rehearsal.event.prepares_for_service %}
+        <div style="font-size:.7rem;color:#5a6580;margin-bottom:6px;">
+          Preparing for <span style="color:#c9d1d9;">{{ music_upcoming_rehearsal.event.prepares_for_service.name }}</span>
+        </div>
+        {% endif %}
+        {% if music_upcoming_rehearsal.setlist %}
+        <div style="font-size:.7rem;color:#5a6580;">
+          Setlist: <span style="color:#8b949e;">{{ music_upcoming_rehearsal.setlist.title }}</span>
+          · {{ music_upcoming_rehearsal.setlist.songs.count }} song{{ music_upcoming_rehearsal.setlist.songs.count|pluralize }}
+        </div>
+        {% endif %}
+        <a href="{% url 'music:rehearsal_detail' uid=music_upcoming_rehearsal.uid %}"
+           style="display:inline-block;margin-top:8px;font-size:.68rem;padding:3px 10px;border-radius:6px;border:1px solid #21262d;background:transparent;color:#8b949e;text-decoration:none;">
+          View Rehearsal →
+        </a>
+      </div>
+      {% else %}
+      <div style="font-size:.75rem;color:#3f4a5c;margin-bottom:12px;">No upcoming rehearsals scheduled.</div>
+      {% endif %}
+
+      {# Recent setlist history #}
+      {% if music_previous_setlists %}
+      <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#3f4a5c;margin-bottom:8px;">Recent Setlists</div>
+      {% for sl in music_previous_setlists %}
+      <div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #161b22;">
+        <span style="width:5px;height:5px;border-radius:50%;flex-shrink:0;
+          background:{% if sl.finalized %}#22c55e{% else %}#3f4a5c{% endif %};"></span>
+        <span style="font-size:.75rem;color:#8b949e;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ sl.title }}</span>
+        <span style="font-size:.62rem;color:#3f4a5c;font-family:'IBM Plex Mono',monospace;flex-shrink:0;">
+          {% if sl.event %}{{ sl.event.date|date:"M j" }}{% else %}—{% endif %}
+        </span>
+        <a href="{% url 'music:setlist_detail' sl.uid %}"
+           style="font-size:.6rem;color:#3f4a5c;text-decoration:none;flex-shrink:0;">↗</a>
+      </div>
+      {% endfor %}
+      {% endif %}
+
+    </div>
+  </div>{# /grid #}
+
+</div>
+{% endif %}

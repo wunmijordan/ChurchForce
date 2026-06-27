@@ -1,0 +1,364 @@
+{% extends base_template %}
+{% load static access_tags %}
+{% block title %}{{ track.title }}{% endblock %}
+{% block content %}
+<div class="container-xl py-4">
+  <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <a href="{% url 'music:library' %}" class="text-muted text-decoration-none small">← Library</a>
+    <h2 class="fw-bold mb-0">{{ track.title }}</h2>
+    {% if track.original_key %}<span class="badge bg-blue-lt fs-6">{{ track.original_key }}</span>{% endif %}
+    <a href="{% url 'music:mixer' uid=track.uid %}" class="btn btn-outline-primary btn-sm ms-auto">Open Mixer</a>
+    {% if can_edit %}
+    <a href="{% url 'music:track_edit' uid=track.uid %}" class="btn btn-outline-secondary btn-sm">Edit Track</a>
+    {% endif %}
+  </div>
+
+  <div class="row g-4">
+    {# Left: Info + Lyrics #}
+    <div class="col-12 col-lg-7">
+      {# Track meta #}
+      <div class="card bg-dark border-secondary mb-4" style="border-radius:12px;">
+        <div class="card-body p-3">
+          <div class="row g-3 text-center">
+            <div class="col-4"><div class="text-muted small">Artist</div><div class="fw-semibold small">{{ track.artist|default:"—" }}</div></div>
+            <div class="col-4"><div class="text-muted small">Tempo</div><div class="fw-semibold small">{{ track.tempo|default:"—" }}{% if track.tempo %} BPM{% endif %}</div></div>
+            <div class="col-4"><div class="text-muted small">Time</div><div class="fw-semibold small">{{ track.time_signature|default:"4/4" }}</div></div>
+          </div>
+          {% if track.youtube_url %}
+          <div class="mt-2 text-center">
+            <a href="{{ track.youtube_url }}" target="_blank" class="btn btn-sm btn-outline-danger">▶ YouTube Reference</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {# Lyrics Sections #}
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h5 class="fw-semibold mb-0">Lyrics</h5>
+        {% if can_edit %}
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" id="addSectionBtn">+ Section</button>
+          {% if track.lyrics %}
+          <button class="btn btn-sm btn-outline-primary" id="aiStructureBtn">✨ AI Structure</button>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div id="sectionsContainer">
+        {% for section in sections %}
+        <div class="card bg-dark border-secondary mb-2 section-card" data-id="{{ section.pk }}" style="border-radius:10px;">
+          <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="badge bg-secondary">{{ section.label }}</span>
+              {% if section.repeat_count > 1 %}<span class="text-muted small">×{{ section.repeat_count }}</span>{% endif %}
+              {% if can_edit %}
+              <button class="btn btn-xs btn-ghost text-muted edit-section-btn" data-id="{{ section.pk }}"
+                      data-type="{{ section.section_type }}" data-content="{{ section.content|escapejs }}"
+                      data-label="{{ section.label }}" data-repeat="{{ section.repeat_count }}">Edit</button>
+              {% endif %}
+            </div>
+            <pre class="mb-0 small text-white" style="white-space:pre-wrap;font-family:inherit;">{{ section.content }}</pre>
+          </div>
+        </div>
+        {% empty %}
+        <div class="text-muted text-center py-3 small" id="noSectionsMsg">
+          No lyrics sections yet.{% if can_edit %} Click "+ Section" or "✨ AI Structure" to add.{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Right: Chord Charts + History #}
+    <div class="col-12 col-lg-5">
+      {# Chord Charts #}
+      <div class="card bg-dark border-secondary mb-4" style="border-radius:12px;">
+        <div class="card-header d-flex justify-content-between border-secondary">
+          <span class="fw-semibold">Chord Charts</span>
+          {% if can_edit %}<button class="btn btn-xs btn-outline-secondary" id="addChartBtn">+ Chart</button>{% endif %}
+        </div>
+        <div class="card-body p-0">
+          {% for chart in charts %}
+          <div class="p-3 border-bottom border-secondary">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-semibold small">{{ chart.key }}{% if chart.label %} — {{ chart.label }}{% endif %}</span>
+              {% if chart.is_default %}<span class="badge bg-primary-lt" style="font-size:.65rem;">Default</span>{% endif %}
+            </div>
+            {% if chart.content %}
+            <pre class="mb-0" style="font-size:.72rem;white-space:pre-wrap;color:#94a3b8;max-height:120px;overflow:auto;">{{ chart.content }}</pre>
+            {% endif %}
+            {% if chart.file %}<a href="{{ chart.file.url }}" target="_blank" class="text-muted small">📄 PDF Chart</a>{% endif %}
+          </div>
+          {% empty %}
+          <div class="text-muted text-center py-3 small">No chord charts yet.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      {# Setlist appearances #}
+      <div class="card bg-dark border-secondary mb-4" style="border-radius:12px;">
+        <div class="card-header border-secondary"><span class="fw-semibold">Recent Setlists</span></div>
+        <div class="card-body p-0">
+          {% for ss in setlist_songs %}
+          <div class="p-3 border-bottom border-secondary">
+            <a href="{% url 'music:setlist_detail' uid=ss.setlist.uid %}" class="text-white text-decoration-none small fw-semibold">
+              {{ ss.setlist.title }}
+            </a>
+            <div class="text-muted" style="font-size:.7rem;">
+              {{ ss.setlist.event|default:"No event" }} · Key: {{ ss.performance_key|default:"—" }}
+            </div>
+          </div>
+          {% empty %}
+          <div class="text-muted text-center py-3 small">Not used in any setlist yet.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      {# ── Resources panel ── #}
+      <div class="card bg-dark border-secondary" style="border-radius:12px;">
+        <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Resources</span>
+          {% if can_edit %}
+          <button class="btn btn-xs btn-outline-secondary" id="addResourceBtn">+ Add</button>
+          {% endif %}
+        </div>
+        <div class="card-body p-0" id="resourceList">
+          {% for res in track.resources.all %}
+          <div class="d-flex align-items-center gap-2 p-3 border-bottom border-secondary res-item">
+            <span style="font-size:1rem;">
+              {% if res.resource_type == 'chord_chart' %}🎼
+              {% elif res.resource_type == 'sheet_music' %}📄
+              {% elif res.resource_type == 'stem' %}🎚
+              {% elif res.resource_type == 'loop' %}🔁
+              {% elif res.resource_type == 'reference' %}🎵
+              {% elif res.resource_type == 'lyrics' %}📝
+              {% else %}📎{% endif %}
+            </span>
+            <div class="flex-grow-1" style="min-width:0;">
+              <div class="small fw-semibold text-white" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                {% if res.download_url %}<a href="{{ res.download_url }}" target="_blank" class="text-white text-decoration-none">{{ res.name }}</a>
+                {% else %}{{ res.name }}{% endif %}
+              </div>
+              <div class="text-muted" style="font-size:.68rem;">{{ res.get_resource_type_display }}</div>
+            </div>
+            {% if can_edit %}
+            <button class="remove-res-btn btn btn-xs btn-ghost text-danger" data-id="{{ res.pk }}" title="Delete">✕</button>
+            {% endif %}
+          </div>
+          {% empty %}
+          <div class="text-muted text-center py-3 small" id="noResMsg">No resources yet. Add chord charts, PDFs, loops…</div>
+          {% endfor %}
+        </div>
+        {% if can_edit %}
+        <div class="card-footer border-secondary p-3" id="addResourceForm" style="display:none;">
+          <div class="row g-2">
+            <div class="col-12 col-sm-6">
+              <input type="text" id="resName" class="form-control form-control-sm bg-dark border-secondary text-white" placeholder="Resource name *">
+            </div>
+            <div class="col-12 col-sm-6">
+              <select id="resType" class="form-select form-select-sm bg-dark border-secondary text-white">
+                <option value="chord_chart">Chord Chart</option>
+                <option value="sheet_music">Sheet Music</option>
+                <option value="stem">Stem / Track</option>
+                <option value="loop">Loop</option>
+                <option value="reference">Reference Recording</option>
+                <option value="lyrics">Lyrics Sheet</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <input type="url" id="resUrl" class="form-control form-control-sm bg-dark border-secondary text-white" placeholder="External URL (Google Drive, Dropbox…)">
+            </div>
+            <div class="col-12">
+              <input type="file" id="resFile" class="form-control form-control-sm bg-dark border-secondary text-white">
+            </div>
+            <div class="col-12 d-flex gap-2">
+              <button class="btn btn-sm btn-primary" id="saveResourceBtn">Save Resource</button>
+              <button class="btn btn-sm btn-ghost text-muted" onclick="document.getElementById('addResourceForm').style.display='none'">Cancel</button>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if can_edit %}
+{# Section modal #}
+<div class="modal fade" id="sectionModal" tabindex="-1">
+  <div class="modal-dialog modal-lg"><div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="sectionModalTitle">Add Section</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editSectionId">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label small text-muted">Type</label>
+          <select id="sectionType" class="form-select bg-dark border-secondary text-white">
+            <option value="intro">Intro</option>
+            <option value="verse" selected>Verse</option>
+            <option value="pre_chorus">Pre-Chorus</option>
+            <option value="chorus">Chorus</option>
+            <option value="bridge">Bridge</option>
+            <option value="outro">Outro</option>
+            <option value="tag">Tag</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small text-muted">Label (auto if blank)</label>
+          <input id="sectionLabel" class="form-control bg-dark border-secondary text-white" placeholder="e.g. Verse 1">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small text-muted">Repeats</label>
+          <input id="sectionRepeat" type="number" min="1" max="4" value="1" class="form-control bg-dark border-secondary text-white">
+        </div>
+        <div class="col-12">
+          <label class="form-label small text-muted">Lyrics</label>
+          <textarea id="sectionContent" rows="8" class="form-control bg-dark border-secondary text-white" style="font-family:monospace;"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer border-secondary">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-primary" id="saveSectionBtn">Save</button>
+    </div>
+  </div></div>
+</div>
+
+{# Chart modal #}
+<div class="modal fade" id="chartModal" tabindex="-1">
+  <div class="modal-dialog modal-lg"><div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Add Chord Chart</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label small text-muted">Key</label>
+          <select id="chartKey" class="form-select bg-dark border-secondary text-white">
+            {% for k, label in keys %}<option value="{{ k }}">{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small text-muted">Label</label>
+          <input id="chartLabel" class="form-control bg-dark border-secondary text-white" placeholder="e.g. Acoustic">
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <div class="form-check"><input class="form-check-input" type="checkbox" id="chartDefault"><label class="form-check-label small">Set as default</label></div>
+        </div>
+        <div class="col-12">
+          <label class="form-label small text-muted">Chord content (Nashville, chord names, or tab)</label>
+          <textarea id="chartContent" rows="10" class="form-control bg-dark border-secondary text-white" style="font-family:monospace;font-size:.85rem;"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer border-secondary">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-primary" id="saveChartBtn">Save</button>
+    </div>
+  </div></div>
+</div>
+
+<script>
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+const SECTION_URL = "{% url 'music:section_save' track_uid=track.uid %}";
+const AI_URL      = "{% url 'music:ai_structure' track_uid=track.uid %}";
+const CHART_URL   = "{% url 'music:chart_save' track_uid=track.uid %}";
+
+function post(url, data) {
+  return fetch(url, {method:'POST', headers:{'X-CSRFToken':CSRF,'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams(data)}).then(r=>r.json());
+}
+
+// Section modal
+const sectionModal = new bootstrap.Modal(document.getElementById('sectionModal'));
+document.getElementById('addSectionBtn')?.addEventListener('click', () => {
+  document.getElementById('sectionModalTitle').textContent = 'Add Section';
+  document.getElementById('editSectionId').value = '';
+  document.getElementById('sectionType').value = 'verse';
+  document.getElementById('sectionLabel').value = '';
+  document.getElementById('sectionContent').value = '';
+  document.getElementById('sectionRepeat').value = 1;
+  sectionModal.show();
+});
+document.querySelectorAll('.edit-section-btn').forEach(btn => btn.addEventListener('click', () => {
+  document.getElementById('sectionModalTitle').textContent = 'Edit Section';
+  document.getElementById('editSectionId').value = btn.dataset.id;
+  document.getElementById('sectionType').value = btn.dataset.type;
+  document.getElementById('sectionLabel').value = btn.dataset.label;
+  document.getElementById('sectionContent').value = btn.dataset.content;
+  document.getElementById('sectionRepeat').value = btn.dataset.repeat;
+  sectionModal.show();
+}));
+document.getElementById('saveSectionBtn').addEventListener('click', () => {
+  post(SECTION_URL, {
+    section_id: document.getElementById('editSectionId').value,
+    section_type: document.getElementById('sectionType').value,
+    label: document.getElementById('sectionLabel').value,
+    content: document.getElementById('sectionContent').value,
+    repeat_count: document.getElementById('sectionRepeat').value,
+    order: document.querySelectorAll('.section-card').length,
+  }).then(d => { if (d.ok) location.reload(); else alert(d.error); });
+});
+
+// AI structure
+document.getElementById('aiStructureBtn')?.addEventListener('click', () => {
+  if (!confirm('Replace all sections with AI-structured lyrics? Existing sections will be deleted.')) return;
+  fetch(AI_URL, {method:'POST', headers:{'X-CSRFToken':CSRF}}).then(r=>r.json()).then(d => {
+    if (d.ok) { location.reload(); } else alert(d.error || 'AI structuring failed.');
+  });
+});
+
+// Chord chart modal
+const chartModal = new bootstrap.Modal(document.getElementById('chartModal'));
+document.getElementById('addChartBtn')?.addEventListener('click', () => chartModal.show());
+document.getElementById('saveChartBtn').addEventListener('click', () => {
+  post(CHART_URL, {
+    key: document.getElementById('chartKey').value,
+    label: document.getElementById('chartLabel').value,
+    content: document.getElementById('chartContent').value,
+    is_default: document.getElementById('chartDefault').checked ? 'on' : '',
+  }).then(d => { if (d.ok) location.reload(); else alert(d.error); });
+});
+
+// Resources
+const RESOURCE_UPLOAD_URL = "{% url 'music:resource_upload' uid=track.uid %}";
+const RESOURCE_DELETE_URL = id => `/music/track/{{ track.uid }}/resources/${id}/delete/`;
+
+document.getElementById('addResourceBtn')?.addEventListener('click', () => {
+  const f = document.getElementById('addResourceForm');
+  f.style.display = f.style.display === 'none' ? '' : 'none';
+});
+
+document.getElementById('saveResourceBtn')?.addEventListener('click', () => {
+  const name    = document.getElementById('resName').value.trim();
+  const type    = document.getElementById('resType').value;
+  const url     = document.getElementById('resUrl').value.trim();
+  const fileEl  = document.getElementById('resFile');
+  if (!name) { alert('Please enter a resource name.'); return; }
+  if (!url && !fileEl.files.length) { alert('Provide a file or URL.'); return; }
+  const fd = new FormData();
+  fd.append('name', name);
+  fd.append('resource_type', type);
+  fd.append('external_url', url);
+  if (fileEl.files.length) fd.append('file', fileEl.files[0]);
+  fetch(RESOURCE_UPLOAD_URL, { method:'POST', headers:{'X-CSRFToken':CSRF}, body:fd })
+    .then(r => r.json()).then(d => {
+      if (!d.ok) { alert(d.error || 'Upload failed.'); return; }
+      location.reload();
+    });
+});
+
+document.querySelectorAll('.remove-res-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (!confirm('Delete this resource?')) return;
+    fetch(RESOURCE_DELETE_URL(btn.dataset.id), { method:'POST', headers:{'X-CSRFToken':CSRF} })
+      .then(r => r.json()).then(d => { if (d.ok) btn.closest('.res-item').remove(); });
+  });
+});
+</script>
+{% endif %}
+{% endblock %}

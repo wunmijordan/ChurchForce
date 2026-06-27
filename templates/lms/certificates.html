@@ -1,0 +1,31 @@
+{% extends base_template %}
+{% load static access_tags %}
+{% block title %}Certificates — Training{% endblock %}
+{% block content %}
+<div class="container-xl py-4">
+  <h2 class="fw-bold mb-4">My Certificates</h2>
+  {% if certificates %}
+  <div class="row g-3">
+    {% for cert in certificates %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card bg-dark border-success h-100" style="border-radius:16px;">
+        <div class="card-body text-center p-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.5" class="mb-3"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+          <h5 class="fw-bold mb-1">{{ cert.enrollment.course.title }}</h5>
+          <div class="text-muted small mb-3">{{ cert.enrollment.course.get_course_type_display }}</div>
+          <div class="p-3 bg-black bg-opacity-25 rounded mb-3 text-start" style="font-size:.85rem;line-height:1.6;">{{ cert.certificate_text }}</div>
+          <div class="text-muted small">Issued: {{ cert.issued_at|date:"d M Y" }}</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="mb-3 opacity-50"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+    <p>No certificates yet.</p>
+    <a href="{% url 'lms:course_list' %}" class="btn btn-primary btn-sm">Browse Courses</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

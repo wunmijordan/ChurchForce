@@ -1,0 +1,21 @@
+{# Guest Origin Map Widget — shows home address data as a distribution #}
+{# Requires: guest_locations (list of {area, count}) #}
+{% if guest_locations %}
+<div class="card bg-dark border-secondary mb-3" style="border-radius:12px;">
+  <div class="card-header border-secondary py-2">
+    <span class="fw-semibold small">📍 Guest Catchment Areas</span>
+    <span class="text-muted ms-2" style="font-size:.72rem;">(based on home address data)</span>
+  </div>
+  <div class="card-body py-3">
+    {% for loc in guest_locations %}
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <div class="text-muted small" style="min-width:120px;font-size:.8rem;">{{ loc.area }}</div>
+      <div class="flex-grow-1 bg-secondary rounded" style="height:6px;border-radius:99px;overflow:hidden;">
+        <div style="width:{{ loc.percent }}%;height:100%;background:#22c55e;border-radius:99px;"></div>
+      </div>
+      <div class="text-muted small" style="min-width:30px;font-size:.75rem;">{{ loc.count }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

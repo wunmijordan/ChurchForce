@@ -18,14 +18,20 @@ from django.utils.timezone import make_aware
 
 
 weekday_map = {
-    "monday": 0, "tuesday": 1, "wednesday": 2,
-    "thursday": 3, "friday": 4, "saturday": 5, "sunday": 6,
+    "monday": 0,
+    "tuesday": 1,
+    "wednesday": 2,
+    "thursday": 3,
+    "friday": 4,
+    "saturday": 5,
+    "sunday": 6,
 }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Job functions
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def fire_event_broadcast(event_id, church_id):
     """
@@ -48,7 +54,9 @@ def fire_event_broadcast(event_id, church_id):
             print(f"⏩ [Scheduler] Event {event_id} no longer active — skipped.")
 
     except Exception as exc:
-        print(f"❌ [Scheduler] fire_event_broadcast({event_id}, church={church_id}): {exc}")
+        print(
+            f"❌ [Scheduler] fire_event_broadcast({event_id}, church={church_id}): {exc}"
+        )
 
 
 def fire_push_notification(notification_id, church_id):
@@ -69,18 +77,25 @@ def fire_push_notification(notification_id, church_id):
         if notif:
             broadcast_notification(notif)
         else:
-            print(f"⏩ [Scheduler] Notification {notification_id} already delivered — skipped.")
+            print(
+                f"⏩ [Scheduler] Notification {notification_id} already delivered — skipped."
+            )
 
     except Exception as exc:
-        print(f"❌ [Scheduler] fire_push_notification({notification_id}, church={church_id}): {exc}")
+        print(
+            f"❌ [Scheduler] fire_push_notification({notification_id}, church={church_id}): {exc}"
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Scheduling functions (called on startup + daily cron)
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def get_next_occurrence(day_of_week: str, event_time):
     """Return next localized datetime for a weekly recurring event."""
+    if not event_time:
+        return None
     today = timezone.localdate()
     now = timezone.localtime()
     target_weekday = weekday_map[day_of_week.lower()]
@@ -120,34 +135,46 @@ def schedule_event_notifications():
             for event in Event.raw_objects.filter(church=church, is_active=True):
 
                 if event.date:
+                    if not event.time:
+                        continue
                     full_dt = make_aware(datetime.combine(event.date, event.time))
                     if full_dt <= now:
                         continue
-                    run_time = max(full_dt - timedelta(seconds=45), now + timedelta(seconds=5))
+                    run_time = max(
+                        full_dt - timedelta(seconds=45), now + timedelta(seconds=5)
+                    )
                     scheduler.add_job(
                         fire_event_broadcast,
-                        trigger="date", run_date=run_time,
+                        trigger="date",
+                        run_date=run_time,
                         args=[event.id, church.id],
                         id=f"event_fixed_{church.id}_{event.id}",
-                        replace_existing=True, misfire_grace_time=60,
+                        replace_existing=True,
+                        misfire_grace_time=60,
                     )
                     total += 1
                     continue
 
                 if getattr(event, "is_recurring_weekly", False) and event.day_of_week:
                     next_dt = get_next_occurrence(event.day_of_week, event.time)
+                    if not next_dt:
+                        continue
                     if next_dt <= now:
                         continue
                     scheduler.add_job(
                         fire_event_broadcast,
-                        trigger="date", run_date=next_dt - timedelta(seconds=45),
+                        trigger="date",
+                        run_date=next_dt - timedelta(seconds=45),
                         args=[event.id, church.id],
                         id=f"event_weekly_{church.id}_{event.id}",
-                        replace_existing=True, misfire_grace_time=60,
+                        replace_existing=True,
+                        misfire_grace_time=60,
                     )
                     total += 1
 
-        print(f"✅ [Scheduler] {total} event broadcasts scheduled across {churches.count()} churches.")
+        print(
+            f"✅ [Scheduler] {total} event broadcasts scheduled across {churches.count()} churches."
+        )
 
     except Exception as exc:
         print(f"❌ [Scheduler] schedule_event_notifications: {exc}")
@@ -176,10 +203,12 @@ def schedule_push_notifications():
         for notif in pending:
             scheduler.add_job(
                 fire_push_notification,
-                trigger="date", run_date=notif.send_at,
+                trigger="date",
+                run_date=notif.send_at,
                 args=[notif.id, notif.church_id],
                 id=f"notif_{notif.church_id}_{notif.id}",
-                replace_existing=True, misfire_grace_time=60,
+                replace_existing=True,
+                misfire_grace_time=60,
             )
             total += 1
 
@@ -193,19 +222,76 @@ def schedule_push_notifications():
 # Job registration — called by core/scheduler.py:start()
 # ─────────────────────────────────────────────────────────────────────────────
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Daily probation completion check
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def run_probation_completions():
+    """
+    Daily job: find all WorkforceTraineeProfiles whose probation_ends_at
+    has been reached and complete their probation automatically.
+
+    Covers both:
+        reason='induction'  → moves member to preferred_unit + Active stage
+        reason='probation'  → restores member to original_unit + Active stage
+    """
+    from tenants.models import Church
+    from workforce.models import WorkforceTraineeProfile
+    from workforce.services.disciplinary import complete_probation
+    from django.utils import timezone
+
+    today = timezone.localdate()
+    total = 0
+
+    churches = Church.raw_objects.filter(is_active=True)
+    for church in churches:
+        due = WorkforceTraineeProfile.raw_objects.filter(
+            church=church,
+            is_active=True,
+            probation_ends_at__lte=today,
+            reason__in=["induction", "probation"],
+        )
+        for trainee in due:
+            try:
+                complete_probation(trainee)
+                total += 1
+            except Exception as exc:
+                import logging
+
+                logging.getLogger(__name__).error(
+                    "probation completion failed for trainee %s: %s", trainee.pk, exc
+                )
+
+    return total
+
+
 def register_workforce_jobs(scheduler):
     """Register all workforce cron jobs into the shared scheduler."""
 
     scheduler.add_job(
         schedule_event_notifications,
-        trigger="cron", hour=0, minute=10,
+        trigger="cron",
+        hour=0,
+        minute=10,
         id="daily_event_reschedule",
         replace_existing=True,
     )
     scheduler.add_job(
         schedule_push_notifications,
-        trigger="cron", hour=0, minute=15,
+        trigger="cron",
+        hour=0,
+        minute=15,
         id="daily_push_reschedule",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        run_probation_completions,
+        trigger="cron",
+        hour=1,
+        minute=15,
+        id="daily_probation_completions",
         replace_existing=True,
     )
     print("✅ [Scheduler] Workforce jobs registered.")

@@ -5,43 +5,46 @@
 <div class="nav-item dropdown">
   <a href="#" class="nav-link d-flex lh-1 p-0 px-2 ms-2 text-white" data-bs-toggle="dropdown" aria-label="User menu">
     {% render_user_avatar user "avatar-sm" %}
-    <div class="ps-2 d-flex flex-column justify-content-center d-none d-xl-flex">
-      <div>{{ user.title|default:"" }} {{ user.full_name }}</div>
+    <!--<div class="ps-2 d-flex flex-column justify-content-center d-none d-xl-flex">
+      <div>{{ user.title|default:"" }} {{ user.full_name|default:user.username }}</div>
       <div class="text-secondary small">{{ user|role_label }}</div>
-    </div>
+    </div>-->
   </a>
   <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow py-1">
-    <a class="dropdown-item" href="{% url 'accounts:edit_profile' %}">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-2">
-        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-        <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0-8 0"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-      </svg>
-      Profile
-    </a>
-    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#notifSettingsModal">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-2">
-        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-        <path d="M12 17h-8a4 4 0 0 0 2-3v-3a7 7 0 0 1 4-6a2 2 0 1 1 4 0a7 7 0 0 1 4 6v.5"/>
-        <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/><path d="M19.001 15.5v1.5"/><path d="M19.001 21v1.5"/>
-        <path d="M22.032 17.25l-1.299.75"/><path d="M17.27 20l-1.3.75"/><path d="M15.97 17.25l1.3.75"/><path d="M20.733 20l1.3.75"/>
-        <path d="M9 17v1a3 3 0 0 0 3 3"/>
-      </svg>
-      Preferences
-    </a>
+    {% if nav_is_admin %}
     <a href="https://churchforce.io" class="dropdown-item" target="_blank" rel="noreferrer">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-2">
+      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-pointer">
         <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-        <path d="M7.904 17.563a1.2 1.2 0 0 0 2.228.308l2.09-3.093l4.907 4.907a1.067 1.067 0 0 0 1.509 0l1.047-1.047a1.067 1.067 0 0 0 0-1.509l-4.907-4.907l3.113-2.09a1.2 1.2 0 0 0-.309-2.228l-13.582-3.904l3.904 13.563z"/>
+        <path d="M7.904 17.563a1.2 1.2 0 0 0 2.228 .308l2.09 -3.093l4.907 4.907a1.067 1.067 0 0 0 1.509 0l1.047 -1.047a1.067 1.067 0 0 0 0 -1.509l-4.907 -4.907l3.113 -2.09a1.2 1.2 0 0 0 -.309 -2.228l-13.582 -3.904l3.904 13.563z" />
       </svg>
-      churchforce.io
+      ChurchForce
       <span class="badge badge-sm bg-green-lt ms-auto">Home</span>
     </a>
+    {% endif %}
     <div class="dropdown-divider"></div>
-    <a href="{% url 'logout' %}" class="dropdown-item text-danger">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-2">
-        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-        <path d="M14 8v-2a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2"/>
-        <path d="M9 12h12l-3-3"/><path d="M18 15l3-3"/>
+    <a class="dropdown-item" href="{% scoped_url request 'workforce:member_settings' %}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-settings">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" />
+        <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+      </svg>
+      My Settings
+    </a>
+
+    <div class="dropdown-divider"></div>
+    {% if request.user.is_superuser %}
+    <div class="dropdown-divider"></div>
+    <a class="dropdown-item text-warning fw-semibold" href="{% url 'dashboard:superuser_dashboard' %}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-device-remote">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M15 2a3 3 0 0 1 3 3v14a3 3 0 0 1 -3 3h-6a3 3 0 0 1 -3 -3v-14a3 3 0 0 1 3 -3h2v1a1 1 0 0 0 .883 .993l.117 .007a1 1 0 0 0 1 -1v-1zm-5 15a1 1 0 0 0 -1 1l.007 .127a1 1 0 0 0 1.993 -.117l-.007 -.127a1 1 0 0 0 -.993 -.883m4 0a1 1 0 0 0 -1 1l.007 .127a1 1 0 0 0 1.993 -.117l-.007 -.127a1 1 0 0 0 -.993 -.883m-4 -3a1 1 0 0 0 -1 1l.007 .127a1 1 0 0 0 1.993 -.117l-.007 -.127a1 1 0 0 0 -.993 -.883m4 0a1 1 0 0 0 -1 1l.007 .127a1 1 0 0 0 1.993 -.117l-.007 -.127a1 1 0 0 0 -.993 -.883m-2 -7a3 3 0 0 0 -2.995 2.824l-.005 .176a3 3 0 1 0 3 -3" />
+      </svg> 
+      Control Panel
+    </a>
+    {% endif %}
+    <a href="{% url 'accounts:login' %}" class="dropdown-item text-danger">
+      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-logout">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
+        <path d="M9 12h12l-3 -3" /><path d="M18 15l3 -3" />
       </svg>
       Logout
     </a>

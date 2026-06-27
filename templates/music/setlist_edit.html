@@ -1,0 +1,28 @@
+{% extends base_template %}
+{% load widget_tweaks %}
+{% load static access_tags %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}<div class="container-xl py-4" style="max-width:600px;">
+  <h2 class="fw-bold mb-4">{{ page_title }}</h2>
+  <form method="post" class="card bg-dark border-secondary p-4" style="border-radius:12px;">
+    {% csrf_token %}
+    <div class="mb-3"><label class="form-label text-muted small">Title *</label>
+      <input name="title" class="form-control bg-dark border-secondary text-white" value="{{ setlist.title|default:'' }}" required></div>
+    <div class="mb-3"><label class="form-label text-muted small">Linked Event</label>
+      <select name="event_id" class="form-select bg-dark border-secondary text-white">
+        <option value="">— None —</option>
+        {% for e in events %}<option value="{{ e.pk }}" {% if setlist and setlist.event_id == e.pk %}selected{% endif %}>{{ e.name }} ({{ e.date|default:"recurring" }})</option>{% endfor %}
+      </select></div>
+    <div class="mb-3"><label class="form-label text-muted small">Music Unit</label>
+      <select name="unit_id" class="form-select bg-dark border-secondary text-white">
+        <option value="">— None —</option>
+        {% for u in units %}<option value="{{ u.pk }}" {% if setlist and setlist.unit_id == u.pk %}selected{% endif %}>{{ u.name }}</option>{% endfor %}
+      </select></div>
+    <div class="mb-4"><label class="form-label text-muted small">Notes</label>
+      <textarea name="notes" rows="3" class="form-control bg-dark border-secondary text-white">{{ setlist.notes|default:'' }}</textarea></div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary">Save</button>
+      <a href="{% url 'music:setlist_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>{% endblock %}

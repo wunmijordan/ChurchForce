@@ -6,10 +6,10 @@ register = template.Library()
 
 
 @register.filter
-def roles_for_team(raw, team_id):
+def roles_for_unit(raw, unit_id):
     """
-    Given a raw team_role string and a team_id integer,
-    return a list of role names that belong to this team.
+    Given a raw unit_role string and a unit_id integer,
+    return a list of role names that belong to this unit.
     Format understood: "11:Head of Unit,7:Member" or plain "Member".
     """
     if raw is None:
@@ -29,7 +29,7 @@ def roles_for_team(raw, team_id):
             left, right = left.strip(), right.strip()
             if left.isdigit():
                 try:
-                    if int(left) == int(team_id):
+                    if int(left) == int(unit_id):
                         matches.append(right)
                     continue
                 except Exception:

@@ -23,7 +23,7 @@ import random
 import string
 
 from django.db import transaction
-from django.utils.text import slugify
+from accounts.username_utils import derive_username_base, format_username
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -49,9 +49,7 @@ def generate_username(full_name: str, church_slug: str = ""):
     """
     from accounts.models import CustomUser
 
-    parts = slugify(full_name or "member").split("-")
-    base = ".".join(parts[:2]) if len(parts) >= 2 else parts[0]
-    base = base[:28]  # leave room for counter suffix
+    base = derive_username_base(full_name or "member")
 
     username = base
     counter = 1
@@ -60,6 +58,20 @@ def generate_username(full_name: str, church_slug: str = ""):
         counter += 1
 
     return username
+
+
+def generate_formatted_username(full_name: str, church):
+    from accounts.models import CustomUser
+
+    base = derive_username_base(full_name or "member")
+    candidate_base = base
+    counter = 1
+    candidate = format_username(candidate_base, church=church)
+    while CustomUser.objects.filter(username__iexact=candidate).exists():
+        candidate_base = f"{base}{counter}"
+        candidate = format_username(candidate_base, church=church)
+        counter += 1
+    return candidate
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -116,7 +128,7 @@ def manual_promote_guest_to_member(
         )
 
     # ── Create user ───────────────────────────────────────────────────
-    username = generate_username(full_name, church.slug)
+    username = generate_formatted_username(full_name, church)
     temp_password = generate_temp_password()
 
     user = CustomUser.objects.create_user(

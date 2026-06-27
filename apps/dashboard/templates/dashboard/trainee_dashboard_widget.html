@@ -1,0 +1,120 @@
+{% comment %}
+  lms/trainee_dashboard_widget.html
+  ─────────────────────────────────
+  Include this inside the dashboard "Trainee" db-tab-panel.
+  Usage: {% include "lms/trainee_dashboard_widget.html" %}
+  Context variables (set in dashboard view):
+    lms_enrollments         — queryset of LMSEnrollment for this member
+    lms_pending_peer_count  — int, peer review tasks pending
+    lms_pending_reviews     — queryset of LMSSubmission pending this admin's review
+    lms_certificates        — queryset of LMSCertificate for this member
+{% endcomment %}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h6 class="fw-bold mb-0">
+    My Training
+    {% if lms_pending_peer_count %}
+    <span class="badge bg-warning text-dark ms-1" style="font-size:.62rem;border-radius:20px;vertical-align:middle;">
+      {{ lms_pending_peer_count }} peer review{{ lms_pending_peer_count|pluralize }}
+    </span>
+    {% endif %}
+  </h6>
+  <a href="{% url 'lms:course_list' %}" class="btn btn-xs btn-outline-primary" style="border-radius:10px;font-size:.72rem;">View all</a>
+</div>
+
+{% if lms_enrollments %}
+<div class="d-flex flex-column gap-2 mb-3">
+  {% for enroll in lms_enrollments|slice:":5" %}
+  <a href="{% url 'lms:course_detail' enroll.course.slug %}"
+     class="text-decoration-none d-flex align-items-center gap-3 px-2 py-2 lms-trainee-mod-row"
+     style="border-radius:12px;border:1px solid rgba(255,255,255,.06);">
+
+    {# Course type icon bubble #}
+    <div class="flex-shrink-0 d-flex align-items-center justify-content-center"
+         style="width:36px;height:36px;border-radius:10px;font-size:1.1rem;
+                background:{% if enroll.course.course_type == 'induction' %}rgba(32,107,196,.2){% elif enroll.course.course_type == 'workforce' %}rgba(130,80,190,.2){% elif enroll.course.course_type == 'unit_training' %}rgba(30,150,90,.2){% else %}rgba(200,100,20,.2){% endif %};">
+      {% if enroll.course.course_type == 'induction' %}🎓{% elif enroll.course.course_type == 'workforce' %}🏢{% elif enroll.course.course_type == 'unit_training' %}🔧{% else %}⚠{% endif %}
+    </div>
+
+    <div class="flex-grow-1 min-w-0">
+      <div class="fw-semibold text-white text-truncate" style="font-size:.82rem;">{{ enroll.course.title }}</div>
+      <div class="d-flex align-items-center gap-2 mt-1">
+        <div class="progress flex-grow-1" style="height:4px;border-radius:6px;background:rgba(255,255,255,.08);">
+          {% with pct=enroll.progress_pct %}
+          <div class="progress-bar bg-{% if enroll.status == 'passed' or enroll.status == 'certified' %}success{% else %}primary{% endif %}"
+               style="width:{% if enroll.status == 'passed' or enroll.status == 'certified' %}100{% else %}{{ pct }}{% endif %}%;border-radius:6px;"></div>
+          {% endwith %}
+        </div>
+        <span class="text-muted flex-shrink-0" style="font-size:.64rem;white-space:nowrap;">
+          {% if enroll.status == 'passed' or enroll.status == 'certified' %}Done{% else %}{{ enroll.progress_pct }}%{% endif %}
+        </span>
+      </div>
+    </div>
+
+    <div class="flex-shrink-0">
+      <span class="badge bg-{% if enroll.status == 'passed' or enroll.status == 'certified' %}success{% elif enroll.status == 'failed' %}danger{% elif enroll.status == 'active' %}warning{% else %}secondary{% endif %}-lt"
+            style="font-size:.6rem;border-radius:20px;">
+        {% if enroll.status == 'certified' %}🏆{% elif enroll.status == 'passed' %}✅{% elif enroll.status == 'failed' %}❌{% elif enroll.status == 'active' %}⏳{% else %}{{ enroll.status|capfirst }}{% endif %}
+      </span>
+    </div>
+  </a>
+  {% endfor %}
+
+  {% if lms_enrollments.count > 5 %}
+  <div class="text-center text-muted small pt-1">
+    +{{ lms_enrollments.count|add:"-5" }} more ·
+    <a href="{% url 'lms:course_list' %}" class="text-primary">See all</a>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="text-center py-3 text-muted small">
+  <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" class="mb-2 d-block mx-auto opacity-40">
+    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+  </svg>
+  No training enrolled yet.
+</div>
+{% endif %}
+
+{# ── Peer review alert ───────────────────────────────────── #}
+{% if lms_pending_peer_count %}
+<a href="{% url 'lms:proctor_queue' %}"
+   class="d-flex align-items-center gap-2 p-2 mb-2 text-decoration-none"
+   style="border-radius:12px;background:rgba(240,173,0,.08);border:1px solid rgba(240,173,0,.25);">
+  <span style="font-size:1.1rem;">👥</span>
+  <span class="small text-warning fw-semibold">
+    {{ lms_pending_peer_count }} peer review{{ lms_pending_peer_count|pluralize }} waiting
+  </span>
+  <span class="ms-auto text-muted" style="font-size:.7rem;">Review →</span>
+</a>
+{% endif %}
+
+{# ── Certificates ────────────────────────────────────────── #}
+{% if lms_certificates %}
+<div class="mt-1">
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <span class="text-muted small fw-semibold">Certificates</span>
+    <a href="{% url 'lms:certificates' %}" class="text-muted small">View all</a>
+  </div>
+  {% for cert in lms_certificates|slice:":2" %}
+  <div class="d-flex align-items-center gap-2 py-1">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+    <span class="text-white small text-truncate">{{ cert.enrollment.course.title }}</span>
+    <span class="text-muted ms-auto" style="font-size:.65rem;white-space:nowrap;">{{ cert.issued_at|date:"d M Y" }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# ── Admin review queue badge ─────────────────────────────── #}
+{% if nav_is_admin and lms_pending_reviews %}
+<div class="border-top border-secondary mt-3 pt-3">
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <span class="text-muted small fw-semibold">Pending Proctor Reviews</span>
+    <span class="badge bg-danger" style="font-size:.62rem;">{{ lms_pending_reviews }}</span>
+  </div>
+  <a href="{% url 'lms:proctor_queue' %}" class="btn btn-sm btn-outline-danger w-100" style="border-radius:10px;font-size:.75rem;">
+    Open Review Queue →
+  </a>
+</div>
+{% endif %}

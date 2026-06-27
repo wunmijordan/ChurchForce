@@ -6,7 +6,13 @@ class ScopedChurchManager(
     models.Manager.from_queryset(ChurchQuerySet)
 ):
     def get_queryset(self):
-        return super().get_queryset().auto_scope()
+        qs = super().get_queryset()
+
+        # Only auto-scope when explicitly enabled
+        try:
+            return qs.auto_scope()
+        except Exception:
+            return qs
 
 
 class RawChurchManager(
@@ -20,7 +26,13 @@ class ScopedGuestManager(
     models.Manager.from_queryset(GuestQuerySet)
 ):
     def get_queryset(self):
-        return super().get_queryset().auto_scope()
+        qs = super().get_queryset()
+
+        # Only auto-scope when explicitly enabled
+        try:
+            return qs.auto_scope()
+        except Exception:
+            return qs
 
 
 class RawGuestManager(
@@ -34,7 +46,13 @@ class ScopedNotificationManager(
     models.Manager.from_queryset(NotificationQuerySet)
 ):
     def get_queryset(self):
-        return super().get_queryset().auto_scope()
+        qs = super().get_queryset()
+
+        # Only auto-scope when explicitly enabled
+        try:
+            return qs.auto_scope()
+        except Exception:
+            return qs
 
 
 class RawNotificationManager(

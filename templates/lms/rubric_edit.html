@@ -1,0 +1,115 @@
+{% extends base_template %}
+{% load static %}
+{% block title %}Rubric — {{ module.title }}{% endblock %}
+
+{% block content %}
+<div class="container-xl py-4" style="max-width:820px;">
+
+  <div class="mb-3">
+    <a href="{% url 'lms:course_detail' course.slug %}" class="text-muted small d-inline-flex align-items-center gap-1">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      Back to {{ course.title }}
+    </a>
+  </div>
+
+  <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <div class="flex-grow-1">
+      <h3 class="fw-bold mb-0">📋 Rubric Builder</h3>
+      <p class="text-muted small mb-0">{{ module.order }}. {{ module.title }}</p>
+    </div>
+  </div>
+
+  <form method="post" id="rubricForm">
+    {% csrf_token %}
+    <div class="card bg-dark border-secondary mb-4" style="border-radius:18px;">
+      <div class="card-body p-4">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Rubric Title</label>
+          <input name="rubric_title" value="{{ rubric.title|default:'Rubric' }}" class="form-control bg-dark text-white border-secondary" style="border-radius:12px;" required>
+        </div>
+
+        {# ── Criteria rows ── #}
+        <h6 class="fw-semibold mb-3 text-muted small text-uppercase tracking-wide">Criteria</h6>
+        <div id="criteriaContainer">
+          {% for crit in criteria %}
+          <div class="lms-rubric-criterion-row card bg-dark border-secondary mb-3 p-3" style="border-radius:14px;" data-index="{{ forloop.counter0 }}">
+            <input type="hidden" name="criterion_id_{{ forloop.counter0 }}" value="{{ crit.id }}">
+            <div class="row g-2 align-items-start">
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Criterion description *</label>
+                <input name="desc_{{ forloop.counter0 }}" value="{{ crit.description }}" class="form-control bg-dark text-white border-secondary" placeholder="e.g. Content Accuracy" required style="border-radius:10px;">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small text-muted">Max pts</label>
+                <input type="number" name="max_pts_{{ forloop.counter0 }}" value="{{ crit.max_points }}" min="1" max="100" class="form-control bg-dark text-white border-secondary" style="border-radius:10px;" required>
+              </div>
+              <div class="col-auto ms-auto d-flex align-items-end">
+                <button type="button" class="btn btn-xs btn-outline-danger remove-criterion" style="border-radius:8px;">✕</button>
+              </div>
+              <div class="col-12">
+                <label class="form-label small text-muted">Rating levels (JSON) — auto-generated if blank</label>
+                <textarea name="ratings_json_{{ forloop.counter0 }}" class="form-control bg-dark text-white border-secondary font-monospace" rows="2"
+                          placeholder='[{"label":"Excellent","points":10,"description":"Fully demonstrates..."},{"label":"Developing","points":5,"description":"Partially..."}]'
+                          style="border-radius:10px;font-size:.72rem;">{{ crit.ratings_json }}</textarea>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <button type="button" id="addCriterion" class="btn btn-outline-success btn-sm w-100 mt-1" style="border-radius:12px;border-style:dashed;">
+          + Add Criterion
+        </button>
+      </div>
+    </div>
+
+    <div class="d-flex gap-3">
+      <button type="submit" class="btn btn-primary fw-bold px-4" style="border-radius:14px;">Save Rubric</button>
+      <a href="{% url 'lms:course_detail' course.slug %}" class="btn btn-outline-secondary" style="border-radius:14px;">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+let criterionCount = {{ criteria|length }};
+
+document.getElementById('addCriterion').addEventListener('click', () => {
+  const i = criterionCount++;
+  const container = document.getElementById('criteriaContainer');
+  const div = document.createElement('div');
+  div.className = 'lms-rubric-criterion-row card bg-dark border-secondary mb-3 p-3';
+  div.style.borderRadius = '14px';
+  div.setAttribute('data-index', i);
+  div.innerHTML = `
+    <input type="hidden" name="criterion_id_${i}" value="">
+    <div class="row g-2 align-items-start">
+      <div class="col-md-6">
+        <label class="form-label small text-muted">Criterion description *</label>
+        <input name="desc_${i}" class="form-control bg-dark text-white border-secondary" placeholder="e.g. Presentation" required style="border-radius:10px;">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted">Max pts</label>
+        <input type="number" name="max_pts_${i}" value="10" min="1" max="100" class="form-control bg-dark text-white border-secondary" style="border-radius:10px;" required>
+      </div>
+      <div class="col-auto ms-auto d-flex align-items-end">
+        <button type="button" class="btn btn-xs btn-outline-danger remove-criterion" style="border-radius:8px;">✕</button>
+      </div>
+      <div class="col-12">
+        <label class="form-label small text-muted">Rating levels (JSON) — leave blank for defaults</label>
+        <textarea name="ratings_json_${i}" class="form-control bg-dark text-white border-secondary font-monospace" rows="2"
+                  placeholder='[{"label":"Excellent","points":10,"description":"..."}]'
+                  style="border-radius:10px;font-size:.72rem;"></textarea>
+      </div>
+    </div>`;
+  container.appendChild(div);
+  wireRemoveButtons();
+});
+
+function wireRemoveButtons() {
+  document.querySelectorAll('.remove-criterion').forEach(btn => {
+    btn.onclick = () => btn.closest('.lms-rubric-criterion-row').remove();
+  });
+}
+wireRemoveButtons();
+</script>
+{% endblock %}

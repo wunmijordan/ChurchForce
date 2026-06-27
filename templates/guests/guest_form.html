@@ -1,10 +1,10 @@
-{% extends 'base.html' %}
-{% load static form_tags access_tags %}
+{% extends base_template %}
+{% load static form_tags access_tags widget_tweaks %}
 
 {% block title %}{{ page_title }} — {{ church.name }}{% endblock %}
 
 {% block content %}
-<div class="page-wrapper">
+<div class="page-wrapper py-5">
   <div class="page-header d-print-none">
     <div class="container-xl">
       <div class="row g-2 align-items-center">
@@ -12,231 +12,373 @@
           <kbd class="bg-yellow-lt"><h2 class="page-title mb-0">{{ page_title }}</h2></kbd>
         </div>
         <div class="col-auto ms-auto">
-          <a href="{% url 'guests:guest_list' %}" class="btn btn-outline-secondary btn-sm">← Back to guests</a>
+          <a href="{% url 'guests:guest_list' %}" class="btn btn-outline-secondary btn-sm" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+            Back to guests
+          </a>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="page-body">
-    <div class="container py-4">
-      <div class="card shadow-sm">
-        <div class="card-header">
-          <h3 class="card-title mb-0">
-            {% if edit_mode %}
-              Editing: <span class="text-warning">{{ guest.title }} {{ guest.full_name }}</span>
-            {% else %}
-              Add New Guest
-            {% endif %}
-          </h3>
-        </div>
-        <div class="card-body">
+  <div class="page-body d-print-none">
+    <div class="container-xl pb-5">
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger mb-3">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <form id="guestForm" method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
 
-          <!-- Photo preview -->
-          <div class="mb-4 text-center">
-            <span class="avatar avatar-xl rounded" style="width:100px;height:100px;">
-              <img id="preview-img"
-                   src="{% if guest and guest.picture %}{{ guest.picture.url }}{% else %}{% static 'images/default_image.jpg' %}{% endif %}"
-                   alt="Guest photo" class="rounded shadow-sm" style="object-fit:cover;width:100px;height:100px;">
-            </span>
-          </div>
-                    <div class="alert alert-secondary py-2">
-            <small><span class="text-danger">*</span> Required fields</small>
-          </div>
-
-          <form id="guestForm" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
-            {% csrf_token %}
-            {% if form.non_field_errors %}
-              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-            {% endif %}
-
-            <div class="row g-3">
-              <div class="col-12">
-                <h4 class="text-yellow mt-2">Personal Information</h4>
-                <hr class="mt-1 mb-3">
-              </div>
-              {% for field in form.visible_fields %}
-                {% if field.name == "phone_number" %}
-                  <div class="col-12">
-                    <h4 class="text-yellow mt-3">Contact Information</h4>
-                    <hr class="mt-1 mb-3">
+        <div class="row g-0" style="min-height:80vh;">
+          <div class="col-12 col-lg-auto" style="width:220px;flex-shrink:0;">
+            <div class="card bg-grey h-100" style="border-radius:36px 0 0 36px;border-right:none;">
+              <div class="card-body p-3">
+                <div class="text-center mb-4 pt-2">
+                  <div class="position-relative d-inline-block" style="width:100px;height:100px;">
+                    <img id="preview-img"
+                         src="{% if guest and guest.picture %}{{ guest.picture.url }}{% else %}{% static 'images/default_image.jpg' %}{% endif %}"
+                         alt="Guest photo"
+                         style="width:100px;height:100px;object-fit:cover;border-radius:24px;box-shadow:0 4px 4px #00000055;">
                   </div>
-                {% endif %}
-
-                {% if field.name == "date_of_visit" %}
-                  <div class="col-12">
-                    <h4 class="text-yellow mt-3">Visit Details</h4>
-                    <hr class="mt-1 mb-3">
-                  </div>
-                {% endif %}
-
-                {% if field.name == "assigned_to" %}
-                  <div class="col-12">
-                    <h4 class="text-yellow mt-3">Follow-Up Assignment</h4>
-                    <hr class="mt-1 mb-3">
-                  </div>
-                {% endif %}
-                <div class="col-md-6">
-                  <div class="form-group">
-                    <label class="form-label fw-semibold text-white">
-                        {{ field.label }}
-                        {% if field.field.required %}
-                          <span class="text-danger">*</span>
-                        {% endif %}
+                  <div class="mt-3">
+                    <label class="btn btn-sm btn-outline-secondary mb-0"
+                           style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                           for="id_picture">
+                      {% if edit_mode %}Change Picture{% else %}Upload Picture{% endif %}
                     </label>
-                    <div class="input-group input-group-flat">
-                      
-                      {% if field.name == 'picture' %}
-                        <span class="input-group-text bg-dark text-purple border-0" style="width:38px;">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                            <path d="M5 7h1a2 2 0 0 0 2-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2"/>
-                            <path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0-6 0"/>
-                          </svg>
-                        </span>
-                        <input type="file" name="picture" id="{{ field.id_for_label }}" accept="image/*"
-                              class="form-control bg-grey text-white border-0" onchange="previewImage(this)">
-                      {% else %}
-                        {{ field|add_class:"form-control bg-grey text-white border-0"|add_error_class:"is-invalid" }}
-                      {% endif %}
-                    </div>
-                    {% if field.help_text %}<small class="form-hint text-grey fst-italic">{{ field.help_text }}</small>{% endif %}
-                    {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    <input type="file" name="picture" id="id_picture" accept="image/*" class="d-none" onchange="previewImage(this)">
                   </div>
-                </div>
-              {% endfor %}
-
-              <!-- Social media fields -->
-              <div class="col-md-6">
-                <div id="socialMediaFieldsContainer" class="w-100">
-                  {% if edit_mode and social_media_entries %}
-                    {% for sm in social_media_entries %}
-                    <div class="social-media-field mb-2">
-                      <div class="input-group input-group-flat">
-                        <button type="button" class="btn bg-grey text-white border-0 socialMediaDropdown" data-bs-toggle="dropdown"
-                                style="width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                            <path d="M12 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
-                            <path d="M5 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
-                            <path d="M19 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
-                            <path d="M12 14m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/>
-                            <path d="M12 7l0 4"/><path d="M6.7 17.8l2.8 -2"/><path d="M17.3 17.8l-2.8 -2"/>
-                          </svg>
-                        </button>
-                        <input type="text" name="social_media_handle[]" class="form-control bg-grey text-white border-0"
-                               placeholder="Social media handle" value="{{ sm.handle }}">
-                        <input type="hidden" name="social_media_type[]" value="{{ sm.platform }}">
-                        <ul class="dropdown-menu dropdown-menu-end">
-                          {% for key, label in social_platform_choices %}
-                          <li><a class="dropdown-item social-media-option" href="#" data-type="{{ key }}">{{ label }}</a></li>
-                          {% endfor %}
-                        </ul>
-                      </div>
-                    </div>
-                    {% endfor %}
-                  {% else %}
-                    <div class="social-media-field mb-2">
-                      <div class="input-group input-group-flat">
-                        <button type="button" class="btn bg-grey text-white border-0 socialMediaDropdown" data-bs-toggle="dropdown"
-                                style="width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                            <path d="M12 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
-                            <path d="M5 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
-                            <path d="M19 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
-                            <path d="M12 14m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/>
-                            <path d="M12 7l0 4"/><path d="M6.7 17.8l2.8 -2"/><path d="M17.3 17.8l-2.8 -2"/>
-                          </svg>
-                        </button>
-                        <input type="text" name="social_media_handle[]" class="form-control bg-grey text-white border-0"
-                               placeholder="Social media handle">
-                        <input type="hidden" name="social_media_type[]" value="">
-                        <ul class="dropdown-menu dropdown-menu-end">
-                          {% for key, label in social_platform_choices %}
-                          <li><a class="dropdown-item social-media-option" href="#" data-type="{{ key }}">{{ label }}</a></li>
-                          {% endfor %}
-                        </ul>
-                      </div>
-                    </div>
+                  {% if guest and guest.picture %}
+                  <div class="form-check mt-3 text-start">
+                    <input class="form-check-input" type="checkbox" name="clear_picture" id="clear-picture-checkbox">
+                    <label class="form-check-label small" for="clear-picture-checkbox">Clear current photo</label>
+                  </div>
                   {% endif %}
-                  <div class="d-flex justify-content-end mt-2">
-                    <button type="button" id="addSocialMediaField" class="btn btn-sm btn-purple mt-2">+ Add social</button>
+                </div>
+
+                {# ── Section nav ── #}
+                <nav class="d-flex flex-column gap-3 mt-2">
+                  <button type="button" class="guest-section-btn d-flex align-items-center gap-2 px-3 py-2 border-0 bg-transparent w-100 text-start text-muted"
+                          data-gsection="single"
+                          style="font-size:.875rem;transition:all .15s;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                    Add Guest
+                  </button>
+                  {% if not edit_mode %}
+                  <button type="button" class="guest-section-btn d-flex align-items-center gap-2 px-3 py-2 border-0 bg-transparent w-100 text-start text-muted"
+                          data-gsection="batch"
+                          style="font-size:.875rem;transition:all .15s;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                    Batch Add
+                  </button>
+                  <button type="button" class="guest-section-btn d-flex align-items-center gap-2 px-3 py-2 border-0 bg-transparent w-100 text-start text-muted"
+                          data-gsection="import"
+                          style="font-size:.875rem;transition:all .15s;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                    Import CSV
+                  </button>
+                  {% endif %}
+                </nav>
+              </div>
+            </div>
+          </div>
+
+          <div class="col">
+            <div class="card bg-grey h-100" style="border-radius:0 36px 36px 0;">
+              <div class="card-body p-4 p-lg-5">
+
+                {# ── Single Guest Add panel ── #}
+                <div data-gsection-panel="single" style="display:none;">
+
+                  <!-- <div class="alert alert-warning mb-3" style="border-radius:18px;">
+                    <strong>Required on save:</strong> Name, Gender, Service Attended, Date of Visit
+                  </div> -->
+                  <div class="card bg-gray-900 mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                    <div class="card-body p-4">
+                      <h3 class="fw-semibold mb-3">Personal Details</h3>
+                      <div class="row g-3">
+                        <div class="col-md-3"><label class="form-label">{{ form.title.label }}{% if form.title.field.required %} <span class="text-danger">*</span>{% endif %}</label>{% render_field form.title class="form-select bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        <div class="col-md-9"><label class="form-label">{{ form.full_name.label }} <span class="text-danger">*</span></label>{% render_field form.full_name class="form-control bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        <div class="col-md-6"><label class="form-label">{{ form.gender.label }} <span class="text-danger">*</span></label>{% render_field form.gender class="form-select bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        <div class="col-md-6"><label class="form-label">{{ form.date_of_birth.label }}{% if form.date_of_birth.field.required %} <span class="text-danger">*</span>{% endif %}</label>{% render_field form.date_of_birth class="form-control bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        <div class="col-md-6"><label class="form-label">{{ form.phone_number.label }}{% if form.phone_number.field.required %} <span class="text-danger">*</span>{% endif %}</label>{% render_field form.phone_number class="form-control bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        <div class="col-md-6"><label class="form-label">{{ form.email.label }}{% if form.email.field.required %} <span class="text-danger">*</span>{% endif %}</label>{% render_field form.email class="form-control bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        <div class="col-md-6"><label class="form-label">{{ form.age_range.label }}{% if form.age_range.field.required %} <span class="text-danger">*</span>{% endif %}</label>{% render_field form.age_range class="form-select bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        <div class="col-md-6"><label class="form-label">{{ form.marital_status.label }}{% if form.marital_status.field.required %} <span class="text-danger">*</span>{% endif %}</label>{% render_field form.marital_status class="form-select bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        <div class="col-md-6"><label class="form-label">{{ form.occupation.label }}{% if form.occupation.field.required %} <span class="text-danger">*</span>{% endif %}</label>{% render_field form.occupation class="form-control bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        <div class="col-12"><label class="form-label">{{ form.home_address.label }}{% if form.home_address.field.required %} <span class="text-danger">*</span>{% endif %}</label>{% render_field form.home_address class="form-control bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" rows="3" %}</div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              {% if guest and guest.picture %}
-              <div class="col-md-6">
-                <div class="form-check mt-2">
-                  <input class="form-check-input" type="checkbox" name="clear_picture" id="clear-picture-checkbox">
-                  <label class="form-check-label" for="clear-picture-checkbox">Clear current photo</label>
-                </div>
-              </div>
-              {% endif %}
-            </div>
+                  <div class="card bg-grey mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                    <div class="card-body p-4">
+                      <h3 class="fw-semibold mb-3">Contact & Visit</h3>
+                      <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">{{ form.date_of_visit.label }} <span class="text-danger">*</span></label>{% render_field form.date_of_visit class="form-control" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        <div class="col-md-6"><label class="form-label">{{ form.purpose_of_visit.label }}{% if form.purpose_of_visit.field.required %} <span class="text-danger">*</span>{% endif %}</label>{% render_field form.purpose_of_visit class="form-select" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        <div class="col-md-6"><label class="form-label">{{ form.channel_of_visit.label }}{% if form.channel_of_visit.field.required %} <span class="text-danger">*</span>{% endif %}</label>{% render_field form.channel_of_visit class="form-select" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        <div class="col-md-6"><label class="form-label">{{ form.service_attended.label }} <span class="text-danger">*</span></label>{% render_field form.service_attended class="form-select" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        <div class="col-md-6"><label class="form-label">{{ form.referred_by_member.label }}{% if form.referred_by_member.field.required %} <span class="text-danger">*</span>{% endif %}</label>{% render_field form.referred_by_member class="form-select" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        <div class="col-md-6"><label class="form-label">{{ form.referred_by_name.label }}{% if form.referred_by_name.field.required %} <span class="text-danger">*</span>{% endif %}</label>{% render_field form.referred_by_name class="form-control" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        {% if form.assigned_to %}
+                        <div class="col-md-6"><label class="form-label">{{ form.assigned_to.label }}{% if form.assigned_to.field.required %} <span class="text-danger">*</span>{% endif %}</label>{% render_field form.assigned_to class="form-select" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
 
-            <!-- Action buttons — permission resolved by view, passed as `can_save` context var -->
-            <div class="mt-4 d-flex gap-2 flex-wrap">
-              {% if can_save %}
-                <button type="submit" name="save_return" class="btn btn-success fw-bold">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon me-1">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M6 4h10l4 4v10a2 2 0 0 1-2 2h-12a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2"/>
-                    <path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/><path d="M14 4l0 4l-6 0l0-4"/>
-                  </svg>
-                  Save Guest
-                </button>
-                {% if permissions|can:"guests.create" %}
-                <button type="submit" name="save_add_another" class="btn">
-                  Save &amp; Register New Guest
-                </button>
+                  <div class="card mb-4" style="background:{{ church.primary_color }}0F;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                    <div class="card-body p-4">
+                      <h3 class="fw-semibold mb-3">Social Media</h3>
+                      <div id="socialMediaFieldsContainer" class="w-100">
+                        {% if edit_mode and social_media_entries %}
+                          {% for sm in social_media_entries %}
+                          <div class="social-media-field mb-2">
+                            <div class="input-group input-group-flat flex-grow-1 position-relative" style="width: 100%;box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+                              <button type="button" class="btn text-white bg-grey border-0 d-flex align-items-center justify-content-center socialMediaDropdown" data-bs-toggle="dropdown" aria-expanded="false" 
+                                      style="width: 38px; height: 38px; padding: 0;box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 0 0 24px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-restore">
+                                  <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3.06 13a9 9 0 1 0 .49 -4.087" /><path d="M3 4.001v5h5" /><path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                                </svg>
+                              </button>
+                              <input type="text" name="social_media_handle[]" class="form-control bg-grey text-white border-0" placeholder="Social media handle" value="{{ sm.handle }}"
+                                      style="box-shadow:inset 0 4px 8px #000000d2;border-radius:0 24px 24px 0;">
+                              <input type="hidden" name="social_media_type[]" value="{{ sm.platform }}">
+                              <ul class="dropdown-menu dropdown-menu-end">
+                                {% for key, label in social_platform_choices %}
+                                <li><a class="dropdown-item social-media-option" href="#" data-type="{{ key }}">{{ label }}</a></li>
+                                {% endfor %}
+                                <li><a class="dropdown-item social-media-option" href="#" data-type="" style="color:#f59f00;font-weight:600;">Reset</a></li>
+                              </ul>
+                            </div>
+                          </div>
+                          {% endfor %}
+                        {% else %}
+                          <div class="social-media-field mb-2">
+                            <div class="input-group input-group-flat flex-grow-1 position-relative" style="width: 100%;box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+                              <button type="button" class="btn text-white bg-grey border-0 d-flex align-items-center justify-content-center socialMediaDropdown" data-bs-toggle="dropdown" aria-expanded="false" 
+                                      style="width: 38px; height: 38px; padding: 0;box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 0 0 24px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-restore">
+                                  <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3.06 13a9 9 0 1 0 .49 -4.087" /><path d="M3 4.001v5h5" /><path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                                </svg>
+                              </button>
+                              <input type="text" name="social_media_handle[]" class="form-control bg-grey text-white border-0" placeholder="Social media handle"
+                                      style="box-shadow:inset 0 4px 8px #000000d2;border-radius:0 24px 24px 0;">
+                              <input type="hidden" name="social_media_type[]" value="">
+                              <ul class="dropdown-menu dropdown-menu-end">
+                                {% for key, label in social_platform_choices %}
+                                <li><a class="dropdown-item social-media-option" href="#" data-type="{{ key }}">{{ label }}</a></li>
+                                {% endfor %}
+                                <li><a class="dropdown-item social-media-option" href="#" data-type="" style="color:#f59f00;font-weight:600;">Reset</a></li>
+                              </ul>
+                            </div>
+                          </div>
+                        {% endif %}
+                      </div>
+                      <div class="d-flex justify-content-end mt-2">
+                        <button type="button" id="addSocialMediaField" class="btn btn-sm btn-success" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                          Add another
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="d-flex gap-3 flex-wrap">
+                    <button type="submit" name="save_return" class="btn btn-success fw-bold px-5" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      Save Guest
+                    </button>
+                    <button type="submit" name="save_add_another" class="btn btn-secondary px-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      Save &amp; Register New Guest
+                    </button>
+                    {% if show_delete and permissions|can:"guests.delete" %}
+                    <button type="button" class="btn btn-danger ms-auto" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      Delete Guest
+                    </button>
+                    {% endif %}
+                  </div>
+                </div>{# /data-gsection-panel="single" #}
+
+                {# ── Batch Add panel ── #}
+                {% if not edit_mode %}
+                <div data-gsection-panel="batch" style="display:none;">
+                  <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                      <h3 class="fw-bold mb-1">Batch Add Guests</h3>
+                      <p class="text-muted small mb-0">Add up to 10 guests at once.</p>
+                    </div>
+                  </div>
+                  <form method="post" action="{% url 'guests:batch_create_guests' %}"
+                        id="batchGuestForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div id="batchGuestRows" class="d-flex flex-column gap-3">
+                      <div class="batch-guest-row bg-cyan-lt p-3" style="border-radius:24px;box-shadow:0 4px 8px #000000d2;">
+                        <div class="row g-2 mb-1 d-none d-xl-flex text-muted" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">
+                          <div class="col-xl-1">Title</div>
+                          <div class="col-xl-2">Full Name</div>
+                          <div class="col-xl-1">Gender</div>
+                          <div class="col-xl-1">Phone</div>
+                          <div class="col-xl-1">Service</div>
+                          <div class="col-xl-2">Assigned To</div>
+                          <div class="col-xl-auto">Photo</div>
+                        </div>
+                        <div class="row g-2 align-items-center">
+                          <div class="col-6 col-xl-1">
+                            <label class="form-label d-xl-none small text-muted mb-1">Title</label>
+                            <select name="title[]" class="form-select form-select-sm" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:12px;">
+                              <option value="">—</option>
+                              {% for val, label in guest_title_choices %}{% if val %}<option value="{{ val }}">{{ label }}</option>{% endif %}{% endfor %}
+                            </select>
+                          </div>
+                          <div class="col-12 col-xl-2">
+                            <label class="form-label d-xl-none small text-muted mb-1">Full Name *</label>
+                            <input type="text" name="full_name[]" class="form-control form-control-sm" placeholder="Full Name *" required style="box-shadow:inset 0 4px 8px #000000d2;border-radius:12px;">
+                          </div>
+                          <div class="col-6 col-xl-1">
+                            <label class="form-label d-xl-none small text-muted mb-1">Gender</label>
+                            <select name="gender[]" class="form-select form-select-sm" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:12px;">
+                              <option value="">—</option>
+                              {% for val, label in guest_gender_choices %}{% if val %}<option value="{{ val }}">{{ label }}</option>{% endif %}{% endfor %}
+                            </select>
+                          </div>
+                          <div class="col-6 col-xl-1">
+                            <label class="form-label d-xl-none small text-muted mb-1">Phone</label>
+                            <input type="tel" name="phone_number[]" class="form-control form-control-sm" placeholder="Phone" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:12px;">
+                          </div>
+                          <div class="col-12 col-xl-1">
+                            <label class="form-label d-xl-none small text-muted mb-1">Service</label>
+                            <select name="service_attended[]" class="form-select form-select-sm" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:12px;">
+                              <option value="">— Service —</option>
+                              {% for svc in church_services %}<option value="{{ svc.name }}">{{ svc.name }}</option>{% endfor %}
+                            </select>
+                          </div>
+                          <div class="col-12 col-xl-2">
+                            <label class="form-label d-xl-none small text-muted mb-1">Assigned To</label>
+                            <select name="assigned_to[]" class="form-select form-select-sm" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:12px;">
+                              <option value="">— Assignee —</option>
+                              {% for m in batch_assignees %}<option value="{{ m.id }}">{{ m.label }}</option>{% endfor %}
+                            </select>
+                          </div>
+                          <div class="col-12 col-xl-auto d-flex align-items-center gap-2">
+                            <input type="file" name="image[]" class="form-control form-control-sm" accept="image/*" style="border-radius:12px;max-width:120px;">
+                            <button type="button" class="btn btn-sm text-danger remove-guest-row" title="Remove">✕</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 mt-3 flex-wrap">
+                      <button type="button" id="addGuestRow" class="btn btn-sm btn-outline-secondary" style="border-radius:12px;">+ Add Row</button>
+                      <span id="guestRowCount" class="text-muted small">1 / 10</span>
+                      <div class="ms-auto">
+                        <button type="submit" class="btn btn-primary fw-bold px-4" style="border-radius:12px;">Add All Guests</button>
+                      </div>
+                    </div>
+                  </form>
+                </div>{# /data-gsection-panel="batch" #}
+
+                {# ── Import panel ── #}
+                <div data-gsection-panel="import" style="display:none;">
+                  <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                      <h3 class="fw-bold mb-1">Import Guests</h3>
+                      <p class="text-muted small mb-0">Upload a CSV or Excel file.</p>
+                    </div>
+                    <a href="{% url 'guests:download_csv_template' %}" class="btn btn-sm btn-outline-warning" style="border-radius:24px;">⬇ Download Template</a>
+                  </div>
+                  <form method="post" action="{% url 'guests:import_guests_csv' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                      <label class="form-label fw-semibold">CSV file</label>
+                      <input type="file" name="csv_file" class="form-control" accept=".csv" required style="border-radius:12px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" style="border-radius:24px;">Import CSV</button>
+                  </form>
+                  <hr class="border-secondary my-3">
+                  <form method="post" action="{% url 'guests:import_excel' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold">Excel file (.xlsx)</label>
+                      <input type="file" name="excel_file" class="form-control" accept=".xlsx,.xls" required style="border-radius:12px;">
+                    </div>
+                    <button type="submit" class="btn btn-outline-success w-100" style="border-radius:24px;">Import Excel</button>
+                  </form>
+                </div>{# /data-gsection-panel="import" #}
                 {% endif %}
-              {% endif %}
-              {% if show_delete and permissions|can:"guests.delete" %}
-              <button type="button" class="btn btn-danger ms-auto" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal">
-                Delete Guest
-              </button>
-              {% endif %}
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+
+              </div>{# /card-body #}
+            </div>{# /card #}
+          </div>{# /col #}
+        </div>{# /row #}
+      </div>{# /container #}
+    </div>{# /page-body #}
+  </div>{# /page-wrapper #}
+
+<script>
+// ── Guest section switcher — no page reload ───────────────────────────────
+(function () {
+  const panels  = document.querySelectorAll('[data-gsection-panel]');
+  const navBtns = document.querySelectorAll('.guest-section-btn');
+
+  function activateSection(name) {
+    panels.forEach(p => {
+      p.style.display = p.dataset.gsectionPanel === name ? '' : 'none';
+    });
+    navBtns.forEach(btn => {
+      const active = btn.dataset.gsection === name;
+      btn.classList.toggle('text-white', active);
+      btn.classList.toggle('bg-gray-900', active);
+      btn.classList.toggle('text-muted', !active);
+    });
+    const url = new URL(window.location.href);
+    url.searchParams.set('gsection', name);
+    history.replaceState({ gsection: name }, '', url.toString());
+  }
+
+  navBtns.forEach(btn => btn.addEventListener('click', () => activateSection(btn.dataset.gsection)));
+
+  // Default to single on load
+  const initial = new URLSearchParams(window.location.search).get('gsection') || 'single';
+  activateSection(initial);
+})();
+
+// ── Batch guest row JS ────────────────────────────────────────────────────
+(function() {
+  const MAX = 10;
+  const container = document.getElementById('batchGuestRows');
+  const counter   = document.getElementById('guestRowCount');
+  if (!container) return;
+
+  function updateCount() {
+    const n = container.querySelectorAll('.batch-guest-row').length;
+    if (counter) counter.textContent = n + ' / ' + MAX;
+    const addBtn = document.getElementById('addGuestRow');
+    if (addBtn) addBtn.disabled = n >= MAX;
+  }
+
+  document.getElementById('addGuestRow')?.addEventListener('click', () => {
+    const rows = container.querySelectorAll('.batch-guest-row');
+    if (rows.length >= MAX) { alert('Maximum ' + MAX + ' guests per batch.'); return; }
+    const clone = rows[0].cloneNode(true);
+    clone.querySelectorAll('input').forEach(el => { el.value = ''; el.required = false; });
+    clone.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+    container.appendChild(clone);
+    updateCount();
+    clone.querySelector('input[name="full_name[]"]')?.focus();
+  });
+
+  container.addEventListener('click', e => {
+    if (e.target.classList.contains('remove-guest-row')) {
+      const rows = container.querySelectorAll('.batch-guest-row');
+      if (rows.length <= 1) return;
+      e.target.closest('.batch-guest-row').remove();
+      updateCount();
+    }
+  });
+
+  updateCount();
+})();
+</script>
 
 <script>
 function previewImage(input) {
   const preview = document.getElementById('preview-img');
   if (input.files[0] && preview) preview.src = URL.createObjectURL(input.files[0]);
 }
-
-// Social media type selector
-document.addEventListener('DOMContentLoaded', () => {
-  function bindSocialDropdown(container) {
-    container.querySelectorAll('.social-media-option').forEach(option => {
-      option.addEventListener('click', e => {
-        e.preventDefault();
-        const type = option.dataset.type;
-        const field = option.closest('.social-media-field');
-        field.querySelector('[name="social_media_type[]"]').value = type;
-        field.querySelector('.socialMediaDropdown').title = type || 'Social';
-      });
-    });
-  }
-
-  document.querySelectorAll('.social-media-field').forEach(bindSocialDropdown);
-
-  document.getElementById('addSocialMediaField')?.addEventListener('click', () => {
-    const first = document.querySelector('.social-media-field');
-    if (!first) return;
-    const clone = first.cloneNode(true);
-    clone.querySelector('[name="social_media_handle[]"]').value = '';
-    clone.querySelector('[name="social_media_type[]"]').value = '';
-    bindSocialDropdown(clone);
-    document.getElementById('socialMediaFieldsContainer').appendChild(clone);
-  });
-});
 </script>
 {% endblock %}

@@ -36,28 +36,44 @@ class SubscriptionPlan(models.Model):
         default=0,
         help_text="Additional cost in Naira per campus above the plan's base allowance.",
     )
+    annual_discount_pct = models.PositiveSmallIntegerField(
+        default=10,
+        help_text="Percentage discount for annual billing.",
+    )
+    biannual_discount_pct = models.PositiveSmallIntegerField(
+        default=20,
+        help_text="Percentage discount for bi-annual billing.",
+    )
+
+    @property
+    def is_founders(self):
+        return self.name in (
+            "founders_saas_lifetime",
+            "founders_white_label_lifetime",
+        )
 
     def __str__(self):
         return self.name
+
+    def interval_multiplier(self, interval):
+        if interval == "annual":
+            return 12 * (1 - (max(0, min(self.annual_discount_pct, 100)) / 100))
+        if interval == "biannual":
+            return 24 * (1 - (max(0, min(self.biannual_discount_pct, 100)) / 100))
+        return 1
 
     def price_for_interval(self, interval):
         """
         Return the total charge in Naira for a given billing interval.
 
-        Discounts:
-            monthly   →  0% off
-            annual    → 10% off  (pay for 10.8 months)
-            biannual  → 20% off  (pay for 19.2 months over 24)
+        Discounts are configurable per plan:
+            - annual_discount_pct
+            - biannual_discount_pct
         """
         if self.monthly_price_ngn == 0:
             return 0
 
-        multipliers = {
-            "monthly":  1,
-            "annual":   12 * 0.90,
-            "biannual": 24 * 0.80,
-        }
-        return int(self.monthly_price_ngn * multipliers.get(interval, 1))
+        return int(self.monthly_price_ngn * self.interval_multiplier(interval))
 
     def price_in_kobo(self, interval):
         """Paystack expects amounts in kobo (1 NGN = 100 kobo)."""
@@ -67,9 +83,9 @@ class SubscriptionPlan(models.Model):
 class ChurchSubscription(models.Model):
 
     INTERVAL_CHOICES = [
-        ("monthly",  "Monthly"),
-        ("annual",   "Annual (10% off)"),
-        ("biannual", "Bi-annual (20% off)"),
+        ("monthly", "Monthly"),
+        ("annual", "Annual"),
+        ("biannual", "Bi-annual"),
     ]
 
     church = models.OneToOneField(
@@ -98,11 +114,15 @@ class ChurchSubscription(models.Model):
     # Populated by webhook after first successful charge.
     # Used to match future invoice.update / subscription.disable events.
     paystack_subscription_code = models.CharField(
-        max_length=100, blank=True, default="",
+        max_length=100,
+        blank=True,
+        default="",
         help_text="Paystack subscription code for recurring billing.",
     )
     paystack_email_token = models.CharField(
-        max_length=200, blank=True, default="",
+        max_length=200,
+        blank=True,
+        default="",
         help_text="Paystack email token for manage-subscription link.",
     )
 
@@ -141,9 +161,13 @@ class ChurchSubscription(models.Model):
         self.reminder_7d_sent = False
         self.reminder_3d_sent = False
         self.reminder_1d_sent = False
-        self.save(update_fields=[
-            "reminder_7d_sent", "reminder_3d_sent", "reminder_1d_sent",
-        ])
+        self.save(
+            update_fields=[
+                "reminder_7d_sent",
+                "reminder_3d_sent",
+                "reminder_1d_sent",
+            ]
+        )
 
 
 class PaymentRecord(models.Model):
@@ -153,9 +177,9 @@ class PaymentRecord(models.Model):
     """
 
     STATUS_CHOICES = [
-        ("pending",   "Pending"),
-        ("success",   "Success"),
-        ("failed",    "Failed"),
+        ("pending", "Pending"),
+        ("success", "Success"),
+        ("failed", "Failed"),
         ("abandoned", "Abandoned"),
     ]
 

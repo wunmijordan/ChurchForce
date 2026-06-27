@@ -1,0 +1,133 @@
+{% extends base_template %}{% load static access_tags %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block extra_css %}
+<style>
+.my-song-card {
+  background:#0d1117;border:1px solid #21262d;border-radius:16px;
+  padding:20px;margin-bottom:16px;transition:border-color .15s;
+}
+.my-song-card:hover { border-color:#30363d; }
+.my-song-header { display:flex;align-items:center;gap:12px;margin-bottom:12px; }
+.my-song-num { font-family:monospace;font-size:1.1rem;color:#5a6580;min-width:28px; }
+.my-song-title { font-size:1rem;font-weight:700;color:#e6edf3;flex:1; }
+.my-song-artist { font-size:.78rem;color:#5a6580; }
+.key-badge { background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:#58a6ff;border-radius:8px;padding:3px 10px;font-size:.78rem;font-weight:700;font-family:monospace; }
+.instr-badge { background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:#22c55e;border-radius:8px;padding:3px 10px;font-size:.75rem; }
+.confirm-btn { border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s; }
+.confirm-btn.unconfirmed { background:rgba(245,159,0,.12);color:#f59f00;border:1px solid rgba(245,159,0,.3); }
+.confirm-btn.confirmed { background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3); }
+.section-pill { display:inline-block;padding:2px 8px;border-radius:6px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-right:4px;margin-bottom:4px; }
+.chord-block { font-family:monospace;font-size:.82rem;background:#141720;border-radius:8px;padding:12px;white-space:pre-wrap;color:#c9d1d9;line-height:1.8;overflow-x:auto; }
+.empty-state { text-align:center;padding:60px 20px;color:#5a6580; }
+.empty-icon { font-size:3rem;opacity:.3;margin-bottom:12px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container-xl py-4">
+
+  <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <a href="{% url 'music:setlist_detail' uid=setlist.uid %}" class="text-muted text-decoration-none small">← Full Setlist</a>
+    <div>
+      <h2 class="fw-bold mb-0">My Songs</h2>
+      <div class="text-muted small">{{ setlist.title }}</div>
+    </div>
+    {% if setlist.event %}
+    <span class="badge bg-blue-lt ms-auto">{{ setlist.event.date|date:"D, N j" }}</span>
+    {% endif %}
+  </div>
+
+  {% if my_assignments %}
+  <div class="row g-0">
+    <div class="col-12 col-lg-8">
+      {% for assignment in my_assignments %}
+      {% with ss=assignment.setlist_song track=assignment.setlist_song.track %}
+      <div class="my-song-card">
+        <div class="my-song-header">
+          <span class="my-song-num">{{ forloop.counter }}</span>
+          <div class="flex-grow-1">
+            <div class="my-song-title">{{ track.title }}</div>
+            {% if track.artist %}<div class="my-song-artist">{{ track.artist }}</div>{% endif %}
+          </div>
+          <span class="key-badge">{{ ss.performance_key|default:track.original_key|default:"?" }}</span>
+          <span class="instr-badge">{{ assignment.get_instrument_display }}</span>
+          <button class="confirm-btn {% if assignment.confirmed %}confirmed{% else %}unconfirmed{% endif %}"
+                  data-assignment="{{ assignment.pk }}"
+                  data-song="{{ ss.pk }}"
+                  onclick="toggleConfirm(this, '{{ setlist.uid }}', {{ ss.pk }}, {{ assignment.pk }})">
+            {% if assignment.confirmed %}✓ Confirmed{% else %}Confirm{% endif %}
+          </button>
+        </div>
+
+        {% if assignment.notes %}
+        <div class="text-muted small mb-2" style="padding-left:40px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          {{ assignment.notes }}
+        </div>
+        {% endif %}
+
+        {# Lyrics sections #}
+        {% with sections=track.sections.all %}
+        {% if sections %}
+        <div style="padding-left:40px;margin-top:8px;">
+          {% for section in sections %}
+          <span class="section-pill"
+                style="background:{{ section.color_hex|default:'#21262d' }}22;color:{{ section.color_hex|default:'#8b949e' }};border:1px solid {{ section.color_hex|default:'#30363d' }}44;">
+            {{ section.label|default:section.section_type|upper }}
+          </span>
+          {% endfor %}
+
+          {# Chord chart for performance key #}
+          {% for chart in track.chord_charts.all %}
+          {% if chart.instrument == "generic" or not chart.instrument %}
+          <div class="chord-block mt-2">{{ chart.chart_text }}</div>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% if ss.notes %}
+        <div class="text-muted small mt-2" style="padding-left:40px;font-style:italic;">
+          Setlist note: {{ ss.notes }}
+        </div>
+        {% endif %}
+      </div>
+      {% endwith %}
+      {% endfor %}
+    </div>
+    <div class="col-12 col-lg-4 ps-lg-4">
+      <div class="my-song-card">
+        <h6 class="fw-semibold mb-3">Quick Info</h6>
+        <div class="mb-2"><span class="text-muted small">Songs assigned to me</span><br><strong>{{ my_assignments|length }}</strong></div>
+        {% if setlist.event %}
+        <div class="mb-2"><span class="text-muted small">Service</span><br><strong>{{ setlist.event.name }}</strong></div>
+        <div><span class="text-muted small">Date</span><br><strong>{{ setlist.event.date|date:"D, N j, Y" }}</strong></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">🎵</div>
+    <div class="fw-semibold mb-1">No songs assigned to you yet</div>
+    <div class="small">Ask your music leader to assign you to songs in this setlist.</div>
+    <a href="{% url 'music:setlist_detail' uid=setlist.uid %}" class="btn btn-outline-secondary btn-sm mt-3">View Full Setlist</a>
+  </div>
+  {% endif %}
+</div>
+{% if member %}
+<script>
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+async function toggleConfirm(btn, uid, songId, assignId) {
+  const url = `/music/setlist/${uid}/song/${songId}/confirm/${assignId}/`;
+  const res  = await fetch(url, {method:'POST', headers:{'X-CSRFToken':CSRF}});
+  const data = await res.json();
+  if (data.ok) {
+    btn.classList.toggle('confirmed', data.confirmed);
+    btn.classList.toggle('unconfirmed', !data.confirmed);
+    btn.textContent = data.confirmed ? '✓ Confirmed' : 'Confirm';
+  }
+}
+</script>
+{% endif %}
+{% endblock %}

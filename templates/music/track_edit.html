@@ -1,0 +1,54 @@
+{% extends base_template %}
+{% load static access_tags %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}<div class="container-xl py-4" style="max-width:700px;">
+  <h2 class="fw-bold mb-4">{{ page_title }}</h2>
+  <form method="post" class="card bg-dark border-secondary p-4" style="border-radius:12px;">
+    {% csrf_token %}
+    <div class="row g-3 mb-3">
+      <div class="col-md-8"><label class="form-label text-muted small">Title *</label>
+        <input name="title" class="form-control bg-dark border-secondary text-white" value="{{ track.title|default:'' }}" required></div>
+      <div class="col-md-4"><label class="form-label text-muted small">Original Key</label>
+        <select name="original_key" class="form-select bg-dark border-secondary text-white">
+          <option value="">—</option>
+          {% for k,label in keys %}<option value="{{ k }}" {% if track and track.original_key == k %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-8"><label class="form-label text-muted small">Artist / Composer</label>
+        <input name="artist" class="form-control bg-dark border-secondary text-white" value="{{ track.artist|default:'' }}"></div>
+      <div class="col-md-2"><label class="form-label text-muted small">Tempo (BPM)</label>
+        <input name="tempo" type="number" class="form-control bg-dark border-secondary text-white" value="{{ track.tempo|default:'' }}"></div>
+      <div class="col-md-2"><label class="form-label text-muted small">Time Sig</label>
+        <select name="time_signature" class="form-select bg-dark border-secondary text-white">
+          <option value="4/4" {% if not track or track.time_signature == '4/4' %}selected{% endif %}>4/4</option>
+          <option value="3/4" {% if track and track.time_signature == '3/4' %}selected{% endif %}>3/4</option>
+          <option value="6/8" {% if track and track.time_signature == '6/8' %}selected{% endif %}>6/8</option>
+        </select></div>
+      <div class="col-12"><label class="form-label text-muted small">YouTube Reference URL</label>
+        <input name="youtube_url" type="url" class="form-control bg-dark border-secondary text-white" value="{{ track.youtube_url|default:'' }}"></div>
+      <div class="col-md-6"><label class="form-label text-muted small">CCLI Number</label>
+        <input name="ccli_id" class="form-control bg-dark border-secondary text-white" value="{{ track.ccli_id|default:'' }}"></div>
+      <div class="col-md-6"><label class="form-label text-muted small">Unit scope (blank = church-wide)</label>
+        <select name="unit_id" class="form-select bg-dark border-secondary text-white">
+          <option value="">— Church-wide —</option>
+          {% for u in units %}<option value="{{ u.pk }}" {% if track and track.unit_id == u.pk %}selected{% endif %}>{{ u.name }}</option>{% endfor %}
+        </select></div>
+      <div class="col-12"><label class="form-label text-muted small">Tags</label>
+        <div class="d-flex flex-wrap gap-2">
+          {% for tag in tags %}
+          <label class="d-flex align-items-center gap-1 small">
+            <input type="checkbox" name="tags" value="{{ tag.pk }}" {% if tag.pk in selected_tags %}checked{% endif %}>
+            <span class="badge" style="background:{{ tag.color }}22;color:{{ tag.color }};">{{ tag.name }}</span>
+          </label>
+          {% endfor %}
+        </div></div>
+      <div class="col-12"><label class="form-label text-muted small">Full Lyrics (raw text — use ✨ AI Structure on track detail to split into sections)</label>
+        <textarea name="lyrics" rows="8" class="form-control bg-dark border-secondary text-white" style="font-family:monospace;">{{ track.lyrics|default:'' }}</textarea></div>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary">Save Track</button>
+      {% if track %}<a href="{% url 'music:track_detail' uid=track.uid %}" class="btn btn-outline-secondary">Cancel</a>
+      {% else %}<a href="{% url 'music:library' %}" class="btn btn-outline-secondary">Cancel</a>{% endif %}
+    </div>
+  </form>
+</div>{% endblock %}

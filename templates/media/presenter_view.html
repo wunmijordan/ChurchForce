@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ pres.title }} — ChurchForce Presenter</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html,body { width:100%; height:100%; background:#000; color:#fff; font-family:sans-serif; overflow:hidden; }
+    #stage { width:100%; height:100vh; display:flex; align-items:center; justify-content:center; position:relative; }
+    #bg { position:absolute; inset:0; background-size:cover; background-position:center; }
+    #overlay { position:absolute; inset:0; background:rgba(0,0,0,0.4); }
+    #content { position:relative; z-index:2; text-align:center; padding:40px; max-width:960px; width:100%; }
+    #mainText { font-size:48px; line-height:1.4; font-weight:700; white-space:pre-wrap; }
+    #subText  { font-size:22px; margin-top:16px; opacity:.75; }
+    #controls { position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+                display:flex; gap:12px; align-items:center; z-index:10;
+                background:rgba(0,0,0,.7); padding:10px 20px; border-radius:99px; }
+    #controls button { background:#334155; color:#fff; border:none; border-radius:8px;
+                       padding:8px 20px; font-size:14px; cursor:pointer; }
+    #controls button:hover { background:#475569; }
+    #slideCounter { color:#94a3b8; font-size:13px; min-width:60px; text-align:center; }
+    #thumbnailStrip { position:fixed; top:0; left:0; right:0; background:rgba(0,0,0,.8);
+                      display:flex; gap:6px; padding:8px; overflow-x:auto; z-index:20;
+                      max-height:80px; }
+    .thumb { flex-shrink:0; width:100px; height:60px; border:2px solid #334155;
+             border-radius:6px; display:flex; align-items:center; justify-content:center;
+             font-size:.55rem; text-align:center; cursor:pointer; padding:4px;
+             background:#1e293b; overflow:hidden; word-break:break-all; }
+    .thumb.active { border-color:#3b82f6; }
+    {% if mode == 'audience' %}#controls,#thumbnailStrip { display:none !important; }{% endif %}
+  </style>
+</head>
+<body>
+<div id="thumbnailStrip"></div>
+<div id="stage">
+  <div id="bg"></div>
+  <div id="overlay"></div>
+  <div id="content">
+    <div id="mainText"></div>
+    <div id="subText"></div>
+  </div>
+</div>
+{% if mode == 'operator' %}
+<div id="controls">
+  <button id="prevBtn">◀ Prev</button>
+  <span id="slideCounter">1 / 1</span>
+  <button id="nextBtn">Next ▶</button>
+  <button id="blankBtn" style="background:#1e293b;">⬛ Blank</button>
+  <a href="{{ request.path }}?mode=audience" target="_blank" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:14px;text-decoration:none;">👁 Audience</a>
+</div>
+{% endif %}
+
+<script>
+const SLIDES = {{ slides_json|safe }};
+let cur = {{ current_index }};
+let blanked = false;
+
+function render(idx) {
+  if (idx < 0 || idx >= SLIDES.length) return;
+  cur = idx;
+  const s = SLIDES[idx];
+  document.getElementById('mainText').textContent = s.content;
+  document.getElementById('subText').textContent = s.sub_content || '';
+  document.getElementById('mainText').style.fontSize = (s.font_size || 48) + 'px';
+  document.getElementById('mainText').style.color = s.text_color || '#fff';
+  document.getElementById('mainText').style.fontFamily = s.font_family || 'sans-serif';
+  document.getElementById('subText').style.color = s.text_color || '#fff';
+  document.getElementById('bg').style.background = s.bg_url
+    ? `url(${s.bg_url}) center/cover no-repeat`
+    : s.bg_color || '#000';
+  document.getElementById('overlay').style.opacity = s.overlay_opacity ?? 0.4;
+  document.getElementById('slideCounter').textContent = `${idx+1} / ${SLIDES.length}`;
+  document.querySelectorAll('.thumb').forEach((t,i)=>t.classList.toggle('active',i===idx));
+  blanked = false;
+  document.getElementById('content').style.visibility = 'visible';
+}
+
+// Build thumbnail strip
+const strip = document.getElementById('thumbnailStrip');
+SLIDES.forEach((s, i) => {
+  const t = document.createElement('div');
+  t.className = 'thumb' + (i === cur ? ' active' : '');
+  t.textContent = s.content.substring(0, 40);
+  t.style.background = s.bg_color || '#1e293b';
+  t.style.color = s.text_color || '#fff';
+  t.addEventListener('click', () => render(i));
+  strip.appendChild(t);
+});
+
+document.getElementById('prevBtn')?.addEventListener('click', () => render(cur - 1));
+document.getElementById('nextBtn')?.addEventListener('click', () => render(cur + 1));
+document.getElementById('blankBtn')?.addEventListener('click', () => {
+  blanked = !blanked;
+  document.getElementById('content').style.visibility = blanked ? 'hidden' : 'visible';
+});
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') render(cur + 1);
+  if (e.key === 'ArrowLeft'  || e.key === 'PageUp')   render(cur - 1);
+  if (e.key === 'b' || e.key === 'B') document.getElementById('blankBtn')?.click();
+});
+
+render(cur);
+</script>
+</body>
+</html>

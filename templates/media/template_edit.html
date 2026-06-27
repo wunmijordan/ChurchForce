@@ -1,0 +1,36 @@
+{% extends base_template %}{% block title %}{{ page_title }}{% endblock %}
+{% block content %}<div class="container-xl py-4" style="max-width:560px;">
+  <h2 class="fw-bold mb-4">{{ page_title }}</h2>
+  <form method="post" class="card bg-dark border-secondary p-4" style="border-radius:12px;">
+    {% csrf_token %}
+    <div class="mb-3"><label class="form-label text-muted small">Name *</label>
+      <input name="name" class="form-control bg-dark border-secondary text-white" value="{{ tmpl.name|default:'' }}" required></div>
+    <div class="mb-3"><label class="form-label text-muted small">Type</label>
+      <select name="template_type" class="form-select bg-dark border-secondary text-white">
+        {% for val,label in types %}<option value="{{ val }}" {% if tmpl and tmpl.template_type == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select></div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-4"><label class="form-label text-muted small">Background</label>
+        <input name="background_color" type="color" class="form-control form-control-color" value="{{ tmpl.background_color|default:'#000000' }}"></div>
+      <div class="col-md-4"><label class="form-label text-muted small">Text</label>
+        <input name="text_color" type="color" class="form-control form-control-color" value="{{ tmpl.text_color|default:'#ffffff' }}"></div>
+      <div class="col-md-4"><label class="form-label text-muted small">Font size (px)</label>
+        <input name="font_size" type="number" min="20" max="120" class="form-control bg-dark border-secondary text-white" value="{{ tmpl.font_size|default:48 }}"></div>
+    </div>
+    <div class="mb-3"><label class="form-label text-muted small">Font family</label>
+      <select name="font_family" class="form-select bg-dark border-secondary text-white">
+        {% for f in font_families %}
+        <option {% if tmpl and tmpl.font_family == f %}selected{% endif %}>{{ f }}</option>{% endfor %}
+      </select></div>
+    <div class="mb-3"><label class="form-label text-muted small">Overlay opacity (0=none, 1=full)</label>
+      <input name="overlay_opacity" type="range" min="0" max="1" step="0.05" class="form-range" value="{{ tmpl.overlay_opacity|default:'0.4' }}"></div>
+    <div class="mb-4 form-check">
+      <input class="form-check-input" type="checkbox" name="is_default" {% if tmpl and tmpl.is_default %}checked{% endif %}>
+      <label class="form-check-label small">Set as default for this type</label>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary">Save</button>
+      <a href="{% url 'media:template_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>{% endblock %}

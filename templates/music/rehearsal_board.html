@@ -1,0 +1,96 @@
+{% extends base_template %}{% load access_tags %}
+{% block title %}Rehearsals · {{ church.name }}{% endblock %}
+{% block extra_css %}
+<style>
+.reh-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+.reh-card {
+  background:#0d1117; border:1px solid #21262d; border-radius:14px;
+  padding:14px 16px; text-decoration:none; display:block;
+  transition:border-color .12s, transform .12s;
+}
+.reh-card:hover { border-color:#30363d; transform:translateY(-1px); }
+.reh-card.completed { opacity:.65; border-style:dashed; }
+.reh-card.upcoming  { border-left:3px solid #3b82f6; }
+.reh-tag { font-size:.62rem; font-weight:700; padding:2px 7px; border-radius:10px; }
+.reh-prepares {
+  display:flex; align-items:center; gap:5px;
+  font-size:.7rem; color:#58a6ff;
+  background:rgba(59,130,246,.07); border:1px solid rgba(59,130,246,.15);
+  border-radius:6px; padding:4px 8px; margin-top:8px;
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="container-xl py-4">
+  <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <h2 class="fw-bold mb-0">Rehearsal Board</h2>
+    {% if unit %}<span class="badge bg-secondary-lt">{{ unit.name }}</span>{% endif %}
+    <div class="ms-auto d-flex gap-2">
+      {% if unit %}
+      <a href="{% url 'units:unit_music' unit.slug %}" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">← Music Hub</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if upcoming_sessions %}
+  <div class="small text-muted text-uppercase fw-semibold mb-2" style="letter-spacing:.08em;">Upcoming</div>
+  <div class="reh-grid mb-4">
+    {% for session in upcoming_sessions %}
+    <a href="{% url 'music:rehearsal_detail' uid=session.uid %}" class="reh-card upcoming">
+      <div class="d-flex justify-content-between align-items-start mb-1">
+        <div class="fw-semibold text-white" style="font-size:.9rem;">{{ session.event.name }}</div>
+        <span class="reh-tag" style="background:rgba(59,130,246,.1);color:#58a6ff;border:1px solid rgba(59,130,246,.2);">Upcoming</span>
+      </div>
+      <div class="text-muted" style="font-size:.75rem;">
+        {{ session.event.date|date:"D, N j Y" }}{% if session.event.time %} · {{ session.event.time|time:"g:i A" }}{% endif %}
+      </div>
+      {% if session.setlist %}
+      <div class="text-muted mt-1" style="font-size:.72rem;">Setlist: {{ session.setlist.title }} · {{ session.setlist.songs.count }} songs</div>
+      {% endif %}
+      {% if session.unit %}
+      <div class="text-muted" style="font-size:.7rem;">{{ session.unit.name }}</div>
+      {% endif %}
+      {% if session.event.prepares_for_service %}
+      <div class="reh-prepares">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>
+        Preparing for: <strong>{{ session.event.prepares_for_service.name }}</strong>
+        {% if session.event.prepares_for_service.date %}&nbsp;· {{ session.event.prepares_for_service.date|date:"N j" }}{% endif %}
+      </div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if past_sessions %}
+  <div class="small text-muted text-uppercase fw-semibold mb-2" style="letter-spacing:.08em;">Past</div>
+  <div class="reh-grid">
+    {% for session in past_sessions %}
+    <a href="{% url 'music:rehearsal_detail' uid=session.uid %}" class="reh-card completed">
+      <div class="d-flex justify-content-between align-items-start mb-1">
+        <div class="fw-semibold text-white" style="font-size:.9rem;">{{ session.event.name }}</div>
+        <span class="reh-tag" style="background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.2);">Done</span>
+      </div>
+      <div class="text-muted" style="font-size:.75rem;">{{ session.event.date|date:"N j, Y" }}</div>
+      {% if session.setlist %}<div class="text-muted" style="font-size:.72rem;">{{ session.setlist.title }}</div>{% endif %}
+      {% if session.unit %}<div class="text-muted" style="font-size:.7rem;">{{ session.unit.name }}</div>{% endif %}
+      {% if session.event.prepares_for_service %}
+      <div class="reh-prepares">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>
+        Was for: <strong>{{ session.event.prepares_for_service.name }}</strong>
+      </div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if not upcoming_sessions and not past_sessions %}
+  <div class="text-center py-5 text-muted">
+    <div style="font-size:2.5rem;opacity:.3;margin-bottom:10px;">🥁</div>
+    <div class="fw-semibold">No rehearsal sessions yet.</div>
+    <div class="small mt-1">Create a Rehearsal event to get started.</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

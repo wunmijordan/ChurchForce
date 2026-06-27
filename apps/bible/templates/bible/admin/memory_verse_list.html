@@ -1,0 +1,65 @@
+{% extends base_template %}
+{% load static %}
+{% block title %}Memory Verses — {{ church.name }}{% endblock %}
+{% block content %}
+<div class="page-wrapper">
+  <div class="page-header d-print-none">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <h2 class="page-title">🧠 Memory Verses</h2>
+          <div class="text-muted">Assign daily or weekly memory verses for your congregation.</div>
+        </div>
+        <div class="col-auto ms-auto">
+          <a href="{% url 'bible:admin_memory_verse_create' %}" class="btn btn-warning">+ Add Memory Verse</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="container-xl">
+      {% if messages %}{% for m in messages %}<div class="alert alert-{{ m.tags }} alert-dismissible"><button type="button" class="btn-close" data-bs-dismiss="alert"></button>{{ m }}</div>{% endfor %}{% endif %}
+      {% if verses %}
+      <div class="card" style="border-radius:20px;">
+        <div class="table-responsive">
+          <table class="table table-vcenter card-table">
+            <thead><tr><th>Reference</th><th>Scope</th><th>Translation</th><th>Active From</th><th>Ends</th><th>Published</th><th></th></tr></thead>
+            <tbody>
+              {% for v in verses %}
+              <tr>
+                <td>
+                  <div class="fw-semibold text-warning">{{ v.reference }}</div>
+                  <div class="text-muted small">{{ v.text|truncatechars:60 }}</div>
+                </td>
+                <td><span class="badge bg-purple-lt">{{ v.get_scope_display }}</span></td>
+                <td><span class="badge bg-dark">{{ v.translation }}</span></td>
+                <td>{{ v.active_date }}</td>
+                <td>{{ v.end_date|default:"—" }}</td>
+                <td>
+                  {% if v.is_published %}<span class="badge bg-success">Live</span>
+                  {% else %}<span class="badge bg-secondary">Draft</span>{% endif %}
+                </td>
+                <td class="text-end">
+                  <a href="{% url 'bible:admin_memory_verse_edit' v.id %}" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
+                  <form method="post" action="{% url 'bible:admin_memory_verse_delete' v.id %}" style="display:inline;" onsubmit="return confirm('Delete this memory verse?')">
+                    {% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% else %}
+      <div class="card text-center p-5" style="border-radius:20px;border:2px dashed #334155;">
+        <div class="display-6 mb-3">🧠</div>
+        <h3>No memory verses yet</h3>
+        <p class="text-muted">Assign a verse for members to memorise this week.</p>
+        <a href="{% url 'bible:admin_memory_verse_create' %}" class="btn btn-warning mx-auto" style="width:fit-content;">+ Add Memory Verse</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

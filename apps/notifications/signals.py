@@ -4,7 +4,7 @@ notifications/signals.py
 Multi-tenant notification signals.
 
 Recipient selection strategy:
-    Old code used is_project_admin() / get_user_role() / TeamMembership
+    Old code used is_project_admin() / get_user_role() / UnitMembership
     to find recipients — all of which referenced deleted single-tenant models.
 
     New strategy:
@@ -36,6 +36,7 @@ from notifications.utils import (
     user_full_name,
     guest_full_name,
 )
+from tenants.time_utils import format_church_datetime
 
 User = get_user_model()
 
@@ -43,14 +44,18 @@ User = get_user_model()
 def _current_church():
     """Return church from current request context, or None."""
     from core.request_context import get_current_church
+
     return get_current_church()
 
 
 def _member_for_user(user, church):
-    """Look up ChurchMember for a user in a church. Returns None if not found."""
+    """Return a ChurchMember for either a CustomUser or ChurchMember input."""
     if not user or not church:
         return None
     from accounts.models import ChurchMember
+
+    if isinstance(user, ChurchMember):
+        return user if user.church_id == church.id and user.is_active else None
     return ChurchMember.raw_objects.filter(
         church=church, user=user, is_active=True
     ).first()
@@ -59,6 +64,7 @@ def _member_for_user(user, church):
 # ─────────────────────────────────────────────────────────────────────────────
 # Guest signals
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @receiver(pre_save, sender="guests.GuestEntry")
 def cache_old_assignment(sender, instance, **kwargs):
@@ -79,14 +85,16 @@ def notify_guest_creation_or_assignment(sender, instance, created, **kwargs):
     if not church:
         return
 
-    ts           = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
-    guest_name   = guest_full_name(instance)
-    custom_id    = getattr(instance, "custom_id", "N/A")
-    link         = reverse("guests:guest_list")
-    registrant   = get_current_user()
-    creator_name = user_full_name(_member_for_user(registrant, church) if registrant else None)
+    ts = format_church_datetime(timezone.localtime(), church)
+    guest_name = guest_full_name(instance)
+    custom_id = getattr(instance, "custom_id", "N/A")
+    link = reverse("guests:guest_list")
+    registrant = get_current_user()
+    creator_name = user_full_name(
+        _member_for_user(registrant, church) if registrant else None
+    )
     old_assigned = getattr(instance, "_old_assigned_to", None)
-    new_assigned = instance.assigned_to   # UnitMembership or None
+    new_assigned = instance.assigned_to  # UnitMembership or None
 
     # Resolve ChurchMember for the new assignee
     new_assigned_member = None
@@ -116,25 +124,38 @@ def notify_guest_creation_or_assignment(sender, instance, created, **kwargs):
                 [new_assigned_member],
                 "Guest Assigned",
                 f"I have been assigned: {guest_name} ({custom_id}), at {ts}.",
-                church, link, is_success=True,
+                church,
+                link,
+                is_success=True,
             )
         return
 
     # Reassignment
     if old_assigned != new_assigned:
-        new_name = member_full_name(new_assigned_member) if new_assigned_member else "no one"
+        new_name = (
+            member_full_name(new_assigned_member) if new_assigned_member else "no one"
+        )
         others_msg = (
             f"{guest_name} ({custom_id}) has been reassigned to {new_name}, at {ts}."
         )
         admin_recipients = [a for a in admins if a != new_assigned_member]
-        notify_members(admin_recipients, "Guest Reassigned", others_msg, church, link, is_urgent=True)
+        notify_members(
+            admin_recipients,
+            "Guest Reassigned",
+            others_msg,
+            church,
+            link,
+            is_urgent=True,
+        )
 
         if new_assigned_member:
             notify_members(
                 [new_assigned_member],
                 "Guest Reassigned",
                 f"I have been reassigned: {guest_name} ({custom_id}), at {ts}.",
-                church, link, is_success=True,
+                church,
+                link,
+                is_success=True,
             )
 
 
@@ -144,25 +165,35 @@ def notify_guest_deletion(sender, instance, **kwargs):
     if not church:
         return
 
-    deleter      = get_current_user()
-    ts           = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
-    guest_name   = guest_full_name(instance)
-    deleter_name = user_full_name(_member_for_user(deleter, church) if deleter else None)
-    custom_id    = getattr(instance, "custom_id", "N/A")
-    guest_count  = sender.raw_objects.filter(church=church).count()
-    link         = reverse("guests:guest_list")
+    deleter = get_current_user()
+    ts = format_church_datetime(timezone.localtime(), church)
+    guest_name = guest_full_name(instance)
+    deleter_name = user_full_name(
+        _member_for_user(deleter, church) if deleter else None
+    )
+    custom_id = getattr(instance, "custom_id", "N/A")
+    guest_count = sender.raw_objects.filter(church=church).count()
+    link = reverse("guests:guest_list")
 
     description = (
         f"{guest_name} ({custom_id})\n"
         f"Deleted by: {deleter_name}, at {ts}.\n"
         f"Guest count: {guest_count}."
     )
-    notify_members(get_admin_members(church), "Guest Deleted", description, church, link, is_urgent=True)
+    notify_members(
+        get_admin_members(church),
+        "Guest Deleted",
+        description,
+        church,
+        link,
+        is_urgent=True,
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Review signals
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @receiver(post_save, sender="guests.Review")
 def notify_review_submission(sender, instance, created, **kwargs):
@@ -173,11 +204,11 @@ def notify_review_submission(sender, instance, created, **kwargs):
     if not church:
         return
 
-    reviewer   = instance.reviewer   # ChurchMember
-    guest      = instance.guest
-    ts         = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
+    reviewer = instance.reviewer  # ChurchMember
+    guest = instance.guest
+    ts = format_church_datetime(timezone.localtime(), church)
     guest_name = guest_full_name(guest)
-    link       = reverse("guests:guest_list")
+    link = reverse("guests:guest_list")
 
     admins = [a for a in get_admin_members(church) if a != reviewer]
 
@@ -189,13 +220,21 @@ def notify_review_submission(sender, instance, created, **kwargs):
         except AttributeError:
             pass
 
-    recipients = list({m.pk: m for m in admins + ([owner_member] if owner_member and owner_member != reviewer else [])}.values())
+    recipients = list(
+        {
+            m.pk: m
+            for m in admins
+            + ([owner_member] if owner_member and owner_member != reviewer else [])
+        }.values()
+    )
     if recipients:
         notify_members(
             recipients,
             "Review Submitted",
             f"{member_full_name(reviewer)} submitted a review for {guest_name}, at {ts}.",
-            church, link, is_success=True,
+            church,
+            link,
+            is_success=True,
         )
 
     # Notify parent reviewer if this is a reply
@@ -204,13 +243,16 @@ def notify_review_submission(sender, instance, created, **kwargs):
             [instance.parent.reviewer],
             "Review Reply",
             f"{member_full_name(reviewer)} replied to your review for {guest_name}, at {ts}.",
-            church, link, is_success=True,
+            church,
+            link,
+            is_success=True,
         )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # User / member signals
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @receiver(post_save, sender=User)
 def notify_user_creation(sender, instance, created, **kwargs):
@@ -219,13 +261,15 @@ def notify_user_creation(sender, instance, created, **kwargs):
     church = _current_church()
     if not church:
         return
-    ts   = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
+    ts = format_church_datetime(timezone.localtime(), church)
     link = reverse("accounts:user_list")
     notify_members(
         get_admin_members(church),
         "New Member Added",
         f"New member: {user_full_name(instance)}, at {ts}.",
-        church, link, is_success=True,
+        church,
+        link,
+        is_success=True,
     )
 
 
@@ -234,13 +278,15 @@ def notify_user_deletion(sender, instance, **kwargs):
     church = _current_church()
     if not church:
         return
-    ts   = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
+    ts = format_church_datetime(timezone.localtime(), church)
     link = reverse("accounts:user_list")
     notify_members(
         get_admin_members(church),
         "Member Removed",
         f"Member removed: {user_full_name(instance)}, at {ts}.",
-        church, link, is_urgent=True,
+        church,
+        link,
+        is_urgent=True,
     )
 
 
@@ -254,27 +300,38 @@ def notify_user_login(sender, request, user, **kwargs):
     if not member:
         return
 
-    ts   = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
+    ts = format_church_datetime(timezone.localtime(), church)
     link = reverse("accounts:user_list")
     name = user_full_name(user)
 
     # Self-notification for admins only
     from permissions.services.resolver import PermissionResolver
+
     resolver = PermissionResolver(user, church)
     is_admin = user.is_superuser or resolver.can("dashboard.admin")
 
     if is_admin:
-        notify_members([member], "Login", f"I just logged in, at {ts}.", church, link, is_urgent=True)
+        notify_members(
+            [member],
+            "Login",
+            f"I just logged in, at {ts}.",
+            church,
+            link,
+            is_urgent=True,
+        )
 
     # Notify other admins
     other_admins = [a for a in get_admin_members(church) if a != member]
     if other_admins:
-        notify_members(other_admins, "Member Login", f"{name} logged in, at {ts}.", church, link)
+        notify_members(
+            other_admins, "Member Login", f"{name} logged in, at {ts}.", church, link
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # UserSettings auto-create on ChurchMember creation
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @receiver(post_save, sender="accounts.ChurchMember")
 def create_user_settings(sender, instance, created, **kwargs):
@@ -282,6 +339,7 @@ def create_user_settings(sender, instance, created, **kwargs):
     if not created:
         return
     from notifications.models import UserSettings
+
     UserSettings.raw_objects.get_or_create(
         member=instance,
         defaults={"church": instance.church},
@@ -291,6 +349,7 @@ def create_user_settings(sender, instance, created, **kwargs):
 # ─────────────────────────────────────────────────────────────────────────────
 # Chat message signals
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def _detect_mentioned_members(text, church, sender_membership=None):
     """
@@ -312,11 +371,15 @@ def _detect_mentioned_members(text, church, sender_membership=None):
 
     for m in memberships:
         try:
-            u    = m.workforce_member.member.user
+            u = m.workforce_member.member.user
             name = (u.full_name or u.username or "").strip()
             if not name:
                 continue
-            pattern = rf"@(?:{re.escape(u.title)}\s+)?{re.escape(name)}" if u.title else rf"@{re.escape(name)}"
+            pattern = (
+                rf"@(?:{re.escape(u.title)}\s+)?{re.escape(name)}"
+                if u.title
+                else rf"@{re.escape(name)}"
+            )
             if re.search(pattern, text, re.IGNORECASE):
                 member = m.workforce_member.member
                 if member.pk not in seen_member_ids:
@@ -332,10 +395,10 @@ def _detect_mentioned_members(text, church, sender_membership=None):
 def cache_old_pin(sender, instance, **kwargs):
     if instance.pk:
         old = sender.raw_objects.filter(pk=instance.pk).first()
-        instance._old_pinned    = old.pinned    if old else False
+        instance._old_pinned = old.pinned if old else False
         instance._old_pinned_by = old.pinned_by if old else None
     else:
-        instance._old_pinned    = False
+        instance._old_pinned = False
         instance._old_pinned_by = None
 
 
@@ -345,20 +408,15 @@ def create_chat_notification(sender, instance, created, **kwargs):
     if not church:
         return
 
-    just_pinned   = instance.pinned and not getattr(instance, "_old_pinned", False)
-    ts_source     = instance.pinned_at if just_pinned else instance.created_at
-    ts            = timezone.localtime(ts_source).strftime("%b. %d, %Y - %H:%M") if ts_source else ""
-    link          = reverse("workforce:chat_room")
-    unit          = instance.sender.unit if instance.sender else None
-    unit_name     = unit.name if unit else "ChurchForce"
+    just_pinned = instance.pinned and not getattr(instance, "_old_pinned", False)
+    ts_source = instance.pinned_at if just_pinned else instance.created_at
+    ts = format_church_datetime(ts_source, church) if ts_source else ""
+    link = reverse("workforce:chat_room")
+    room = instance.room
+    unit = room.unit if room and room.unit else None
+    unit_name = unit.name if unit else "ChurchForce"
 
-    # Resolve sender ChurchMember
-    sender_member = None
-    try:
-        sender_member = instance.sender.workforce_member.member
-    except AttributeError:
-        pass
-
+    sender_member = instance.sender
     sender_name = member_full_name(sender_member) if sender_member else "Someone"
 
     # Message preview
@@ -375,35 +433,43 @@ def create_chat_notification(sender, instance, created, **kwargs):
 
     # ── Pinned message ────────────────────────────────────────────────
     if just_pinned and instance.pinned_by:
-        pinner_member = None
-        try:
-            pinner_member = instance.pinned_by.workforce_member.member
-        except AttributeError:
-            pass
+        pinner_member = instance.pinned_by
 
         mentioned = _detect_mentioned_members(instance.message, church, instance.sender)
 
         if pinner_member:
             notify_members(
-                [pinner_member], f"📌 Pinned ({unit_name})",
-                f"I pinned a message, at {ts}.", church, link, is_success=True,
+                [pinner_member],
+                f"📌 Pinned ({unit_name})",
+                f"I pinned a message, at {ts}.",
+                church,
+                link,
+                is_success=True,
             )
             notified_pks.add(pinner_member.pk)
 
         for m in mentioned:
             if m.pk not in notified_pks:
                 notify_members(
-                    [m], f"📌 Pinned ({unit_name})",
+                    [m],
+                    f"📌 Pinned ({unit_name})",
                     f"{member_full_name(pinner_member)} pinned a message you were mentioned in, at {ts}.",
-                    church, link, is_success=True,
+                    church,
+                    link,
+                    is_success=True,
                 )
                 notified_pks.add(m.pk)
 
         admins = [a for a in get_admin_members(church) if a.pk not in notified_pks]
         if admins:
-            notify_members(admins, f"📌 Pinned ({unit_name})",
-                           f"{member_full_name(pinner_member)} pinned a message, at {ts}.",
-                           church, link, is_success=True)
+            notify_members(
+                admins,
+                f"📌 Pinned ({unit_name})",
+                f"{member_full_name(pinner_member)} pinned a message, at {ts}.",
+                church,
+                link,
+                is_success=True,
+            )
             notified_pks.update(a.pk for a in admins)
 
         return
@@ -414,9 +480,12 @@ def create_chat_notification(sender, instance, created, **kwargs):
         for m in mentioned:
             if m.pk not in notified_pks:
                 notify_members(
-                    [m], f"Mentioned ({unit_name})",
+                    [m],
+                    f"Mentioned ({unit_name})",
                     f"{sender_name} mentioned you in a message, at {ts}.",
-                    church, link, is_success=True,
+                    church,
+                    link,
+                    is_success=True,
                 )
                 notified_pks.add(m.pk)
         return
@@ -427,9 +496,10 @@ def create_chat_notification(sender, instance, created, **kwargs):
 
     if unit:
         from units.models import UnitMembership
+
         unit_memberships = UnitMembership.raw_objects.filter(
             church=church, unit=unit, is_active=True
-        ).select_related("workforce_member__member")
+        ).select_related("workforce_member__member__user")
 
         recipients = []
         for m in unit_memberships:
@@ -443,8 +513,12 @@ def create_chat_notification(sender, instance, created, **kwargs):
 
         if recipients:
             notify_members(
-                recipients, f"Chat ({unit_name})",
-                f"{sender_name}:\n{preview}\n{ts}", church, link, is_success=True,
+                recipients,
+                f"Chat ({unit_name})",
+                f"{sender_name}:\n{preview}\n{ts}",
+                church,
+                link,
+                is_success=True,
             )
 
 
@@ -452,8 +526,9 @@ def create_chat_notification(sender, instance, created, **kwargs):
 # Event signals
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @receiver(post_save, sender="services.Event")
-def notify_team_on_event_create(sender, instance, created, **kwargs):
+def notify_unit_on_event_create(sender, instance, created, **kwargs):
     if not created:
         return
 
@@ -468,16 +543,14 @@ def notify_team_on_event_create(sender, instance, created, **kwargs):
         event_dt = datetime.combine(instance.date, instance.time or time.min)
         if timezone.is_naive(event_dt):
             event_dt = timezone.make_aware(event_dt)
-        ts = timezone.localtime(event_dt).strftime("%b. %d, %Y — %H:%M")
+        ts = format_church_datetime(event_dt, church, separator=" — ")
     else:
         ts = "TBD"
 
-    unit      = getattr(instance, "team", None)
+    unit = getattr(instance, "unit", None)
     unit_name = unit.name if unit else "ChurchForce"
 
-    creator_member = None
-    if instance.created_by:
-        creator_member = _member_for_user(instance.created_by, church)
+    creator_member = _member_for_user(instance.created_by, church)
     creator_name = member_full_name(creator_member) if creator_member else "Unknown"
 
     msg = (
@@ -490,9 +563,10 @@ def notify_team_on_event_create(sender, instance, created, **kwargs):
     # Notify unit members
     if unit:
         from units.models import UnitMembership
+
         unit_members_qs = UnitMembership.raw_objects.filter(
             church=church, unit=unit, is_active=True
-        ).select_related("workforce_member__member")
+        ).select_related("workforce_member__member__user")
 
         recipients = []
         for m in unit_members_qs:
@@ -504,25 +578,52 @@ def notify_team_on_event_create(sender, instance, created, **kwargs):
             except AttributeError:
                 continue
 
-        notify_members(recipients, f"{unit_name} Event", msg, church, reverse("dashboard:dashboard"), is_success=True)
+        notify_members(
+            recipients,
+            f"{unit_name} Event",
+            msg,
+            church,
+            reverse("dashboard:dashboard"),
+            is_success=True,
+        )
     else:
         # Church-wide event — notify all active members
         from accounts.models import ChurchMember
+
         all_members = ChurchMember.raw_objects.filter(
             church=church, is_active=True
         ).exclude(user__is_superuser=True)
-        notify_members(list(all_members), f"{unit_name} Event", msg, church, reverse("dashboard:dashboard"), is_success=True)
+        notify_members(
+            list(all_members),
+            f"{unit_name} Event",
+            msg,
+            church,
+            reverse("dashboard:dashboard"),
+            is_success=True,
+        )
         notified_pks.update(m.pk for m in all_members)
 
     # Notify admins
-    admin_recipients = [a for a in get_admin_members(church) if a.pk not in notified_pks]
-    notify_members(admin_recipients, f"{unit_name} Event", msg, church, reverse("dashboard:admin_dashboard"), is_success=True)
+    admin_recipients = [
+        a for a in get_admin_members(church) if a.pk not in notified_pks
+    ]
+    notify_members(
+        admin_recipients,
+        f"{unit_name} Event",
+        msg,
+        church,
+        reverse("dashboard:admin_dashboard"),
+        is_success=True,
+    )
     notified_pks.update(a.pk for a in admin_recipients)
 
     # Creator confirmation
     if creator_member and creator_member.pk not in notified_pks:
         notify_members(
-            [creator_member], f"{unit_name} Event",
+            [creator_member],
+            f"{unit_name} Event",
             f"I created a new event: {instance.name} ({instance.attendance_mode} {instance.event_type}) on {ts}.",
-            church, reverse("dashboard:dashboard"), is_success=True,
+            church,
+            reverse("dashboard:dashboard"),
+            is_success=True,
         )

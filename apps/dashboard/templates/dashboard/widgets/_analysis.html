@@ -1,0 +1,13 @@
+{# AI Dashboard Analysis Widget #}
+{% if analysis_text %}
+<div class="card bg-dark border-0 mb-3" style="background:linear-gradient(135deg,#0f172a,#1e293b)!important;border-radius:14px;border-left:3px solid #6366f1!important;">
+  <div class="card-body py-3 px-4">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l2 2"/></svg>
+      <span class="small fw-semibold text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;">{{ widget_title|default:"AI Insight" }}</span>
+      <span class="ms-auto badge" style="background:#6366f122;color:#818cf8;font-size:.6rem;">AI</span>
+    </div>
+    <p class="mb-0 text-white" style="font-size:.86rem;line-height:1.6;">{{ analysis_text }}</p>
+  </div>
+</div>
+{% endif %}

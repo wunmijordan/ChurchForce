@@ -1,0 +1,84 @@
+{% extends "founder/base_founder.html" %}
+{% block title %}{{ cfg.label }}{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+  <div>
+    <a href="{% url 'founder:model_registry' %}" class="text-muted text-decoration-none small">← Models</a>
+    <h2 class="fw-bold mb-0 mt-1">{{ cfg.label }}</h2>
+    <span class="text-muted small">{{ total }} records</span>
+  </div>
+  <div class="ms-auto d-flex gap-2">
+    <a href="/admin/{{ cfg.app }}/{{ cfg.model|lower }}/" target="_blank"
+       class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-shield-lock me-1"></i>Django Admin ↗
+    </a>
+  </div>
+</div>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% else %}
+
+<div class="stat-card mb-3">
+  <form class="d-flex gap-2" method="get">
+    <input type="text" name="q" value="{{ search }}"
+           class="form-control form-control-sm" placeholder="Search…"
+           style="background:#0f172a;border-color:#334155;color:#e2e8f0;max-width:320px;">
+    <button class="btn btn-sm btn-outline-primary">Search</button>
+    {% if search %}<a href="?" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+  </form>
+</div>
+
+<div class="stat-card p-0">
+  <div class="table-responsive">
+    <table class="table table-dark table-hover mb-0" style="font-size:.8rem;">
+      <thead>
+        <tr>
+          {% for field in cfg.list_fields %}
+          <th>{{ field }}</th>
+          {% endfor %}
+          <th class="text-end">Open</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pk, identifier, cells in rows %}
+        <tr>
+          {% for name, val in cells %}
+          <td class="{% if name == 'id' or name == 'uid' %}text-muted font-monospace{% endif %}"
+              style="{% if name == 'id' or name == 'uid' %}font-size:.72rem;{% endif %}">
+            {% if val == 'True' %}<span class="badge bg-success-lt" style="font-size:.65rem;">✓ Yes</span>
+            {% elif val == 'False' %}<span class="badge bg-secondary-lt" style="font-size:.65rem;">— No</span>
+            {% else %}{{ val|truncatechars:60 }}{% endif %}
+          </td>
+          {% endfor %}
+          <td class="text-end">
+            <a href="{% url 'founder:model_detail' model_key=model_key pk=pk %}"
+               class="btn btn-xs btn-outline-primary"
+               style="font-size:.65rem;border-radius:6px;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis;display:inline-block;">
+              {{ identifier|truncatechars:20 }} →
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="{{ cfg.list_fields|length|add:1 }}" class="text-muted text-center py-4">No records.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if num_pages > 1 %}
+<div class="d-flex align-items-center gap-2 mt-3">
+  {% if has_prev %}
+  <a href="?{% if search %}q={{ search }}&{% endif %}p={{ page|add:'-1' }}" class="btn btn-sm btn-outline-secondary">← Prev</a>
+  {% endif %}
+  <span class="text-muted small">Page {{ page }} of {{ num_pages }}</span>
+  {% if has_next %}
+  <a href="?{% if search %}q={{ search }}&{% endif %}p={{ page|add:'1' }}" class="btn btn-sm btn-outline-secondary">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

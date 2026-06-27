@@ -1,0 +1,55 @@
+{% extends "marketing/base_marketing.html" %}
+{% block title %}ChurchForce{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+  {# Hero #}
+  <div class="text-center py-5 mb-4">
+    <div class="mb-3">
+      <span class="badge px-3 py-2 rounded-pill" style="background:#ff5e0120;color:#ff5e01;border:1px solid #ff5e0150;font-size:.8rem;">
+        Workforce · Attendance · Guests · LMS
+      </span>
+    </div>
+    <h1 class="fw-bold mb-3" style="font-size:clamp(2rem,5vw,3.5rem);line-height:1.15;">
+      Your Church.<br>
+      <span style="color:var(--cf-orange);">Fully Organised.</span>
+    </h1>
+    <p class="text-secondary lead mb-4 mx-auto" style="max-width:560px;">
+      ChurchForce helps Churches manage their Workforce, track Attendance,
+      manage and follow up Guests, run Induction Programmes, and grow across Campuses.
+    </p>
+    <div class="d-flex gap-3 justify-content-center flex-wrap">
+      <a href="{{ signup_url }}" class="cf-btn" style="font-size:1rem;padding:12px 32px;">Get Started Free</a>
+      <a href="/pricing/" class="cf-btn-outline" style="font-size:1rem;padding:12px 32px;">See Pricing</a>
+    </div>
+    <p class="text-secondary mt-3" style="font-size:.8rem;">30-day Trial · No Card Required · Set up in minutes</p>
+  </div>
+
+  {# Feature highlights #}
+  <div class="row g-4 mb-5">
+    {% for icon, title, desc in features %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="p-4 rounded-4" style="background:var(--cf-card);border:1px solid #1e293b;">
+        <div class="mb-2" style="font-size:1.8rem;">{{ icon }}</div>
+        <h5 class="fw-semibold mb-1">{{ title }}</h5>
+        <p class="text-secondary small mb-0">{{ desc }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# CTA #}
+  <div class="text-center py-4 rounded-4 mb-2" style="background:var(--cf-card);border:1px solid #334155;">
+    <h3 class="fw-bold mb-2">Ready to Get Organised?</h3>
+    <p class="text-secondary mb-3">Sign your Church up in under 2 minutes.</p>
+    <a href="{{ signup_url }}" class="cf-btn" style="font-size:1rem;padding:12px 36px;">Start Free Trial</a>
+  </div>
+
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+// Pass features list from view — rendered inline for simplicity
+</script>
+{% endblock %}

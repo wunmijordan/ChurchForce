@@ -1,0 +1,926 @@
+{% extends base_template %}
+{% load static access_tags %}
+{% block title %}{{ course.title }} — Training{% endblock %}
+
+{% block content %}
+<div class="container-xl py-4">
+
+  {# ── Breadcrumb ── #}
+  <div class="mb-3">
+    <a href="{% url 'lms:course_list' %}" class="text-muted small d-inline-flex align-items-center gap-1">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      Training
+    </a>
+  </div>
+
+  {# ── Course hero ── #}
+  <div class="card mb-4 border-0 overflow-hidden lms-course-hero"
+       style="border-radius:22px;{% if course.course_image %}background:url('{{ course.course_image.url }}') center/cover no-repeat;{% else %}background:linear-gradient(135deg,#1e3a5f 0%,#0f2340 100%);{% endif %}">
+    <div class="card-body p-4 p-md-5 lms-hero-overlay" style="background:rgba(0,0,0,.55);border-radius:22px;">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+          <span class="badge bg-blue-lt mb-2 px-2 py-1">{{ course.get_course_type_display }}</span>
+          {% if course.unit %}<span class="badge bg-secondary-lt mb-2 px-2 py-1 ms-1">{{ course.unit.name }}</span>{% endif %}
+          <h2 class="fw-bold mb-1 text-white">{{ course.title }}</h2>
+          {% if course.description %}<p class="text-white-50 mb-0" style="max-width:540px;">{{ course.description }}</p>{% endif %}
+        </div>
+        {% if enrollment %}
+        <div class="text-end flex-shrink-0">
+          <div class="badge fs-6 px-3 py-2
+            {% if enrollment.status == 'passed' %}bg-success
+            {% elif enrollment.status == 'failed' %}bg-danger
+            {% elif enrollment.status == 'certified' %}bg-purple
+            {% else %}bg-warning{% endif %}">
+            {{ enrollment.status|capfirst }}
+          </div>
+          {% if enrollment.score is not None %}
+          <div class="text-white-50 small mt-1">Score: {{ enrollment.score }}%</div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      <div class="d-flex gap-3 mt-3 text-white-50 small flex-wrap align-items-center">
+        <span>{{ course.get_delivery_mode_display }}</span>
+        <span class="lms-dot">·</span>
+        <span>Pass mark: {{ course.passing_score }}%</span>
+        <span class="lms-dot">·</span>
+        {% if course.strict_sequence %}<span>📋 Sequential</span>{% else %}<span>🔀 Flexible</span>{% endif %}
+        {% if course.allow_retake %}
+        <span class="lms-dot">·</span><span>↩ {{ course.max_retakes }} retake{{ course.max_retakes|pluralize }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ── Announcements banner ── #}
+  {% if announcements %}
+  <div class="mb-4">
+    {% for ann in announcements %}
+    <div class="alert lms-announcement d-flex gap-3 align-items-start mb-2" style="border-radius:16px;background:#1a2e4a;border:1px solid #2563eb;">
+      <span style="font-size:1.3rem;">📢</span>
+      <div class="flex-grow-1">
+        <strong class="text-white">{{ ann.title }}</strong>
+        <p class="mb-0 text-white-75 small mt-1">{{ ann.body }}</p>
+        <div class="text-muted" style="font-size:.68rem;">{{ ann.created_at|timesince }} ago{% if ann.author %} · {{ ann.author }}{% endif %}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ── Admin: post announcement ── #}
+  {% if is_admin %}
+  <div class="card bg-dark border-secondary mb-4" style="border-radius:16px;">
+    <div class="card-body py-2 px-3">
+      <button class="btn btn-xs btn-outline-primary w-100" style="border-radius:10px;" data-bs-toggle="collapse" data-bs-target="#announcePanel">
+        + Post Announcement
+      </button>
+      <div class="collapse mt-3" id="announcePanel">
+        <form method="post" action="{% url 'lms:announcement_create' course.slug %}">
+          {% csrf_token %}
+          <div class="row g-2">
+            <div class="col-12"><input name="title" class="form-control bg-dark text-white border-secondary" placeholder="Announcement title *" required></div>
+            <div class="col-12"><textarea name="body" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Message…" required></textarea></div>
+            <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary" style="border-radius:10px;">Post</button></div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+
+    {# ══ LEFT ══ #}
+    <div class="col-12 col-lg-8">
+
+      {# ── Sessions ── #}
+      {% if sessions %}
+      <div class="card bg-dark border-secondary mb-4" style="border-radius:18px;">
+        <div class="card-header border-secondary d-flex justify-content-between align-items-center py-2 px-3">
+          <h6 class="fw-bold mb-0">Training Sessions</h6>
+          {% if is_admin %}<a href="{% url 'lms:session_list' course.slug %}" class="btn btn-xs btn-outline-primary" style="border-radius:8px;">Manage</a>{% endif %}
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-dark table-hover table-sm mb-0" style="border-radius:0 0 18px 18px;overflow:hidden;">
+            <thead><tr><th>Session</th><th>Date</th><th>Covers</th><th>Your Attendance</th></tr></thead>
+            <tbody>
+              {% for session in sessions %}
+              <tr>
+                <td class="fw-semibold small">{{ session.title }}{% if session.notes %}<br><span class="text-muted fw-normal" style="font-size:.7rem;">{{ session.notes|truncatechars:60 }}</span>{% endif %}</td>
+                <td class="small text-muted text-nowrap">{% if session.event %}{{ session.event.date|date:"D, d M Y" }}{% else %}—{% endif %}</td>
+                <td>{% for mod in session.modules_covered.all %}<span class="badge bg-secondary-lt me-1" style="font-size:.6rem;">{{ mod.order }}. {{ mod.title }}</span>{% empty %}<span class="text-muted small">All</span>{% endfor %}</td>
+                <td>
+                  {% with att=session_attendance|lookup:"session.id" %}
+                  {% if att %}
+                  <span class="badge bg-{% if att.status == 'present' %}success{% elif att.status == 'late' %}danger{% elif att.status == 'excused' %}warning{% else %}secondary{% endif %}-lt" style="font-size:.65rem;">{{ att.get_status_display }}</span>
+                  {% else %}<span class="text-muted small">—</span>{% endif %}
+                  {% endwith %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── Peer review tasks for this member ── #}
+      {% if pending_peer_count %}
+      <div class="card border-warning bg-dark mb-4" style="border-radius:18px;border-style:solid;">
+        <div class="card-body p-3">
+          <h6 class="fw-bold mb-2 text-warning">📝 Peer Reviews Assigned to You <span class="badge bg-warning text-dark ms-1">{{ pending_peer_count }}</span></h6>
+          {% for task_id, task in peer_tasks.items %}
+          {% if not task.done %}
+          <div class="d-flex align-items-center justify-content-between gap-2 py-2 border-top border-secondary">
+            <div class="small">
+              <span class="fw-semibold text-white">{{ task.assignment.submission.module.title }}</span>
+              <span class="text-muted"> · </span>
+              <span class="text-muted">by {{ task.assignment.submission.enrollment.member }}</span>
+            </div>
+            <button class="btn btn-xs btn-warning flex-shrink-0" style="border-radius:10px;"
+                    data-bs-toggle="modal"
+                    data-bs-target="#peerReviewModal{{ task.assignment.id }}">
+              Review
+            </button>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── Module list ── #}
+      <div class="d-flex align-items-center justify-content-between mb-3 gap-2">
+        <h5 class="fw-bold mb-0">Modules <span class="text-muted fw-normal fs-6">({{ modules|length }})</span></h5>
+        <div class="d-flex gap-2">
+          <button id="expandAll" class="btn btn-xs btn-outline-secondary" style="border-radius:10px;font-size:.72rem;">Expand all</button>
+          <button id="collapseAll" class="btn btn-xs btn-outline-secondary" style="border-radius:10px;font-size:.72rem;">Collapse all</button>
+        </div>
+      </div>
+
+      <div id="moduleList">
+        {% if not modules %}<p class="text-muted py-4 text-center">No modules yet.</p>{% endif %}
+      </div>
+
+      {# ── Add Module (admin) ── #}
+      {% if is_admin %}
+      <div class="card bg-dark border-secondary mt-3" style="border-radius:16px;border-style:dashed!important;">
+        <div class="card-body py-3">
+          <button class="btn btn-sm btn-outline-success w-100" data-bs-toggle="collapse" data-bs-target="#addModPanel" style="border-radius:10px;">+ Add Module</button>
+          <div class="collapse mt-3" id="addModPanel">
+            <form method="post" action="{% url 'lms:module_add' course.slug %}" enctype="multipart/form-data">
+              {% csrf_token %}
+              <div class="row g-2">
+                <div class="col-md-7"><input name="title" class="form-control bg-dark text-white border-secondary" placeholder="Module title *" required></div>
+                <div class="col-md-2"><input name="order" type="number" class="form-control bg-dark text-white border-secondary" placeholder="Order" min="1"></div>
+                <div class="col-md-3"><input name="estimated_minutes" type="number" class="form-control bg-dark text-white border-secondary" placeholder="Est. min" min="1"></div>
+                <div class="col-md-4">
+                  <select name="content_type" id="addModType" class="form-select bg-dark text-white border-secondary">
+                    <option value="text">📝 Text / Reading</option>
+                    <option value="video">▶ Video</option>
+                    <option value="audio">🎵 Audio</option>
+                    <option value="pdf">📄 PDF</option>
+                    <option value="assessment">✏ Assessment</option>
+                    <option value="practical">🔧 Practical / Task</option>
+                    <option value="quiz">❓ Quiz</option>
+                    <option value="link">🔗 External Link</option>
+                    <option value="embed">🖼 Embed</option>
+                  </select>
+                </div>
+                <div class="col-md-8">
+                  <select name="content_template" id="addModTemplate" class="form-select bg-dark text-white border-secondary">
+                    <option value="">Choose a content template</option>
+                    <option value="reading_notes" data-types="text">Reading notes</option>
+                    <option value="video_lesson" data-types="video">Video lesson</option>
+                    <option value="quiz_mcq" data-types="quiz">Quiz with answer key</option>
+                    <option value="practical_task" data-types="practical">Practical task checklist</option>
+                    <option value="written_reflection" data-types="assessment">Written reflection</option>
+                  </select>
+                </div>
+                <div class="col-md-8"><input name="description" class="form-control bg-dark text-white border-secondary" placeholder="Short description"></div>
+                <div class="col-12" id="addMod_text"><textarea name="content" class="form-control bg-dark text-white border-secondary" rows="4" placeholder="Content…"></textarea></div>
+                <div class="col-12" id="addMod_quiz" style="display:none;">
+                  <div class="card bg-dark border-secondary p-3" style="border-radius:12px;">
+                    <div class="fw-semibold small mb-2">Quiz questions</div>
+                    <div id="addQuizRows">
+                      <div class="quiz-row row g-2 mb-3">
+                        <div class="col-12"><input name="quiz_question" class="form-control bg-dark text-white border-secondary" placeholder="Question"></div>
+                        <div class="col-md-6"><input name="quiz_option_a" class="form-control bg-dark text-white border-secondary" placeholder="Option A"></div>
+                        <div class="col-md-6"><input name="quiz_option_b" class="form-control bg-dark text-white border-secondary" placeholder="Option B"></div>
+                        <div class="col-md-6"><input name="quiz_option_c" class="form-control bg-dark text-white border-secondary" placeholder="Option C"></div>
+                        <div class="col-md-6"><input name="quiz_option_d" class="form-control bg-dark text-white border-secondary" placeholder="Option D"></div>
+                        <div class="col-md-6"><input name="quiz_answer" class="form-control bg-dark text-white border-secondary" placeholder="Correct answer"></div>
+                        <div class="col-md-6"><input name="quiz_explanation" class="form-control bg-dark text-white border-secondary" placeholder="Explanation"></div>
+                      </div>
+                    </div>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" id="addQuizQuestion" style="border-radius:8px;">+ Add Question</button>
+                  </div>
+                </div>
+                <div class="col-12" id="addMod_url" style="display:none;"><input type="url" name="external_url" class="form-control bg-dark text-white border-secondary" placeholder="https://…"></div>
+                <div class="col-12" id="addMod_file" style="display:none;"><input type="file" name="resource" class="form-control bg-dark text-white border-secondary"></div>
+                <div class="col-12" id="addMod_embed" style="display:none;"><textarea name="embed_code" class="form-control bg-dark text-white border-secondary font-monospace" rows="3" placeholder="<iframe …></iframe>"></textarea></div>
+                <div class="col-12 d-flex flex-wrap gap-3">
+                  <div class="form-check"><input class="form-check-input" type="checkbox" name="is_required" id="addModReq" checked><label class="form-check-label small" for="addModReq">Required</label></div>
+                  <div class="form-check"><input class="form-check-input" type="checkbox" name="requires_attachment" id="addModFile"><label class="form-check-label small" for="addModFile">Must submit file</label></div>
+                  <div class="form-check"><input class="form-check-input" type="checkbox" name="enable_peer_review" id="addModPeer"><label class="form-check-label small" for="addModPeer">Peer review</label></div>
+                  <div class="form-check"><input class="form-check-input" type="checkbox" name="discussion_enabled" id="addModDisc"><label class="form-check-label small" for="addModDisc">Discussion board</label></div>
+                </div>
+                <div id="addModPeerCount" style="display:none;" class="col-md-3">
+                  <input name="peer_review_count" type="number" min="1" max="10" value="2" class="form-control bg-dark text-white border-secondary" placeholder="# peers">
+                </div>
+                <div class="col-12 text-end"><button type="submit" class="btn btn-sm btn-primary" style="border-radius:10px;">Save Module</button></div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>{# /col-lg-8 #}
+
+    {# ══ RIGHT RAIL ══ #}
+    <div class="col-12 col-lg-4">
+
+      {# ── Progress ── #}
+      {% if enrollment %}
+      <div class="card bg-dark border-secondary mb-3" style="border-radius:18px;">
+        <div class="card-body p-3">
+          <h6 class="fw-semibold mb-3">Your Progress</h6>
+          {% with done=submissions|length total=modules|length %}
+          <div class="d-flex justify-content-between text-muted small mb-1">
+            <span>{{ done }}/{{ total }} submitted</span>
+            {% if enrollment.score %}<span class="fw-bold text-white">{{ enrollment.score }}%</span>{% endif %}
+          </div>
+          <div class="progress mb-2" style="height:8px;border-radius:8px;">
+            <div class="progress-bar bg-{% if enrollment.status == 'passed' %}success{% else %}primary{% endif %}"
+                 style="width:{% if enrollment.status == 'passed' %}100{% elif total %}{% widthratio done total 100 %}{% else %}2{% endif %}%;border-radius:8px;transition:width .6s ease;"></div>
+          </div>
+          {% endwith %}
+          {% if enrollment.current_module %}<div class="text-muted small mt-2">Current: <strong class="text-white">{{ enrollment.current_module.title }}</strong></div>{% endif %}
+          {% if enrollment.completed_at %}<div class="text-muted small">Completed: {{ enrollment.completed_at|date:"d M Y" }}</div>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── Admin stats ── #}
+      {% if is_admin %}
+      <div class="card bg-dark border-secondary mb-3" style="border-radius:18px;">
+        <div class="card-body p-3">
+          <h6 class="fw-semibold mb-2">Course Stats</h6>
+          <div class="row g-2 text-center mb-3">
+            <div class="col-6"><div class="fw-bold fs-4">{{ course.enrollments.count }}</div><div class="text-muted small">Enrolled</div></div>
+            <div class="col-6"><div class="fw-bold fs-4 text-success">{{ passed_count }}</div><div class="text-muted small">Passed</div></div>
+          </div>
+          <a href="{% url 'lms:proctor_queue' %}" class="btn btn-sm btn-outline-warning w-100 mb-2" style="border-radius:10px;">Review Queue</a>
+          <a href="{% url 'lms:course_edit' course.slug %}" class="btn btn-sm btn-outline-secondary w-100" style="border-radius:10px;">Edit Course</a>
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── Certificate ── #}
+      {% if has_certificate %}
+      <div class="card border-success bg-dark mb-3" style="border-radius:18px;">
+        <div class="card-body p-3 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.5" class="mb-2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+          <div class="fw-bold text-success mb-2">Certificate Earned</div>
+          <a href="{% url 'lms:certificates' %}" class="btn btn-sm btn-success w-100" style="border-radius:10px;">View Certificate</a>
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── Module index ── #}
+      {% if modules %}
+      <div class="card bg-dark border-secondary" id="moduleIndexCard"
+           style="border-radius:18px;position:sticky;top:76px;max-height:calc(100vh - 110px);overflow:hidden;display:flex;flex-direction:column;">
+        <div class="card-header border-secondary py-2 px-3 d-flex align-items-center justify-content-between flex-shrink-0">
+          <span class="fw-semibold small">Module Index</span>
+          <span class="badge bg-secondary-lt text-muted" style="font-size:.62rem;">{{ modules|length }}</span>
+        </div>
+        <div class="p-2 flex-grow-1" style="overflow-y:auto;scrollbar-width:thin;">
+          <div class="d-flex flex-column gap-1" id="moduleIndexPills">
+            {% for module in modules %}
+            {% with sub=submissions|lookup:"module.id" %}
+            <button class="db-tab-pill lms-idx-pill w-100 text-start px-2 py-2"
+                    data-mod="{{ module.id }}"
+                    style="border-radius:10px;font-size:.72rem;border:none;background:transparent;color:var(--tblr-body-color);text-align:left;">
+              <span class="lms-status-dot me-1
+                {% if sub and sub.status == 'passed' %}bg-success
+                {% elif sub and sub.status == 'failed' %}bg-danger
+                {% elif sub %}bg-warning
+                {% elif module.id in completions %}bg-success
+                {% else %}bg-secondary{% endif %}"
+                style="display:inline-block;width:7px;height:7px;border-radius:50%;"></span>
+              <span class="{% if sub and sub.status == 'passed' %}text-success{% elif not module.id in unlocked_module_ids %}text-muted{% endif %}">
+                {{ module.order }}. {{ module.title|truncatechars:32 }}
+              </span>
+              {% if module.enable_peer_review %}<span class="ms-1 text-warning" title="Peer review" style="font-size:.6rem;">👥</span>{% endif %}
+              {% if module.discussion_enabled %}<span class="ms-1 text-info" title="Discussion" style="font-size:.6rem;">💬</span>{% endif %}
+            </button>
+            {% endwith %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>{# /col-lg-4 #}
+  </div>{# /row #}
+</div>{# /container #}
+
+{# ══ Per-module full content (server-rendered, hidden, picked by JS) ══ #}
+<div id="moduleContentStore" style="display:none;">
+{% for module in modules %}
+<div id="mc-{{ module.id }}">
+
+  {% if is_admin or module.id in unlocked_module_ids %}
+  {# Content by type #}
+  {% if module.content_type == "quiz" and module.template_data.questions %}
+    {% if module.content %}<div class="lms-prose mb-3">{{ module.content|linebreaks }}</div>{% endif %}
+    <div class="lms-quiz-preview mb-3">
+      {% for question in module.template_data.questions %}
+      <div class="card bg-dark border-secondary p-3 mb-2" style="border-radius:12px;">
+        <div class="fw-semibold small mb-2">{{ forloop.counter }}. {{ question.question }}</div>
+        <div class="d-flex flex-column gap-1 small">
+          {% for option in question.options %}
+          <label class="d-flex gap-2 align-items-center">
+            {% if enrollment and module.id in unlocked_module_ids %}
+            <input type="radio" form="submit-module-{{ module.id }}" name="quiz_answer_{{ forloop.parentloop.counter }}" value="{{ option }}">
+            {% endif %}
+            <span>{{ option }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        {% if is_admin and question.answer %}
+        <div class="text-muted mt-2" style="font-size:.72rem;">Answer key: {{ question.answer }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  {% elif module.content_type == "text" or module.content_type == "assessment" or module.content_type == "practical" or module.content_type == "quiz" %}
+    {% if module.content %}
+    <div class="lms-prose mb-3">{{ module.content|linebreaks }}</div>
+    {% else %}
+    <div class="alert py-3 mb-3" style="border-radius:14px;background:#152033;border:1px solid rgba(96,165,250,.35);">
+      <div class="fw-semibold">No page content yet.</div>
+      <div class="small text-muted">{% if is_admin %}Add reading text, instructions, an external URL, an upload, or an embed from Edit Module.{% else %}This module has been unlocked, but the lesson content has not been added yet.{% endif %}</div>
+    </div>
+    {% endif %}
+  {% elif module.content_type == "video" %}
+    {% if module.external_url %}
+    <div class="ratio ratio-16x9 mb-3" style="border-radius:14px;overflow:hidden;">
+      {% if "youtube.com" in module.external_url or "youtu.be" in module.external_url %}
+        {% with yt_url=module.external_url %}
+        <iframe src="https://www.youtube.com/embed/{{ yt_url|cut:'https://www.youtube.com/watch?v='|cut:'https://youtu.be/' }}" allowfullscreen></iframe>
+        {% endwith %}
+      {% else %}
+        <video controls src="{{ module.external_url }}" class="w-100"></video>
+      {% endif %}
+    </div>
+    {% elif module.resource %}
+    <div class="ratio ratio-16x9 mb-3" style="border-radius:14px;overflow:hidden;">
+      <video controls src="{{ module.resource.url }}" class="w-100"></video>
+    </div>
+    {% endif %}
+    {% if module.content %}<div class="lms-prose mb-3">{{ module.content|linebreaks }}</div>{% endif %}
+    {% if not module.external_url and not module.resource and not module.content %}
+    <div class="alert py-3 mb-3" style="border-radius:14px;background:#152033;border:1px solid rgba(96,165,250,.35);">
+      <div class="fw-semibold">No video content yet.</div>
+      <div class="small text-muted">{% if is_admin %}Attach a video file or add a video URL from Edit Module.{% else %}This video module is unlocked, but the media has not been added yet.{% endif %}</div>
+    </div>
+    {% endif %}
+  {% elif module.content_type == "audio" %}
+    {% if module.resource %}
+    <audio controls class="w-100 mb-3" style="border-radius:12px;">
+      <source src="{{ module.resource.url }}">
+    </audio>
+    {% endif %}
+    {% if module.content %}<div class="lms-prose mb-3">{{ module.content|linebreaks }}</div>{% endif %}
+    {% if not module.resource and not module.content %}
+    <div class="alert py-3 mb-3" style="border-radius:14px;background:#152033;border:1px solid rgba(96,165,250,.35);">
+      <div class="fw-semibold">No audio content yet.</div>
+      <div class="small text-muted">{% if is_admin %}Attach an audio file from Edit Module.{% else %}This audio module is unlocked, but the audio has not been added yet.{% endif %}</div>
+    </div>
+    {% endif %}
+  {% elif module.content_type == "pdf" %}
+    {% if module.resource %}
+    <div class="mb-3 d-flex gap-2">
+      <a href="{{ module.resource.url }}" target="_blank" class="btn btn-sm btn-outline-primary" style="border-radius:10px;">📄 Open PDF</a>
+      <a href="{{ module.resource.url }}" download class="btn btn-sm btn-outline-secondary" style="border-radius:10px;">⬇ Download</a>
+    </div>
+    <iframe src="{{ module.resource.url }}" class="w-100 mb-3" style="height:420px;border-radius:14px;border:1px solid rgba(255,255,255,.1);"></iframe>
+    {% endif %}
+    {% if module.content %}<div class="lms-prose mb-3">{{ module.content|linebreaks }}</div>{% endif %}
+    {% if not module.resource and not module.content %}
+    <div class="alert py-3 mb-3" style="border-radius:14px;background:#152033;border:1px solid rgba(96,165,250,.35);">
+      <div class="fw-semibold">No document content yet.</div>
+      <div class="small text-muted">{% if is_admin %}Attach a PDF/document or add notes from Edit Module.{% else %}This document module is unlocked, but the file has not been added yet.{% endif %}</div>
+    </div>
+    {% endif %}
+  {% elif module.content_type == "link" %}
+    {% if module.external_url %}
+    <a href="{{ module.external_url }}" target="_blank" rel="noopener" class="btn btn-primary mb-3" style="border-radius:12px;">
+      🔗 Open Resource
+    </a>
+    {% endif %}
+    {% if module.content %}<div class="lms-prose mb-3">{{ module.content|linebreaks }}</div>{% endif %}
+    {% if not module.external_url and not module.content %}
+    <div class="alert py-3 mb-3" style="border-radius:14px;background:#152033;border:1px solid rgba(96,165,250,.35);">
+      <div class="fw-semibold">No link content yet.</div>
+      <div class="small text-muted">{% if is_admin %}Add the external URL from Edit Module.{% else %}This link module is unlocked, but the URL has not been added yet.{% endif %}</div>
+    </div>
+    {% endif %}
+  {% elif module.content_type == "embed" %}
+    {% if module.embed_code %}
+    <div class="lms-embed-wrapper mb-3" style="border-radius:14px;overflow:hidden;">
+      {{ module.embed_code|safe }}
+    </div>
+    {% endif %}
+    {% if module.content %}<div class="lms-prose mb-3">{{ module.content|linebreaks }}</div>{% endif %}
+    {% if not module.embed_code and not module.content %}
+    <div class="alert py-3 mb-3" style="border-radius:14px;background:#152033;border:1px solid rgba(96,165,250,.35);">
+      <div class="fw-semibold">No embedded content yet.</div>
+      <div class="small text-muted">{% if is_admin %}Paste the iframe/embed code from Edit Module.{% else %}This embed module is unlocked, but the embedded content has not been added yet.{% endif %}</div>
+    </div>
+    {% endif %}
+  {% endif %}
+
+  {# ── Rubric display ── #}
+  {% with rubric=rubrics|lookup:"module.id" %}
+  {% if rubric %}
+  <div class="lms-rubric-block mb-3">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <h6 class="fw-semibold mb-0">📋 Grading Rubric <span class="text-muted fw-normal">({{ rubric.total_points }} pts)</span></h6>
+      {% if is_admin %}<a href="{% url 'lms:rubric_edit' module.id %}" class="btn btn-xs btn-outline-secondary" style="border-radius:8px;">Edit</a>{% endif %}
+    </div>
+    <div class="table-responsive">
+      <table class="table table-dark table-sm table-bordered lms-rubric-table mb-0" style="border-radius:12px;overflow:hidden;font-size:.78rem;">
+        <thead class="table-active">
+          <tr>
+            <th style="width:28%;">Criterion</th>
+            {% for rating in rubric.criteria.first.ratings %}
+            <th class="text-center">{{ rating.label }}<br><span class="text-muted fw-normal">({{ rating.points }} pts)</span></th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for criterion in rubric.criteria.all %}
+          <tr>
+            <td class="fw-semibold">{{ criterion.description }}<br><span class="text-muted fw-normal">/{{ criterion.max_points }}</span></td>
+            {% for rating in criterion.ratings %}
+            <td class="text-muted small text-center align-top py-2">{{ rating.description|default:"" }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if is_admin %}<a href="{% url 'lms:rubric_edit' module.id %}" class="btn btn-xs btn-outline-secondary mt-2" style="border-radius:8px;">+ Edit Rubric</a>{% endif %}
+  </div>
+  {% else %}
+  {% if is_admin %}<a href="{% url 'lms:rubric_edit' module.id %}" class="btn btn-xs btn-outline-secondary mb-3" style="border-radius:8px;">+ Add Rubric</a>{% endif %}
+  {% endif %}
+  {% endwith %}
+
+  {# ── Submission area ── #}
+  {% if enrollment %}
+  {% with sub=submissions|lookup:"module.id" %}
+  {% if sub and sub.status == 'passed' %}
+    <div class="alert alert-success d-flex align-items-center gap-2 mb-3" style="border-radius:14px;">
+      ✅ <strong>Passed</strong>
+      {% if sub.score is not None %}<span>· {{ sub.score }}%</span>{% endif %}
+      {% if sub.review.feedback %}<span class="text-muted small">— {{ sub.review.feedback }}</span>{% endif %}
+    </div>
+  {% elif sub %}
+    <div class="alert alert-info d-flex align-items-center gap-2 mb-3" style="border-radius:14px;background:#1e2d3d;border:1px solid #3b82f6;">
+      {% if sub.status == 'submitted' %}⏳{% elif sub.status == 'peer_review' %}👥{% elif sub.status == 'reviewing' %}🔍{% elif sub.status == 'failed' %}❌{% elif sub.status == 'returned' %}↩{% endif %}
+      <span>{{ sub.get_status_display }}</span>
+      {% if sub.score is not None %}<span class="ms-auto fw-bold">{{ sub.score }}%</span>{% endif %}
+    </div>
+    {% if sub.status == 'failed' and enrollment.course.allow_retake %}
+    {# Show retake form below #}
+    {% endif %}
+  {% endif %}
+
+  {# Peer review scores display #}
+  {% if sub and sub.peer_assignments.exists %}
+  <div class="mb-3">
+    <h6 class="fw-semibold small mb-2 text-muted">Peer Feedback</h6>
+    {% for pa in sub.peer_assignments.all %}
+    {% if pa.review %}
+    <div class="card bg-dark border-secondary mb-2 p-2" style="border-radius:12px;font-size:.78rem;">
+      {% if pa.review.score is not None %}<span class="badge bg-info-lt me-1">{{ pa.review.score }}%</span>{% endif %}
+      {% if pa.review.feedback %}<span class="text-muted">{{ pa.review.feedback }}</span>{% endif %}
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# Submit / retake form #}
+  {% if module.id in unlocked_module_ids %}
+  {% if not sub or sub.status == 'failed' or sub.status == 'returned' %}
+  {% if module.content_type in "assessment,practical,quiz" or module.requires_attachment %}
+  <form method="post" id="submit-module-{{ module.id }}" action="{% url 'lms:submit_module' enrollment.id module.id %}" enctype="multipart/form-data"
+        class="lms-submit-form card bg-dark border-secondary p-3 mb-3" style="border-radius:14px;">
+    {% csrf_token %}
+    {% if module.content_type == "quiz" and module.template_data.questions %}
+    <div class="form-text text-muted mb-2">Choose your answers above, then submit for review.</div>
+    {% elif module.content_type in "assessment,practical,quiz" %}
+    <label class="form-label small fw-semibold">Your response</label>
+    <textarea name="content" class="form-control bg-dark text-white border-secondary mb-2" rows="5" placeholder="Type your answer here…"></textarea>
+    {% endif %}
+    {% if module.requires_attachment %}
+    <label class="form-label small fw-semibold">Attachment <span class="text-danger">*</span></label>
+    <input type="file" name="attachment" class="form-control bg-dark text-white border-secondary mb-2" required>
+    {% else %}
+    <input type="file" name="attachment" class="form-control bg-dark text-white border-secondary mb-2">
+    <div class="form-text text-muted mb-2">Optional file attachment</div>
+    {% endif %}
+    {% if module.enable_peer_review %}
+    <div class="alert small mb-2 py-2" style="border-radius:10px;background:#1a2e1a;border:1px solid #22c55e;">👥 This submission will be sent to peers for review before grading.</div>
+    {% endif %}
+    <button type="submit" class="btn btn-sm btn-primary w-100" style="border-radius:10px;">
+      Submit{% if sub and sub.status == 'failed' %} (Retake){% endif %}
+    </button>
+  </form>
+  {% endif %}
+  {% endif %}
+  {% if module.id not in completions and module.content_type not in "assessment,practical,quiz" and not module.requires_attachment %}
+  {# Non-graded modules: mark as done #}
+  <form method="post" action="{% url 'lms:module_complete' enrollment.id module.id %}" class="mb-3">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-sm btn-outline-success w-100" style="border-radius:10px;">✓ Mark as Complete</button>
+  </form>
+  {% endif %}
+  {% elif module.id in completions %}
+  <div class="alert alert-success py-2 mb-3" style="border-radius:10px;font-size:.8rem;">✓ Completed</div>
+  {% else %}
+  <div class="alert py-2 mb-3" style="border-radius:10px;background:#2a1a0a;border:1px solid #f59f00;font-size:.8rem;">
+    🔒 Attend a training session to unlock this module.
+  </div>
+  {% endif %}
+
+  {% endwith %}
+  {% endif %}{# /if enrollment #}
+
+  {# ── Discussion board ── #}
+  {% if module.discussion_enabled %}
+  <div class="lms-discussion mt-3">
+    <h6 class="fw-semibold mb-2">💬 Discussion</h6>
+    {% with posts=discussion_map|lookup:"module.id" %}
+    {% if posts %}
+    <div class="lms-discussion-posts mb-3">
+      {% for post in posts %}
+      <div class="lms-post card bg-dark border-secondary mb-2 p-3" style="border-radius:12px;">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="fw-semibold small text-white">{{ post.author }}</span>
+          <span class="text-muted" style="font-size:.68rem;">{{ post.created_at|timesince }} ago</span>
+        </div>
+        <p class="mb-1 small text-white-75">{{ post.body }}</p>
+        {% if post.replies.exists %}
+        <div class="ms-3 mt-2">
+          {% for reply in post.replies.all %}
+          <div class="lms-post-reply d-flex gap-2 py-1 border-top border-secondary">
+            <span class="fw-semibold small text-muted" style="white-space:nowrap;">{{ reply.author }}</span>
+            <span class="small text-white-50">{{ reply.body }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <button class="btn btn-xs btn-outline-secondary mt-2" style="border-radius:8px;font-size:.65rem;"
+                onclick="document.getElementById('reply-form-{{ post.id }}').style.display='block'">Reply</button>
+        <div id="reply-form-{{ post.id }}" style="display:none;" class="mt-2">
+          <form method="post" action="{% url 'lms:discussion_post' module.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="parent_id" value="{{ post.id }}">
+            <div class="input-group input-group-sm">
+              <input name="body" class="form-control bg-dark text-white border-secondary" placeholder="Write a reply…" required>
+              <button type="submit" class="btn btn-sm btn-primary">Post</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted small mb-2">No posts yet. Start the discussion!</p>
+    {% endif %}
+    {% endwith %}
+    <form method="post" action="{% url 'lms:discussion_post' module.id %}" class="mt-1">
+      {% csrf_token %}
+      <div class="input-group">
+        <input name="body" class="form-control bg-dark text-white border-secondary" placeholder="Share a thought or question…" required>
+        <button type="submit" class="btn btn-primary">Post</button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="alert py-3 mb-0" style="border-radius:14px;background:#24190a;border:1px solid rgba(245,159,0,.45);">
+    <div class="fw-semibold">Locked until attendance is recorded</div>
+    <div class="small text-muted mt-1">
+      {% with sessions=module_session_map|lookup:"module.id" %}
+        {% if sessions %}
+          Attend one of the linked training sessions to unlock this module.
+          <div class="d-flex gap-1 flex-wrap mt-2">
+            {% for session in sessions %}
+              <span class="badge bg-secondary-lt" style="font-size:.65rem;">
+                {{ session.title }}{% if session.event and session.event.date %} · {{ session.event.date|date:"d M Y" }}{% endif %}
+              </span>
+            {% endfor %}
+          </div>
+        {% else %}
+          No training event has been linked to this module yet.
+        {% endif %}
+      {% endwith %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>{# /mc-id #}
+{% endfor %}
+</div>{# /moduleContentStore #}
+
+{# ══ Peer review modals ══ #}
+{% for task_id, task in peer_tasks.items %}
+{% if not task.done %}
+{% with assign=task.assignment %}
+<div class="modal fade" id="peerReviewModal{{ assign.id }}" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content bg-dark border-secondary" style="border-radius:20px;">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">Peer Review: {{ assign.submission.module.title }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'lms:peer_review_submit' assign.id %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          {# Submission preview #}
+          <div class="card bg-dark border-secondary p-3 mb-3" style="border-radius:14px;">
+            <h6 class="fw-semibold mb-2 text-muted small">Submission to review</h6>
+            {% if assign.submission.content %}
+            <p class="small text-white-75 mb-1">{{ assign.submission.content|truncatechars:500 }}</p>
+            {% endif %}
+            {% if assign.submission.attachment %}
+            <a href="{{ assign.submission.attachment.url }}" target="_blank" class="btn btn-xs btn-outline-secondary mt-1" style="border-radius:8px;">📎 View Attachment</a>
+            {% endif %}
+          </div>
+          {# Rubric scoring in peer review #}
+          {% with rubric=rubrics|lookup:"assign.submission.module_id" %}
+          {% if rubric %}
+          <h6 class="fw-semibold mb-2">Score by Rubric</h6>
+          {% for criterion in rubric.criteria.all %}
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">{{ criterion.description }} <span class="text-muted">(max {{ criterion.max_points }} pts)</span></label>
+            <div class="d-flex gap-2 flex-wrap mb-1">
+              {% for rating in criterion.ratings %}
+              <label class="lms-rating-chip">
+                <input type="radio" name="criterion_{{ criterion.id }}" value="{{ rating.points }}" class="d-none">
+                <span class="btn btn-xs btn-outline-secondary lms-chip-btn" style="border-radius:20px;font-size:.72rem;">{{ rating.label }} ({{ rating.points }})</span>
+              </label>
+              {% endfor %}
+            </div>
+            <input type="text" name="comment_{{ criterion.id }}" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Optional comment…">
+          </div>
+          {% endfor %}
+          {% else %}
+          <label class="form-label small fw-semibold">Score (0–100)</label>
+          <input type="number" name="score" class="form-control bg-dark text-white border-secondary mb-3" min="0" max="100">
+          {% endif %}
+          {% endwith %}
+          <label class="form-label small fw-semibold">Overall Feedback</label>
+          <textarea name="feedback" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Constructive feedback for your peer…"></textarea>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning fw-bold" style="border-radius:12px;">Submit Peer Review</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endwith %}
+{% endif %}
+{% endfor %}
+
+{# ══ JSON data island + JS ══ #}
+<script>
+const LMS_MODULES = {{ module_data_json|safe }};
+const LMS_ENROLLMENT_ID = {{ enrollment.id|default:"null" }};
+const LMS_IS_ADMIN = {{ is_admin|yesno:"true,false" }};
+const LMS_UNLOCKED = new Set({{ unlocked_module_ids_json|safe }});
+
+// ── Module renderer ────────────────────────────────────────────────────────
+function renderModules() {
+  const container = document.getElementById('moduleList');
+  if (!container) return;
+  container.innerHTML = '';
+  LMS_MODULES.forEach(mod => {
+    const locked = !LMS_IS_ADMIN && !LMS_UNLOCKED.has(mod.id);
+    const statusCls = mod.submission_status === 'passed' ? 'success'
+                    : mod.submission_status === 'failed' ? 'danger'
+                    : mod.submission_status ? 'warning' : locked ? 'secondary' : 'primary';
+    const statusLabel = mod.submission_status
+      ? mod.submission_status.charAt(0).toUpperCase() + mod.submission_status.slice(1)
+      : locked ? '🔒 Locked' : '—';
+
+    const el = document.createElement('div');
+    el.className = 'card bg-dark border-secondary mb-2 lms-module-card';
+    el.id = `module-${mod.id}`;
+    el.style.borderRadius = '16px';
+    el.innerHTML = `
+      <div class="card-body p-0">
+        <div class="lms-mod-toggle w-100 text-start d-flex align-items-center gap-3 p-3"
+             role="button" tabindex="0" data-mod="${mod.id}" style="background:none;border:none;color:inherit;cursor:pointer;">
+          <span class="lms-mod-type-badge" title="${mod.content_type}">${mod.content_type_icon}</span>
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="fw-semibold text-white lms-mod-title">${mod.order}. ${mod.title}</span>
+              ${mod.is_required ? '' : '<span class="badge bg-secondary-lt" style="font-size:.6rem;">Optional</span>'}
+              ${mod.enable_peer_review ? '<span class="badge bg-warning-lt" style="font-size:.6rem;">👥 Peer review</span>' : ''}
+              ${mod.discussion_enabled ? '<span class="badge bg-info-lt" style="font-size:.6rem;">💬 Discussion</span>' : ''}
+              ${mod.has_rubric ? `<span class="badge bg-purple-lt" style="font-size:.6rem;">📋 Rubric (${mod.rubric_total} pts)</span>` : ''}
+            </div>
+            ${mod.description ? `<div class="text-muted small lms-mod-desc mt-1">${mod.description}</div>` : ''}
+          </div>
+          <div class="flex-shrink-0 d-flex align-items-center gap-2">
+            ${LMS_IS_ADMIN ? `
+              <a href="${mod.edit_url}" class="btn btn-xs btn-outline-primary lms-admin-mod-action"
+                 onclick="event.stopPropagation();" style="border-radius:8px;font-size:.68rem;">Edit</a>
+              <a href="${mod.rubric_url}" class="btn btn-xs btn-outline-secondary lms-admin-mod-action"
+                 onclick="event.stopPropagation();" style="border-radius:8px;font-size:.68rem;">Rubric</a>
+            ` : ''}
+            ${mod.estimated_minutes ? `<span class="text-muted small">${mod.estimated_minutes}m</span>` : ''}
+            <span class="badge bg-${statusCls}-lt lms-status-badge" style="font-size:.68rem;">${statusLabel}</span>
+            <svg class="lms-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="lms-mod-body px-3 pb-3" id="mod-body-${mod.id}" style="display:none;">
+          <div class="border-top border-secondary pt-3">
+            <div id="mod-content-${mod.id}"></div>
+          </div>
+        </div>
+      </div>`;
+    container.appendChild(el);
+
+    // Wire toggle
+    el.querySelector('.lms-mod-toggle').addEventListener('click', () => toggleModule(mod.id, el));
+  });
+}
+
+function toggleModule(modId, el) {
+  const body = document.getElementById(`mod-body-${modId}`);
+  const chevron = el.querySelector('.lms-chevron');
+  const isOpen = body.style.display !== 'none';
+
+  if (isOpen) {
+    body.style.display = 'none';
+    chevron.style.transform = '';
+  } else {
+    body.style.display = 'block';
+    chevron.style.transform = 'rotate(180deg)';
+    // Inject content from store
+    const contentEl = document.getElementById(`mod-content-${modId}`);
+    if (!contentEl.innerHTML.trim()) {
+      const src = document.getElementById(`mc-${modId}`);
+      if (src) contentEl.innerHTML = src.innerHTML;
+      // Wire rating chips in injected content
+      wireRatingChips(contentEl);
+    }
+    // Scroll module index
+    const pill = document.querySelector(`[data-mod="${modId}"]`);
+    if (pill) {
+      pill.classList.add('active');
+      setTimeout(() => pill.classList.remove('active'), 1500);
+    }
+  }
+}
+
+function wireRatingChips(container) {
+  container.querySelectorAll('.lms-rating-chip').forEach(label => {
+    const radio = label.querySelector('input[type="radio"]');
+    const btn = label.querySelector('.lms-chip-btn');
+    if (!radio || !btn) return;
+    label.addEventListener('click', () => {
+      const name = radio.name;
+      document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+        r.closest('.lms-rating-chip')?.querySelector('.lms-chip-btn')?.classList.remove('active', 'btn-primary');
+        r.closest('.lms-rating-chip')?.querySelector('.lms-chip-btn')?.classList.add('btn-outline-secondary');
+      });
+      btn.classList.remove('btn-outline-secondary');
+      btn.classList.add('active', 'btn-primary');
+    });
+  });
+}
+
+// ── Expand / collapse all ──────────────────────────────────────────────────
+document.getElementById('expandAll')?.addEventListener('click', () => {
+  LMS_MODULES.forEach(mod => {
+    const body = document.getElementById(`mod-body-${mod.id}`);
+    if (body && body.style.display === 'none') {
+      const el = document.getElementById(`module-${mod.id}`);
+      el && toggleModule(mod.id, el);
+    }
+  });
+});
+document.getElementById('collapseAll')?.addEventListener('click', () => {
+  LMS_MODULES.forEach(mod => {
+    const body = document.getElementById(`mod-body-${mod.id}`);
+    if (body && body.style.display !== 'none') {
+      const el = document.getElementById(`module-${mod.id}`);
+      el && toggleModule(mod.id, el);
+    }
+  });
+});
+
+// ── Module index scroll-spy / click ───────────────────────────────────────
+document.addEventListener('click', e => {
+  const pill = e.target.closest('.lms-idx-pill');
+  if (!pill) return;
+  const modId = parseInt(pill.dataset.mod);
+  const el = document.getElementById(`module-${modId}`);
+  if (!el) return;
+  const body = document.getElementById(`mod-body-${modId}`);
+  if (body && body.style.display === 'none') toggleModule(modId, el);
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+// ── Add module: show/hide fields by content type ──────────────────────────
+(function(){
+  const sel = document.getElementById('addModType');
+  if (!sel) return;
+  const map = {
+    text:['addMod_text'], video:['addMod_url','addMod_file'],
+    audio:['addMod_file'], pdf:['addMod_file'],
+    assessment:['addMod_text'], practical:['addMod_text'],
+    quiz:['addMod_text','addMod_quiz'], link:['addMod_url'], embed:['addMod_embed'],
+  };
+  const templateSel = document.getElementById('addModTemplate');
+  const content = document.querySelector('#addMod_text textarea[name="content"]');
+  const templates = {
+    reading_notes: 'Overview\\n\\nKey scriptures / references\\n\\nReflection points\\n- \\n- \\n\\nNext steps',
+    video_lesson: 'Watch the video, then note the key ideas and questions you want discussed in class.',
+    quiz_mcq: 'Complete the quiz below. Answers are submitted for review.',
+    practical_task: 'Task\\n\\nSteps\\n1. \\n2. \\n3. \\n\\nEvidence to submit',
+    written_reflection: 'Prompt\\n\\nWrite a short reflection covering what you learned, how it applies, and one action you will take.'
+  };
+  function sync(){
+    ['addMod_text','addMod_quiz','addMod_url','addMod_file','addMod_embed'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    (map[sel.value] || ['addMod_text']).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = '';
+    });
+    if (templateSel) {
+      Array.from(templateSel.options).forEach(opt => {
+        const types = opt.dataset.types;
+        opt.hidden = !!types && !types.split(',').includes(sel.value);
+      });
+      if (templateSel.selectedOptions[0]?.hidden) templateSel.value = '';
+    }
+  }
+  sel.addEventListener('change', sync); sync();
+  templateSel?.addEventListener('change', () => {
+    if (content && templateSel.value && !content.value.trim()) {
+      content.value = templates[templateSel.value] || '';
+    }
+  });
+  document.getElementById('addQuizQuestion')?.addEventListener('click', () => {
+    const rows = document.getElementById('addQuizRows');
+    const first = rows?.querySelector('.quiz-row');
+    if (!rows || !first) return;
+    const clone = first.cloneNode(true);
+    clone.querySelectorAll('input').forEach(input => input.value = '');
+    rows.appendChild(clone);
+  });
+
+  const peerCb = document.getElementById('addModPeer');
+  const peerCount = document.getElementById('addModPeerCount');
+  if (peerCb && peerCount) {
+    peerCb.addEventListener('change', () => {
+      peerCount.style.display = peerCb.checked ? '' : 'none';
+    });
+  }
+})();
+
+// ── Hash-jump to module ────────────────────────────────────────────────────
+function jumpToHash() {
+  const hash = window.location.hash;
+  if (!hash.startsWith('#module-')) return;
+  const modId = parseInt(hash.replace('#module-', ''));
+  if (!modId) return;
+  const el = document.getElementById(`module-${modId}`);
+  if (!el) return;
+  const body = document.getElementById(`mod-body-${modId}`);
+  if (body && body.style.display === 'none') toggleModule(modId, el);
+  setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 200);
+}
+
+renderModules();
+jumpToHash();
+</script>
+{% endblock %}

@@ -1,8 +1,1669 @@
-﻿{% extends "base.html" %} {% block title %}Music{% endblock %} {% block content %}
-<div class="container py-4">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h2 class="mb-0 fw-bold">Music Module</h2>
+﻿{% extends base_template %}
+{% load static %}
+{% load access_tags %}
+
+{% block title %}{{ unit.name }} — Music · {{ church.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Geist:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #09090b;
+  --s1: #111114;
+  --s2: #18181b;
+  --s3: #27272a;
+  --bd: #3f3f46;
+  --bd2: #52525b;
+  --t1: #fafafa;
+  --t2: #a1a1aa;
+  --t3: #71717a;
+  --acc: {{ unit.color_hex|default:'#6366f1' }};
+  --green: #22c55e;
+  --amber: #f59f00;
+  --red: #ef4444;
+  --blue: #3b82f6;
+  --purple: #a78bfa;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Geist', system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+.music-hub { font-family: var(--sans); background: var(--bg); color: var(--t2); min-height: 100vh; }
+
+/* ── Topbar ─────────────────────────────────────────────── */
+.hub-top {
+  height: 50px;
+  background: var(--s1);
+  border-bottom: 1px solid var(--s3);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  position: sticky; top: 0; z-index: 60;
+}
+.unit-badge {
+  display: flex; align-items: center; gap: 7px;
+  font-size: .83rem; font-weight: 600; color: var(--t1);
+}
+.unit-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--acc); flex-shrink: 0; box-shadow: 0 0 6px var(--acc); }
+.hub-mode-nav { display: flex; gap: 1px; background: var(--s2); border-radius: 8px; padding: 3px; margin-left: 12px; }
+.mode-btn { padding: 5px 13px; border-radius: 6px; font-size: .78rem; font-weight: 600; color: var(--t3); cursor: pointer; border: none; background: transparent; font-family: var(--sans); transition: all .12s; white-space: nowrap; }
+.mode-btn.active { background: var(--s3); color: var(--t1); }
+.hub-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+
+/* ── Base buttons ──────────────────────────────────────── */
+.btn-h { border: 1px solid var(--s3); background: var(--s2); color: var(--t2); border-radius: 7px; padding: 5px 13px; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: all .12s; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.btn-h:hover { background: var(--s3); color: var(--t1); }
+.btn-h.primary { background: var(--acc); border-color: var(--acc); color: #fff; }
+.btn-h.primary:hover { filter: brightness(1.1); }
+.btn-h.ghost { border-color: transparent; background: transparent; }
+.btn-h.ghost:hover { background: var(--s2); }
+.btn-h.sm { padding: 3px 9px; font-size: .72rem; }
+.btn-h.danger { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.25); color: var(--red); }
+.btn-h.danger:hover { background: rgba(239,68,68,.2); }
+
+/* ── Layout grid ───────────────────────────────────────── */
+.hub-body { display: grid; grid-template-columns: 260px 1fr 300px; height: calc(100vh - 50px); overflow: hidden; }
+.hub-left, .hub-right { overflow-y: auto; border-right: 1px solid var(--s3); }
+.hub-right { border-right: none; border-left: 1px solid var(--s3); display: flex; flex-direction: column; overflow: hidden; }
+#rightPanel { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+#trackCtx { flex-shrink: 0; overflow-y: auto; max-height: 50%; }
+#mixerConsole { flex: 1; overflow-y: auto; border-top: 1px solid var(--s3); display: flex; flex-direction: column; }
+.hub-left::-webkit-scrollbar, .hub-right::-webkit-scrollbar, .hub-center::-webkit-scrollbar { width: 3px; }
+.hub-left::-webkit-scrollbar-thumb, .hub-right::-webkit-scrollbar-thumb, .hub-center::-webkit-scrollbar-thumb { background: var(--s3); }
+.hub-center { display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── Sections / panel heads ────────────────────────────── */
+.panel-head {
+  padding: 9px 14px;
+  font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em;
+  color: var(--t3); background: rgba(24,24,27,.85); border-bottom: 1px solid var(--s3);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 2; backdrop-filter: blur(4px);
+}
+.panel-cnt { font-size: .62rem; padding: 1px 6px; border-radius: 4px; background: var(--s3); color: var(--t3); font-weight: 700; font-family: var(--mono); }
+
+/* ── Track rows (library) ──────────────────────────────── */
+.track-row {
+  padding: 9px 14px; border-bottom: 1px solid var(--s2);
+  cursor: pointer; transition: background .1s;
+  display: flex; align-items: center; gap: 9px;
+}
+.track-row:hover { background: rgba(255,255,255,.025); }
+.track-row.active { background: rgba(99,102,241,.07); border-left: 2px solid var(--acc); }
+.tr-num { font-size: .65rem; color: var(--t3); font-family: var(--mono); width: 16px; text-align: right; flex-shrink: 0; }
+.tr-info { flex: 1; min-width: 0; }
+.tr-title { font-size: .82rem; font-weight: 600; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-artist { font-size: .7rem; color: var(--t3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-key { font-size: .62rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; background: var(--s3); color: var(--blue); font-family: var(--mono); flex-shrink: 0; }
+.tr-tag { font-size: .58rem; padding: 1px 5px; border-radius: 10px; flex-shrink: 0; }
+
+/* ── Center tabs ───────────────────────────────────────── */
+.center-tabs { display: flex; border-bottom: 1px solid var(--s3); background: var(--s1); flex-shrink: 0; overflow-x: auto; }
+.center-tabs::-webkit-scrollbar { display: none; }
+.c-tab { padding: 11px 18px; font-size: .78rem; font-weight: 600; color: var(--t3); cursor: pointer; border-bottom: 2px solid transparent; transition: all .12s; white-space: nowrap; background: none; border-left: none; border-right: none; border-top: none; font-family: var(--sans); }
+.c-tab.active { color: var(--t1); border-bottom-color: var(--acc); }
+.c-tab:hover:not(.active) { color: var(--t2); }
+
+.c-pane { display: none; flex: 1; overflow-y: auto; padding: 18px; }
+.c-pane.active { display: block; }
+
+/* ── Setlist builder ───────────────────────────────────── */
+.setlist-toolbar {
+  background: var(--s1); border-bottom: 1px solid var(--s3);
+  padding: 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.setlist-header { display: flex; align-items: center; gap: 10px; padding: 12px 18px 0; flex-shrink: 0; }
+
+.song-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 18px; border-bottom: 1px solid var(--s2);
+  transition: background .1s; cursor: pointer;
+}
+.song-item:hover { background: rgba(255,255,255,.02); }
+.song-item.playing { background: rgba(34,197,94,.05); border-left: 2px solid var(--green); }
+.song-drag-handle { color: var(--s3); cursor: grab; font-size: .9rem; flex-shrink: 0; transition: color .1s; }
+.song-item:hover .song-drag-handle { color: var(--t3); }
+.song-num { font-size: .68rem; color: var(--t3); font-family: var(--mono); width: 20px; text-align: right; flex-shrink: 0; }
+
+/* Status pills */
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: .68rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+.pill-draft  { background: rgba(245,159,0,.1);  color: var(--amber); border: 1px solid rgba(245,159,0,.25); }
+.pill-final  { background: rgba(34,197,94,.1);  color: var(--green); border: 1px solid rgba(34,197,94,.25); }
+.pill-live   { background: rgba(239,68,68,.12); color: var(--red);   border: 1px solid rgba(239,68,68,.3); }
+.pill-blue   { background: rgba(59,130,246,.1); color: var(--blue);  border: 1px solid rgba(59,130,246,.25); }
+.pill-purple { background: rgba(167,139,250,.1); color: var(--purple); border: 1px solid rgba(167,139,250,.25); }
+
+/* ── Add-song panel ────────────────────────────────────── */
+.add-song-panel {
+  background: var(--s1); border-top: 1px solid var(--s3);
+  padding: 10px 16px; flex-shrink: 0;
+}
+.add-song-tabs { display: flex; gap: 2px; margin-bottom: 10px; }
+.add-tab { padding: 4px 12px; border-radius: 6px; font-size: .72rem; font-weight: 600; color: var(--t3); cursor: pointer; border: 1px solid transparent; background: transparent; font-family: var(--sans); }
+.add-tab.active { background: var(--s2); border-color: var(--s3); color: var(--t1); }
+.add-source { display: none; }
+.add-source.active { display: block; }
+.add-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; max-height: 220px; overflow-y: auto; }
+.add-grid::-webkit-scrollbar { width: 3px; }
+.add-grid::-webkit-scrollbar-thumb { background: var(--s3); }
+.add-track-card {
+  background: var(--s2); border: 1px solid var(--s3); border-radius: 8px;
+  padding: 8px 10px; cursor: pointer; transition: all .12s;
+  display: flex; align-items: center; gap: 8px;
+}
+.add-track-card:hover { border-color: var(--acc); background: rgba(99,102,241,.06); }
+.add-track-card.in-setlist { opacity: .4; pointer-events: none; }
+.atc-check { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--s3); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: .6rem; }
+.atc-check.added { background: var(--acc); border-color: var(--acc); color: #fff; }
+
+/* ── Custom song form ──────────────────────────────────── */
+.custom-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.form-field { display: flex; flex-direction: column; gap: 4px; }
+.form-field label { font-size: .68rem; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .08em; }
+.hub-input { background: var(--s2); border: 1px solid var(--s3); border-radius: 7px; color: var(--t1); padding: 7px 10px; font-size: .82rem; font-family: var(--sans); transition: border-color .12s; width: 100%; }
+.hub-input:focus { outline: none; border-color: var(--acc); }
+.hub-select { background: var(--s2); border: 1px solid var(--s3); border-radius: 7px; color: var(--t1); padding: 7px 10px; font-size: .82rem; font-family: var(--sans); cursor: pointer; width: 100%; }
+
+/* ── Rehearsal pane ────────────────────────────────────── */
+.rehearsal-card {
+  background: var(--s1); border: 1px solid var(--s2); border-radius: 10px;
+  padding: 14px 16px; margin-bottom: 10px; cursor: pointer;
+  transition: border-color .12s; display: flex; gap: 12px; align-items: flex-start;
+}
+.rehearsal-card:hover { border-color: var(--s3); }
+.rehearsal-card.upcoming { border-left: 3px solid var(--acc); }
+.rehear-date { font-size: .68rem; font-family: var(--mono); color: var(--t3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+.rehear-name { font-size: .88rem; font-weight: 600; color: var(--t1); }
+.rehear-sub { font-size: .72rem; color: var(--t3); margin-top: 3px; }
+
+/* ── Lyrics pane ───────────────────────────────────────── */
+.lyrics-view { white-space: pre-wrap; line-height: 2; font-size: .9rem; color: var(--t2); }
+.section-chip { font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--acc); margin-bottom: 4px; }
+
+/* ── Right panel: context card ─────────────────────────── */
+.ctx-head { padding: 14px; border-bottom: 1px solid var(--s2); }
+.ctx-body { padding: 14px; }
+.ctx-key { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--t3); margin-bottom: 4px; }
+.ctx-val { font-size: .83rem; color: var(--t1); font-family: var(--mono); }
+.ctx-row { padding: 7px 0; border-bottom: 1px solid var(--s2); display: flex; justify-content: space-between; align-items: center; }
+.ctx-row:last-child { border-bottom: none; }
+
+/* ── Mini player (inline in right panel) ──────────────── */
+.mini-player {
+  background: var(--s2); border-radius: 10px; margin: 12px; padding: 12px;
+  border: 1px solid var(--s3);
+}
+.mp-track-name { font-size: .83rem; font-weight: 600; color: var(--t1); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-artist { font-size: .7rem; color: var(--t3); margin-bottom: 8px; }
+.mp-progress { height: 3px; background: var(--s3); border-radius: 2px; cursor: pointer; margin-bottom: 8px; position: relative; overflow: hidden; }
+.mp-fill { height: 100%; background: linear-gradient(90deg, var(--acc), var(--green)); width: 0%; border-radius: 2px; transition: width .1s; }
+.mp-controls { display: flex; align-items: center; gap: 6px; justify-content: center; }
+.mp-btn { width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--s3); color: var(--t2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: .75rem; transition: all .12s; }
+.mp-btn:hover { background: var(--bd); color: var(--t1); }
+.mp-btn.play { width: 34px; height: 34px; background: var(--acc); color: #fff; font-size: .9rem; }
+.mp-btn.play:hover { filter: brightness(1.1); }
+.mp-time { font-size: .65rem; font-family: var(--mono); color: var(--t3); }
+
+/* ── Stem bars ─────────────────────────────────────────── */
+.stem-list { display: flex; flex-direction: column; gap: 6px; }
+.stem-row { display: flex; align-items: center; gap: 8px; }
+.stem-name { font-size: .72rem; color: var(--t2); width: 52px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stem-fader-mini { flex: 1; height: 3px; border-radius: 2px; background: var(--s3); accent-color: var(--acc); cursor: pointer; }
+.stem-mute-mini { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--s3); background: transparent; color: var(--t3); font-size: .58rem; font-weight: 700; cursor: pointer; font-family: var(--sans); flex-shrink: 0; }
+.stem-mute-mini.muted { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.35); color: var(--red); }
+
+/* ── Search ────────────────────────────────────────────── */
+.hub-search { background: var(--s2); border: 1px solid var(--s3); border-radius: 7px; color: var(--t1); padding: 7px 10px 7px 32px; font-size: .8rem; font-family: var(--sans); width: 100%; }
+.hub-search:focus { outline: none; border-color: var(--acc); }
+.search-wrap { position: relative; }
+.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--t3); font-size: .78rem; pointer-events: none; }
+.filter-row { display: flex; gap: 6px; padding: 8px 14px; border-bottom: 1px solid var(--s2); overflow-x: auto; }
+.filter-row::-webkit-scrollbar { display: none; }
+.filter-chip { padding: 3px 10px; border-radius: 20px; font-size: .7rem; font-weight: 600; border: 1px solid var(--s3); background: transparent; color: var(--t3); cursor: pointer; font-family: var(--sans); white-space: nowrap; transition: all .1s; }
+.filter-chip.active { background: var(--s3); color: var(--t1); border-color: var(--bd); }
+
+/* ── Empty states ──────────────────────────────────────── */
+.empty { text-align: center; padding: 48px 20px; color: var(--t3); }
+.empty-icon { font-size: 2rem; margin-bottom: 10px; opacity: .4; }
+.empty-title { font-size: .88rem; font-weight: 600; color: var(--t2); margin-bottom: 6px; }
+.empty-desc { font-size: .78rem; line-height: 1.5; max-width: 220px; margin: 0 auto; }
+
+/* ── Responsive ────────────────────────────────────────── */
+@media(max-width:1100px) {
+  .hub-body { grid-template-columns: 1fr; }
+  .hub-right { display: none; }
+  .hub-left { max-height: 280px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-wrapper">
+
+  <!-- ── Page header ── -->
+  <div class="page-header d-print-none" aria-label="Page header">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <kbd class="bg-warning-lt"><h2 class="page-title mb-0">{{ page_title }}</h2></kbd>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+          <div class="hub-actions">
+            <span class="pill {% if ai_health.ok %}pill-final{% else %}pill-live{% endif %}" style="font-size:.65rem;">AI {{ ai_health.provider|upper|default:"—" }}</span>
+            {% if can_manage %}
+            <a href="{% url 'music:setlist_new' %}" class="btn-h primary">+ Setlist</a>
+            <a href="{% url 'music:track_add' %}" class="btn-h">+ Track</a>
+            {% endif %}
+            <a href="{% url 'music:unit_rehearsals' unit.slug %}" class="btn-h ghost">All Rehearsals</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-body d-print-none">
+      <div class="container-xl">
+
+        <div class="music-hub">
+          <div class="hub-mode-nav">
+            <button class="mode-btn active" onclick="setMode('plan',this)">Plan</button>
+            <button class="mode-btn" onclick="setMode('rehearse',this)">Rehearse</button>
+            <button class="mode-btn" onclick="setMode('library',this)">Library</button>
+          </div>
+
+          <!-- ── 3-col body ── -->
+          <div class="hub-body" id="hubBody">
+
+            <!-- ════ LEFT — Track Library ════ -->
+            <div class="hub-left" id="leftPanel">
+              <div class="panel-head">
+                Library
+                <span class="panel-cnt">{{ tracks|length }}</span>
+              </div>
+
+              <!-- Search + filter -->
+              <div style="padding:8px 10px;border-bottom:1px solid var(--s2);">
+                <div class="search-wrap">
+                  <span class="search-icon">⌕</span>
+                  <input class="hub-search" type="text" id="libSearch" placeholder="Search songs…" oninput="filterLibrary(this.value)">
+                </div>
+              </div>
+              <div class="filter-row" id="tagFilters">
+                <button class="filter-chip active" data-tag="" onclick="filterByTag('',this)">All</button>
+                {% for tag in all_tags %}
+                <button class="filter-chip" data-tag="{{ tag.name }}" onclick="filterByTag('{{ tag.name|escapejs }}',this)"
+                        style="border-color:{{ tag.color }}22;color:{{ tag.color }};">{{ tag.name }}</button>
+                {% endfor %}
+              </div>
+
+              <!-- Track list -->
+              <div id="trackList">
+                {% for track in tracks %}
+                <div class="track-row"
+                    id="trow-{{ track.uid }}"
+                    data-uid="{{ track.uid }}"
+                    data-title="{{ track.title|escapejs }}"
+                    data-artist="{{ track.artist|escapejs }}"
+                    data-key="{{ track.original_key }}"
+                    data-tempo="{{ track.tempo|default:'' }}"
+                    data-tags="{% for t in track.tags.all %}{{ t.name }},{% endfor %}"
+                    onclick="selectTrack(this)">
+                  <span class="tr-num">{{ forloop.counter }}</span>
+                  <div class="tr-info">
+                    <div class="tr-title">{{ track.title }}</div>
+                    <div class="tr-artist">{{ track.artist|default:"—" }}</div>
+                  </div>
+                  {% if track.original_key %}<span class="tr-key">{{ track.original_key }}</span>{% endif %}
+                  {% if track.audio_file %}
+                  <span style="font-size:.6rem;color:var(--green);flex-shrink:0;" title="Has audio">▶</span>
+                  {% endif %}
+                </div>
+                {% empty %}
+                <div class="empty">
+                  <div class="empty-icon">🎵</div>
+                  <div class="empty-title">No tracks yet</div>
+                  <div class="empty-desc">Import from catalog or add your own</div>
+                  {% if can_manage %}
+                  <form method="post" style="margin-top:12px;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="import_tracks_by_genre">
+                    <select name="genre" class="hub-select" style="margin-bottom:8px;">
+                      {% for g in genre_seed_options %}<option value="{{ g }}">{{ g|title }}</option>{% endfor %}
+                    </select>
+                    <button type="submit" class="btn-h primary" style="width:100%;justify-content:center;">Import Genre Tracks</button>
+                  </form>
+                  {% endif %}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- ════ CENTER — Main Stage ════ -->
+            <div class="hub-center">
+
+              <!-- ── PLAN MODE ── -->
+              <div id="mode-plan" class="mode-view" style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+
+                <!-- Setlist switcher toolbar -->
+                <div class="setlist-toolbar">
+                  <select class="hub-select" id="setlistPicker" onchange="switchSetlist(this.value)" style="max-width:200px;">
+                    {% for sl in setlists %}
+                    <option value="{{ sl.uid }}" {% if active_setlist and sl.uid == active_setlist.uid %}selected{% endif %}>{{ sl.title }}</option>
+                    {% empty %}
+                    <option value="">— No setlists —</option>
+                    {% endfor %}
+                  </select>
+                  {% if active_setlist %}
+                  <span class="pill {% if active_setlist.finalized %}pill-final{% else %}pill-draft{% endif %}">
+                    {% if active_setlist.finalized %}Finalized{% else %}Draft{% endif %}
+                  </span>
+                  {% if active_setlist.event %}<span class="pill pill-blue" style="font-size:.65rem;">{{ active_setlist.event.name }}</span>{% endif %}
+                  <div style="margin-left:auto;display:flex;gap:6px;">
+                    {% if not active_setlist.finalized and can_manage %}
+                    <button class="btn-h sm" onclick="finalizeSetlist()">Finalize →</button>
+                    {% endif %}
+                    <a href="{% url 'music:setlist_detail' active_setlist.uid %}" class="btn-h sm ghost">Full Editor</a>
+                    {% if first_song %}
+                      <a href="{% url 'music:mixer' first_song.track.uid %}" class="btn-h sm">
+                        🎛 Mixer
+                      </a>
+                    {% endif %}
+                  </div>
+                  {% else %}
+                  <div style="margin-left:auto;">
+                    {% if can_manage %}
+                    <a href="{% url 'music:setlist_new' %}" class="btn-h sm primary">+ New Setlist</a>
+                    {% endif %}
+                  </div>
+                  {% endif %}
+                </div>
+
+                {% if active_setlist %}
+                <!-- Song list -->
+                <div id="setlistSongs" style="flex:1;overflow-y:auto;" ondragover="onDragOver(event)" ondrop="onDrop(event)">
+                  {% for song in active_setlist.songs.all %}
+                  <div class="song-item"
+                      draggable="true"
+                      data-song-id="{{ song.pk }}"
+                      data-track-uid="{{ song.track.uid }}"
+                      ondragstart="onDragStart(event,{{ song.pk }})"
+                      onclick="selectSong('{{ song.track.uid }}','{{ song.track.title|escapejs }}','{{ song.performance_key|default:song.track.original_key }}')">
+                    <span class="song-drag-handle">⠿</span>
+                    <span class="song-num">{{ song.order|add:1 }}</span>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:.85rem;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ song.track.title }}</div>
+                      <div style="font-size:.7rem;color:var(--t3);">{{ song.track.artist|default:"—" }}{% if song.notes %} · {{ song.notes|truncatechars:35 }}{% endif %}</div>
+                    </div>
+                    {% if song.performance_key %}<span class="tr-key">{{ song.performance_key }}</span>{% endif %}
+                    {% if song.track.tempo %}<span style="font-size:.65rem;color:var(--t3);font-family:var(--mono);flex-shrink:0;">{{ song.track.tempo }}</span>{% endif %}
+                    {% if can_manage and not active_setlist.finalized %}
+                    <button class="btn-h sm danger" style="padding:2px 7px;font-size:.65rem;" onclick="removeSong(event,{{ song.pk }})">✕</button>
+                    {% endif %}
+                  </div>
+                  {% empty %}
+                  <div class="empty">
+                    <div class="empty-icon">🎵</div>
+                    <div class="empty-title">No songs yet</div>
+                    <div class="empty-desc">Add songs from the library, catalog, or enter a custom track below.</div>
+                  </div>
+                  {% endfor %}
+                </div>
+
+                <!-- ── Add song panel ── -->
+                {% if can_manage and not active_setlist.finalized %}
+                <div class="add-song-panel">
+                  <div class="add-song-tabs">
+                    <button class="add-tab active" onclick="switchAddTab('library',this)">From Library</button>
+                    <button class="add-tab" onclick="switchAddTab('catalog',this)">From Catalog</button>
+                    <button class="add-tab" onclick="switchAddTab('custom',this)">Custom Song</button>
+                  </div>
+
+                  <!-- From library -->
+                  <div class="add-source active" id="add-library">
+                    <div style="margin-bottom:8px;">
+                      <input class="hub-input" type="text" placeholder="Search library…" id="addLibSearch" oninput="filterAddLibrary(this.value)" style="height:32px;font-size:.78rem;">
+                    </div>
+                    <div class="add-grid" id="addLibGrid">
+                      {% for track in tracks %}
+                      <div class="add-track-card {% if track.uid in setlist_track_uids %}in-setlist{% endif %}"
+                          id="atc-{{ track.uid }}"
+                          data-uid="{{ track.uid }}"
+                          data-title="{{ track.title|escapejs }}"
+                          data-artist="{{ track.artist|escapejs }}"
+                          onclick="addTrackToSetlist('{{ track.uid }}','{{ track.title|escapejs }}')">
+                        <div class="atc-check {% if track.uid in setlist_track_uids %}added{% endif %}">{% if track.uid in setlist_track_uids %}✓{% endif %}</div>
+                        <div style="min-width:0;">
+                          <div style="font-size:.75rem;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ track.title }}</div>
+                          <div style="font-size:.65rem;color:var(--t3);">{{ track.artist|default:"—" }}</div>
+                        </div>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+
+                  <!-- From catalog (preloaded) -->
+                  <div class="add-source" id="add-catalog">
+                    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+                      <input class="hub-input" type="text" placeholder="Search catalog…" id="catSearch" oninput="filterCatalog(this.value)" style="flex:1;height:32px;font-size:.78rem;">
+                      <select class="hub-select" id="catGenreFilter" onchange="filterCatalog('')" style="width:160px;height:32px;font-size:.78rem;">
+                        <option value="">All Genres</option>
+                        {% for g in genre_seed_options %}<option value="{{ g }}">{{ g|title }}</option>{% endfor %}
+                      </select>
+                    </div>
+                    <div class="add-grid" id="catalogGrid">
+                      <!-- Populated from JS CATALOG_DATA -->
+                    </div>
+                    <div id="catalogEmpty" style="text-align:center;padding:16px;font-size:.78rem;color:var(--t3);display:none;">
+                      No catalog matches. You can add this as a custom song instead.
+                    </div>
+                  </div>
+
+                  <!-- Custom song -->
+                  <div class="add-source" id="add-custom">
+                    <form onsubmit="addCustomSong(event)" class="custom-form">
+                      <div class="form-field">
+                        <label>Song Title *</label>
+                        <input class="hub-input" type="text" id="customTitle" placeholder="e.g. Way Maker" required style="height:34px;">
+                      </div>
+                      <div class="form-field">
+                        <label>Artist</label>
+                        <input class="hub-input" type="text" id="customArtist" placeholder="e.g. Sinach" style="height:34px;">
+                      </div>
+                      <div class="form-field">
+                        <label>Key</label>
+                        <select class="hub-select" id="customKey" style="height:34px;">
+                          <option value="">—</option>
+                          {% for k,_ in musical_keys %}<option value="{{ k }}">{{ k }}</option>{% endfor %}
+                        </select>
+                      </div>
+                      <div class="form-field">
+                        <label>BPM</label>
+                        <input class="hub-input" type="number" id="customBpm" placeholder="120" min="40" max="240" style="height:34px;">
+                      </div>
+                      <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;">
+                        <button type="submit" class="btn-h primary sm">Add to Setlist</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% else %}
+                <!-- No active setlist -->
+                <div class="empty" style="padding:80px 24px;">
+                  <div class="empty-icon">🎼</div>
+                  <div class="empty-title">No setlist selected</div>
+                  <div class="empty-desc">Create a setlist to start planning your service music.</div>
+                  {% if can_manage %}
+                  <a href="{% url 'music:setlist_new' %}" class="btn-h primary" style="margin-top:16px;justify-content:center;">Create First Setlist</a>
+                  {% endif %}
+                </div>
+                {% endif %}
+              </div>
+
+              <!-- ── REHEARSE MODE ── -->
+              <div id="mode-rehearse" class="mode-view" style="display:none;flex-direction:column;height:100%;overflow:hidden;">
+                <div class="center-tabs">
+                  <button class="c-tab active" onclick="showCTab('reh-overview',this)">Overview</button>
+                  <button class="c-tab" onclick="showCTab('reh-playlist',this)">Playlist</button>
+                  <button class="c-tab" onclick="showCTab('reh-attendance',this)">Attendance</button>
+                  <button class="c-tab" onclick="showCTab('reh-notes',this)">Notes</button>
+                </div>
+
+                <!-- Overview -->
+                <div class="c-pane active" id="reh-overview">
+                  <div style="margin-bottom:16px;">
+                    <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:10px;">Upcoming Rehearsals</div>
+                    {% for r in upcoming_rehearsals %}
+                    <div class="rehearsal-card upcoming" onclick="openRehearsal('{{ r.uid }}')">
+                      <div style="flex:1;min-width:0;">
+                        <div class="rehear-date">{{ r.event.date|date:"D, N j" }}{% if r.event.time %} · {{ r.event.time }}{% endif %}</div>
+                        <div class="rehear-name">{{ r.event.name }}</div>
+                        {% if r.setlist %}<div class="rehear-sub">Setlist: {{ r.setlist.title }} · {{ r.setlist.songs.count }} songs</div>{% endif %}
+                        {% if r.notes %}<div class="rehear-sub">{{ r.notes|truncatechars:60 }}</div>{% endif %}
+                      </div>
+                      <a href="{% url 'music:rehearsal_detail' r.uid %}" class="btn-h sm" onclick="event.stopPropagation()">Open →</a>
+                    </div>
+                    {% empty %}
+                    <div class="empty" style="padding:32px;">
+                      <div class="empty-icon">🥁</div>
+                      <div class="empty-title">No upcoming rehearsals</div>
+                    </div>
+                    {% endfor %}
+                  </div>
+
+                  {% if past_rehearsals %}
+                  <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:10px;">Past Rehearsals</div>
+                  {% for r in past_rehearsals %}
+                  <div class="rehearsal-card" style="opacity:.65;">
+                    <div style="flex:1;min-width:0;">
+                      <div class="rehear-date">{{ r.event.date|date:"N j, Y" }}</div>
+                      <div class="rehear-name">{{ r.event.name }}</div>
+                    </div>
+                    <span class="pill pill-final" style="font-size:.62rem;">Done</span>
+                    <a href="{% url 'music:rehearsal_detail' r.uid %}" class="btn-h sm ghost">↗</a>
+                  </div>
+                  {% endfor %}
+                  {% endif %}
+                </div>
+
+                <!-- Rehearsal Playlist (with player) -->
+                <div class="c-pane" id="reh-playlist">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                    <div>
+                      <div style="font-size:.95rem;font-weight:700;color:var(--t1);">Rehearsal Playlist</div>
+                      <div style="font-size:.75rem;color:var(--t3);margin-top:2px;">Songs queued for this rehearsal session</div>
+                    </div>
+                    <button class="btn-h sm" onclick="document.getElementById('addToPlaylistPanel').classList.toggle('hidden')">+ Add Song</button>
+                  </div>
+
+                  <!-- Inline add-to-playlist panel -->
+                  <div id="addToPlaylistPanel" class="hidden" style="background:var(--s1);border:1px solid var(--s3);border-radius:10px;padding:12px;margin-bottom:14px;">
+                    <div style="font-size:.78rem;font-weight:600;color:var(--t2);margin-bottom:8px;">Add to Rehearsal Playlist</div>
+                    <div class="add-song-tabs" style="margin-bottom:8px;">
+                      <button class="add-tab active" onclick="switchPlaylistTab('pl-lib',this)">Library</button>
+                      <button class="add-tab" onclick="switchPlaylistTab('pl-catalog',this)">Catalog</button>
+                      <button class="add-tab" onclick="switchPlaylistTab('pl-custom',this)">Custom</button>
+                    </div>
+
+                    <div id="pl-lib" class="add-source active">
+                      <input class="hub-input" type="text" placeholder="Search…" oninput="filterPlaylistAdd(this.value)" style="height:32px;font-size:.78rem;margin-bottom:8px;">
+                      <div class="add-grid" id="plLibGrid">
+                        {% for track in tracks %}
+                        <div class="add-track-card" onclick="addToRehearsalPlaylist('{{ track.uid }}','{{ track.title|escapejs }}','{{ track.artist|escapejs }}','{{ track.audio_file.url|default:'' }}')" data-title="{{ track.title|lower }}" data-artist="{{ track.artist|lower }}">
+                          <div class="atc-check" id="plCheck-{{ track.uid }}"></div>
+                          <div style="min-width:0;">
+                            <div style="font-size:.75rem;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ track.title }}</div>
+                            <div style="font-size:.65rem;color:var(--t3);">{{ track.artist|default:"—" }}</div>
+                          </div>
+                        </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+
+                    <div id="pl-catalog" class="add-source">
+                      <input class="hub-input" type="text" placeholder="Search catalog…" id="plCatSearch" oninput="filterPlCatalog(this.value)" style="height:32px;font-size:.78rem;margin-bottom:8px;">
+                      <div class="add-grid" id="plCatalogGrid"></div>
+                    </div>
+
+                    <div id="pl-custom" class="add-source">
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                        <div class="form-field"><label>Title *</label><input class="hub-input" id="plCustomTitle" style="height:32px;"></div>
+                        <div class="form-field"><label>Artist</label><input class="hub-input" id="plCustomArtist" style="height:32px;"></div>
+                        <div class="form-field"><label>YouTube URL</label><input class="hub-input" id="plCustomYt" placeholder="https://…" style="height:32px;"></div>
+                        <div style="display:flex;align-items:flex-end;">
+                          <button class="btn-h sm primary" onclick="addCustomToPlaylist()" style="height:32px;width:100%;justify-content:center;">Add</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- YouTube embed (shown when a catalog-only track with ytUrl is played) -->
+                  <div id="plYtEmbed" style="display:none;margin-bottom:12px;background:var(--s1);border:1px solid var(--s3);border-radius:10px;padding:10px;"></div>
+
+                  <!-- Playlist items -->
+                  <div id="rehearsalPlaylist" style="display:flex;flex-direction:column;gap:6px;"></div>
+
+                  <div id="playlistEmpty" class="empty" style="padding:32px;">
+                    <div class="empty-icon">🎧</div>
+                    <div class="empty-title">Playlist is empty</div>
+                    <div class="empty-desc">Add songs from your library, catalog, or a custom entry to queue for rehearsal.</div>
+                  </div>
+                </div>
+
+                <!-- Attendance — reads from AttendanceRecord (workforce) via rehearsal event -->
+                <div class="c-pane" id="reh-attendance">
+                  {% if upcoming_rehearsals %}
+                  {% with r=upcoming_rehearsals.0 %}
+                  <div style="margin-bottom:14px;">
+                    <div style="font-size:.88rem;font-weight:700;color:var(--t1);">{{ r.event.name }}</div>
+                    <div style="font-size:.75rem;color:var(--t3);">{{ r.event.date|date:"D, N j Y" }}</div>
+                  </div>
+                  {% for att in r.event.attendance_records.all %}
+                  <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--s2);">
+                    <div style="flex:1;font-size:.83rem;color:var(--t1);">{{ att.user.workforce_member.member.user.get_full_name }}</div>
+                    <span class="pill {% if att.status == 'present' %}pill-final{% elif att.status == 'absent' %}pill-live{% else %}pill-draft{% endif %}">{{ att.status|capfirst }}</span>
+                  </div>
+                  {% empty %}
+                  <div class="empty" style="padding:32px;"><div class="empty-icon">👥</div><div class="empty-title">No attendance marked yet</div><div class="empty-desc" style="font-size:.72rem;">Members mark via the main attendance button.</div></div>
+                  {% endfor %}
+                  <div style="margin-top:14px;">
+                    <a href="{% url 'music:rehearsal_detail' uid=r.uid %}" class="btn-h sm ghost">View full rehearsal →</a>
+                  </div>
+                  {% endwith %}
+                  {% else %}
+                  <div class="empty" style="padding:32px;"><div class="empty-icon">📋</div><div class="empty-title">No upcoming rehearsal</div></div>
+                  {% endif %}
+                </div>
+
+                <!-- Notes -->
+                <div class="c-pane" id="reh-notes">
+                  {% if upcoming_rehearsals %}
+                  {% with r=upcoming_rehearsals.0 %}
+                  <div style="font-size:.83rem;color:var(--t2);line-height:1.7;">{{ r.notes|default:"No notes for this rehearsal." }}</div>
+                  {% if r.recording_file or r.recording_url %}
+                  <div style="margin-top:16px;">
+                    <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:6px;">Recording</div>
+                    {% if r.recording_file %}
+                    <audio controls style="width:100%;border-radius:8px;" src="{{ r.recording_file.url }}"></audio>
+                    {% elif r.recording_url %}
+                    <a href="{{ r.recording_url }}" target="_blank" rel="noopener" class="btn-h">Open Recording →</a>
+                    {% endif %}
+                  </div>
+                  {% endif %}
+                  {% endwith %}
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- ── LIBRARY MODE ── -->
+              <div id="mode-library" class="mode-view" style="display:none;flex-direction:column;height:100%;overflow:hidden;">
+                <div class="center-tabs">
+                  <button class="c-tab active" onclick="showCTab('lib-tracks',this)">All Tracks</button>
+                  <button class="c-tab" onclick="showCTab('lib-import',this)">Import Catalog</button>
+                  <button class="c-tab" onclick="showCTab('lib-tags',this)">Tags</button>
+                </div>
+
+                <div class="c-pane active" id="lib-tracks">
+                  {% for track in all_tracks|default:tracks %}
+                  <div class="track-row" onclick="selectTrack(document.getElementById('trow-{{ track.uid }}'))">
+                    <div class="tr-info">
+                      <div class="tr-title">{{ track.title }}</div>
+                      <div class="tr-artist">{{ track.artist|default:"—" }}{% if track.original_key %} · {{ track.original_key }}{% endif %}{% if track.tempo %} · {{ track.tempo }} BPM{% endif %}</div>
+                    </div>
+                    {% for tag in track.tags.all|slice:":2" %}
+                    <span class="tr-tag" style="background:{{ tag.color }}18;color:{{ tag.color }};border:1px solid {{ tag.color }}33;">{{ tag.name }}</span>
+                    {% endfor %}
+                    <a href="{% url 'music:track_detail' track.uid %}" class="btn-h sm ghost">↗</a>
+                  </div>
+                  {% endfor %}
+                </div>
+
+                <div class="c-pane" id="lib-import">
+                  <div style="margin-bottom:16px;">
+                    <div style="font-size:.88rem;font-weight:700;color:var(--t1);margin-bottom:6px;">Import from Catalog</div>
+                    <div style="font-size:.8rem;color:var(--t3);line-height:1.5;">Preloaded curated tracks — Nigerian worship, African gospel, global praise. Importing adds them to your library for setlist use.</div>
+                  </div>
+                  {% if can_manage %}
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="import_tracks_by_genre">
+                    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;">
+                      <select name="genre" class="hub-select">
+                        {% for g in genre_seed_options %}<option value="{{ g }}">{{ g|title }}</option>{% endfor %}
+                      </select>
+                      <button type="submit" class="btn-h primary">Import</button>
+                    </div>
+                  </form>
+                  {% endif %}
+
+                  <div style="margin-top:20px;font-size:.83rem;font-weight:700;color:var(--t1);margin-bottom:10px;">Catalog Preview</div>
+                  <div id="catalogPreview" class="add-grid">
+                    <!-- Filled by JS from CATALOG_DATA -->
+                  </div>
+                </div>
+
+                <div class="c-pane" id="lib-tags">
+                  {% for tag in all_tags %}
+                  <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--s2);">
+                    <div style="width:10px;height:10px;border-radius:50%;background:{{ tag.color }};flex-shrink:0;"></div>
+                    <div style="flex:1;font-size:.83rem;color:var(--t1);">{{ tag.name }}</div>
+                    <div style="font-size:.72rem;color:var(--t3);">{{ tag.tracks.count }} tracks</div>
+                  </div>
+                  {% empty %}
+                  <div class="empty" style="padding:32px;"><div class="empty-title">No tags yet</div></div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+
+            <!-- ════ RIGHT — Track context + mixer console ════ -->
+            <div class="hub-right" id="rightPanel">
+
+              <!-- Track context card (top, scrollable) -->
+              <div id="trackCtx">
+                <div class="empty" style="padding:40px 16px;">
+                  <div class="empty-icon">🎵</div>
+                  <div class="empty-title">Select a track</div>
+                  <div class="empty-desc">Click any song to see details, lyrics and stems.</div>
+                </div>
+              </div>
+
+              <!-- ── Embedded Mixer Console ── -->
+              <div id="mixerConsole" style="border-top:1px solid var(--s3);background:var(--bg);">
+
+                <!-- Console header -->
+                <div style="padding:8px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--s3);">
+                  <span style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--t3);">Mixer</span>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <button id="mcStartBtn" onclick="mcInit()" class="btn-h sm">⚡ Enable</button>
+                    <button id="mcPlayBtn" onclick="mcToggle()" class="btn-h sm" disabled>▶</button>
+                    <button onclick="mcStop()" class="btn-h sm ghost">⏹</button>
+                  </div>
+                </div>
+
+                <!-- Transport progress -->
+                <div style="padding:6px 14px 4px;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                    <span id="mcNowPlaying" style="font-size:.72rem;color:var(--t3);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">No track loaded</span>
+                    <span id="mcTime" style="font-size:.62rem;color:var(--t3);font-family:var(--mono);flex-shrink:0;">0:00</span>
+                  </div>
+                  <div id="mcProgressBar" onclick="mcSeek(event)" style="height:3px;background:var(--s3);border-radius:2px;cursor:pointer;overflow:hidden;">
+                    <div id="mcProgressFill" style="height:100%;width:0%;background:linear-gradient(90deg,var(--acc),var(--green));transition:width .08s;border-radius:2px;"></div>
+                  </div>
+                </div>
+
+                <!-- Transpose -->
+                <div style="padding:4px 14px 6px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--s3);">
+                  <span style="font-size:.62rem;color:var(--t3);">Transpose</span>
+                  <input type="range" id="mcTranspose" min="-6" max="6" value="0" oninput="document.getElementById('mcTransposeLabel').textContent=(this.value>0?'+':'')+this.value"
+                    style="-webkit-appearance:none;height:3px;background:var(--s3);border-radius:2px;width:80px;cursor:pointer;accent-color:var(--acc);">
+                  <span id="mcTransposeLabel" style="font-size:.62rem;color:var(--t1);font-family:var(--mono);min-width:20px;">0</span>
+                  <div style="flex:1;"></div>
+                  <button onclick="mcIsolateVox()" id="mcVoxBtn" class="btn-h sm ghost" style="font-size:.65rem;">Solo Vox</button>
+                  <button onclick="mcReset()" class="btn-h sm ghost" style="font-size:.65rem;">↺</button>
+                </div>
+
+                <!-- Channel strips (vertical faders) -->
+                <div id="mcStrips" style="display:flex;gap:6px;padding:10px 10px 6px;overflow-x:auto;min-height:140px;align-items:flex-end;">
+                  <!-- Populated by JS when track selected -->
+                  <div id="mcNoStems" style="padding:20px 10px;font-size:.75rem;color:var(--t3);text-align:center;width:100%;line-height:1.5;">
+                    Select a track from the library or setlist.<br>
+                    <span style="color:var(--t3);opacity:.6;font-size:.7rem;">Stems appear here when available.</span>
+                  </div>
+                </div>
+
+                <!-- Master strip always visible -->
+                <div style="padding:6px 14px 10px;border-top:1px solid var(--s3);display:flex;align-items:center;gap:10px;">
+                  <span style="font-size:.62rem;font-weight:700;color:var(--t3);">MASTER</span>
+                  <input type="range" id="mcMasterFader" min="0" max="1.4" step="0.01" value="1" oninput="mcSetMaster(this.value)"
+                    style="-webkit-appearance:none;height:3px;background:var(--s3);border-radius:2px;width:80px;cursor:pointer;accent-color:var(--amber);">
+                  <span id="mcMasterLabel" style="font-size:.62rem;color:var(--t3);font-family:var(--mono);">1.0</span>
+                  <div style="flex:1;"></div>
+                  <span id="mcEngineLabel" style="font-size:.65rem;color:var(--t3);">● Off</span>
+                  {% if active_setlist and active_setlist.songs.first %}
+                  <a href="{% url 'music:mixer' active_setlist.songs.first.track.uid %}" class="btn-h sm" style="font-size:.65rem;">Full Mixer ↗</a>
+                  {% endif %}
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /music-hub -->
+      </div>
+    </div>
   </div>
-  <p class="text-secondary">Manage tracks, setlists, and rehearsals for music units.</p>
 </div>
+
+<!-- Embed track data as JSON for JS -->
+<script id="trackDataEl" type="application/json">
+{
+  {% for track in tracks %}
+  "{{ track.uid }}": {
+    "id": {{ track.id }},
+    "title": "{{ track.title|escapejs }}",
+    "artist": "{{ track.artist|escapejs }}",
+    "key": "{{ track.original_key }}",
+    "tempo": {{ track.tempo|default_if_none:"null" }},
+    "time": "{{ track.time_signature }}",
+    "duration": "{{ track.duration_display }}",
+    "audioUrl": "{{ track.playback_url|escapejs }}",
+    "youtube": "{{ track.youtube_url|escapejs }}",
+    "lyrics": "{{ track.lyrics|default:''|truncatechars:600|escapejs }}",
+    "sections": [{% for s in track.sections.all %}{"label":"{{ s.label|escapejs }}","type":"{{ s.section_type }}","content":"{{ s.content|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}],
+    "stems": [{% for st in track.stems.all %}{"id":{{ st.id }},"name":"{{ st.name|escapejs }}","family":"{{ st.family }}","url":"{{ st.playback_url|escapejs }}","gain":{{ st.default_gain }},"muted":{{ st.default_muted|yesno:"true,false" }}}{% if not forloop.last %},{% endif %}{% endfor %}]
+  }{% if not forloop.last %},{% endif %}
+  {% endfor %}
+}
+</script>
+
+<script id="catalogDataEl" type="application/json">{{ catalog_json|safe }}</script>
+
+<script>
+// ── Data ───────────────────────────────────────────────────────
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+const SETLIST_UID = '{{ active_setlist.uid|default:"" }}';
+const ADD_SONG_URL = '{% if active_setlist %}{% url "music:setlist_add_song" active_setlist.uid %}{% endif %}';
+const REMOVE_SONG_URL_BASE = '{% if active_setlist %}/music/setlist/{{ active_setlist.uid }}/remove/{% endif %}';
+
+let TRACKS = {};
+let CATALOG = {};
+let activeTrackUid = null;
+
+try { TRACKS = JSON.parse(document.getElementById('trackDataEl').textContent); } catch(e){}
+try { CATALOG = JSON.parse(document.getElementById('catalogDataEl').textContent); } catch(e){}
+
+// ── Mode switching ─────────────────────────────────────────────
+function setMode(mode, btn) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.mode-view').forEach(v => v.style.display = 'none');
+  const el = document.getElementById('mode-' + mode);
+  if (el) { el.style.display = 'flex'; }
+}
+
+function showCTab(name, btn) {
+  const parent = btn.closest('.mode-view') || document;
+  parent.querySelectorAll('.c-tab').forEach(t => t.classList.remove('active'));
+  parent.querySelectorAll('.c-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(name)?.classList.add('active');
+}
+
+// ── Library filter ─────────────────────────────────────────────
+let activeTag = '';
+function filterLibrary(q) {
+  const ql = q.toLowerCase();
+  document.querySelectorAll('#trackList .track-row').forEach(row => {
+    const tagMatch = !activeTag || row.dataset.tags.includes(activeTag);
+    const textMatch = !ql || row.dataset.title.toLowerCase().includes(ql) || row.dataset.artist.toLowerCase().includes(ql);
+    row.style.display = (tagMatch && textMatch) ? '' : 'none';
+  });
+}
+function filterByTag(tag, btn) {
+  activeTag = tag;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  filterLibrary(document.getElementById('libSearch').value);
+}
+
+// ── Track selection ────────────────────────────────────────────
+function selectTrack(row) {
+  if (!row) return;
+  document.querySelectorAll('.track-row').forEach(r => r.classList.remove('active'));
+  row.classList.add('active');
+  const uid = row.dataset.uid;
+  activeTrackUid = uid;
+  renderTrackCtx(uid);
+}
+
+function renderTrackCtx(uid) {
+  const t = TRACKS[uid];
+  if (!t) return;
+  const ctx = document.getElementById('trackCtx');
+  const hasAudio = !!t.audioUrl;
+
+  ctx.innerHTML = `
+    <div class="ctx-head">
+      <div style="font-size:.95rem;font-weight:700;color:var(--t1);margin-bottom:2px;">${t.title}</div>
+      <div style="font-size:.75rem;color:var(--t3);">${t.artist || '—'}</div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+        ${t.key ? `<span class="pill pill-blue">${t.key}</span>` : ''}
+        ${t.tempo ? `<span class="pill" style="background:var(--s3);color:var(--t2);">${t.tempo} BPM</span>` : ''}
+        ${t.time ? `<span class="pill" style="background:var(--s3);color:var(--t2);">${t.time}</span>` : ''}
+      </div>
+    </div>
+    <div class="ctx-body">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+        ${hasAudio ? `<button class="btn-h sm primary" onclick="playTrack('${uid}')">▶ Play</button>` : ''}
+        ${t.youtube ? `<a href="${t.youtube}" target="_blank" class="btn-h sm">YouTube ↗</a>` : ''}
+        <a href="/music/track/${uid}/" class="btn-h sm ghost">Full Detail →</a>
+        <a href="/music/track/${uid}/mixer/" class="btn-h sm ghost">Mixer ↗</a>
+      </div>
+
+      ${t.sections.length ? `
+      <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:8px;">Lyrics</div>
+      <div style="max-height:200px;overflow-y:auto;">
+        ${t.sections.map(s => `
+          <div style="margin-bottom:10px;">
+            <div class="section-chip">${s.label || s.type}</div>
+            <div class="lyrics-view" style="font-size:.78rem;line-height:1.8;">${(s.content||'').substring(0,200)}${s.content?.length>200?'…':''}</div>
+          </div>`).join('')}
+      </div>` : t.lyrics ? `<div class="lyrics-view" style="font-size:.78rem;max-height:160px;overflow-y:auto;">${t.lyrics}</div>` : ''}
+
+      ${t.stems.length ? `
+      <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin:12px 0 8px;">Stems (${t.stems.length})</div>
+      <div class="stem-list">
+        ${t.stems.map(st => `
+          <div class="stem-row">
+            <span class="stem-name">${st.name}</span>
+            <input class="stem-fader-mini" type="range" min="0" max="1" step="0.01" value="${st.gain}" oninput="adjustStemGain('${uid}',${st.id},this.value)" ${st.url ? '' : 'disabled'}>
+            <button class="stem-mute-mini ${st.muted?'muted':''}" onclick="toggleStemMute(this,'${uid}',${st.id})">M</button>
+          </div>`).join('')}
+      </div>` : ''}
+    </div>
+  `;
+}
+
+// ── Setlist operations ─────────────────────────────────────────
+function selectSong(uid, title, key) {
+  activeTrackUid = uid;
+  renderTrackCtx(uid);
+}
+
+async function addTrackToSetlist(uid, title) {
+  if (!ADD_SONG_URL) return alert('No active setlist.');
+  const card = document.getElementById('atc-' + uid);
+  if (card && card.classList.contains('in-setlist')) return;
+  const resp = await fetch(ADD_SONG_URL, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `track_id=${TRACKS[uid]?.id}`
+  });
+  const data = await resp.json();
+  if (data.ok) {
+    if (card) { card.classList.add('in-setlist'); card.querySelector('.atc-check').classList.add('added'); card.querySelector('.atc-check').textContent = '✓'; }
+    appendSongToDOM(data);
+    showToast(`"${title}" added`);
+  } else {
+    showToast(data.error || 'Could not add', true);
+  }
+}
+
+async function addCustomSong(e) {
+  e.preventDefault();
+  if (!ADD_SONG_URL) return;
+  const title = document.getElementById('customTitle').value.trim();
+  const artist = document.getElementById('customArtist').value.trim();
+  const key = document.getElementById('customKey').value;
+  const bpm = document.getElementById('customBpm').value;
+  if (!title) return;
+
+  // First create/get the track, then add to setlist
+  const createResp = await fetch('/music/track/quick-create/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, artist, original_key: key, tempo: bpm || null })
+  });
+  const createData = await createResp.json();
+  if (!createData.ok) { showToast(createData.error || 'Failed to create', true); return; }
+
+  const resp = await fetch(ADD_SONG_URL, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `track_id=${createData.id}`
+  });
+  const data = await resp.json();
+  if (data.ok) {
+    appendSongToDOM(data);
+    document.getElementById('customTitle').value = '';
+    document.getElementById('customArtist').value = '';
+    showToast(`"${title}" created & added`);
+  } else {
+    showToast(data.error || 'Failed', true);
+  }
+}
+
+function appendSongToDOM(data) {
+  const container = document.getElementById('setlistSongs');
+  const empty = container?.querySelector('.empty');
+  if (empty) empty.remove();
+  const div = document.createElement('div');
+  div.className = 'song-item';
+  div.dataset.songId = data.id;
+  div.innerHTML = `
+    <span class="song-drag-handle">⠿</span>
+    <span class="song-num">${data.order + 1}</span>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:.85rem;font-weight:600;color:var(--t1);">${data.track_title}</div>
+      <div style="font-size:.7rem;color:var(--t3);">${data.artist || '—'}</div>
+    </div>
+    ${data.key ? `<span class="tr-key">${data.key}</span>` : ''}
+    <button class="btn-h sm danger" style="padding:2px 7px;font-size:.65rem;" onclick="removeSong(event,${data.id})">✕</button>
+  `;
+  container?.appendChild(div);
+}
+
+async function removeSong(e, songId) {
+  e.stopPropagation();
+  if (!REMOVE_SONG_URL_BASE) return;
+  await fetch(REMOVE_SONG_URL_BASE + songId + '/', { method: 'POST', headers: { 'X-CSRFToken': CSRF } });
+  document.querySelector(`.song-item[data-song-id="${songId}"]`)?.remove();
+  renumberSongs();
+}
+
+function renumberSongs() {
+  document.querySelectorAll('#setlistSongs .song-item').forEach((el, i) => {
+    const num = el.querySelector('.song-num');
+    if (num) num.textContent = i + 1;
+  });
+}
+
+async function finalizeSetlist() {
+  if (!SETLIST_UID) return;
+  const resp = await fetch(`/music/setlist/${SETLIST_UID}/finalize/`, { method: 'POST', headers: { 'X-CSRFToken': CSRF } });
+  const data = await resp.json();
+  if (data.ok) { showToast('Setlist finalized!'); setTimeout(() => location.reload(), 800); }
+  else showToast(data.error || 'Failed', true);
+}
+
+// ── Drag reorder ───────────────────────────────────────────────
+let dragSongId = null;
+function onDragStart(e, id) { dragSongId = id; e.target.style.opacity = '.5'; }
+function onDragOver(e) { e.preventDefault(); }
+function onDrop(e) {
+  e.preventDefault();
+  const target = e.target.closest('.song-item');
+  if (!target || !dragSongId) return;
+  const container = document.getElementById('setlistSongs');
+  const dragged = container.querySelector(`[data-song-id="${dragSongId}"]`);
+  if (dragged) { dragged.style.opacity = ''; container.insertBefore(dragged, target); }
+  renumberSongs();
+  // Persist order
+  const ids = [...container.querySelectorAll('.song-item')].map(el => el.dataset.songId).filter(Boolean);
+  const params = new URLSearchParams();
+  ids.forEach(id => params.append('ids[]', id));
+  fetch(`/music/setlist/${SETLIST_UID}/reorder/`, { method: 'POST', headers: { 'X-CSRFToken': CSRF }, body: params });
+}
+
+// ── Add-song panel tabs ────────────────────────────────────────
+function switchAddTab(src, btn) {
+  document.querySelectorAll('.add-song-panel .add-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.add-song-panel .add-source').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('add-' + src)?.classList.add('active');
+}
+
+function switchPlaylistTab(src, btn) {
+  const parent = btn.closest('#addToPlaylistPanel');
+  parent.querySelectorAll('.add-tab').forEach(t => t.classList.remove('active'));
+  parent.querySelectorAll('.add-source').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(src)?.classList.add('active');
+}
+
+function filterAddLibrary(q) {
+  const ql = q.toLowerCase();
+  document.querySelectorAll('#addLibGrid .add-track-card').forEach(card => {
+    card.style.display = card.dataset.title.includes(ql) || card.dataset.artist.includes(ql) ? '' : 'none';
+  });
+}
+
+// ── Catalog rendering ──────────────────────────────────────────
+function renderCatalogGrid(containerId, query = '', genre = '') {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  let count = 0;
+  for (const [g, tracks] of Object.entries(CATALOG)) {
+    if (genre && g !== genre) continue;
+    for (const [title, artist] of tracks) {
+      const tl = title.toLowerCase(), al = (artist||'').toLowerCase();
+      const ql = query.toLowerCase();
+      if (query && !tl.includes(ql) && !al.includes(ql)) continue;
+      if (count++ > 80) break;
+      const div = document.createElement('div');
+      div.className = 'add-track-card';
+      div.innerHTML = `
+        <div class="atc-check"></div>
+        <div style="min-width:0;">
+          <div style="font-size:.75rem;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</div>
+          <div style="font-size:.65rem;color:var(--t3);">${artist || '—'} <span style="color:var(--t3);opacity:.5;">· ${g.replace(/_/g,' ')}</span></div>
+        </div>
+      `;
+      div.onclick = () => addCatalogTrackToSetlist(title, artist);
+      container.appendChild(div);
+    }
+  }
+}
+
+function filterCatalog(q) {
+  const genre = document.getElementById('catGenreFilter')?.value || '';
+  renderCatalogGrid('catalogGrid', q || document.getElementById('catSearch')?.value || '', genre);
+}
+function filterPlCatalog(q) { renderCatalogGrid('plCatalogGrid', q, ''); }
+
+async function addCatalogTrackToSetlist(title, artist) {
+  if (!ADD_SONG_URL) return;
+  // Quick-create the track then add
+  const cr = await fetch('/music/track/quick-create/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, artist })
+  });
+  const cd = await cr.json();
+  if (!cd.ok) { showToast(cd.error || 'Failed', true); return; }
+  const resp = await fetch(ADD_SONG_URL, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `track_id=${cd.id}`
+  });
+  const data = await resp.json();
+  if (data.ok) { appendSongToDOM(data); showToast(`"${title}" added`); }
+  else showToast(data.error || 'Could not add', true);
+}
+
+// ── Rehearsal Playlist ─────────────────────────────────────────
+let rehearsalPlaylist = [];
+let currentRehIdx = -1;
+let miniAudio = null;
+let mpPlaying = false;
+
+function addToRehearsalPlaylist(uid, title, artist, audioUrl) {
+  if (rehearsalPlaylist.find(s => s.uid === uid)) { showToast('Already in playlist'); return; }
+  rehearsalPlaylist.push({ uid, title, artist, audioUrl, fromLibrary: true });
+  const chk = document.getElementById('plCheck-' + uid);
+  if (chk) { chk.classList.add('added'); chk.textContent = '✓'; }
+  renderRehearsalPlaylist();
+  showToast(`"${title}" added to rehearsal`);
+}
+
+function addCustomToPlaylist() {
+  const title = document.getElementById('plCustomTitle').value.trim();
+  const artist = document.getElementById('plCustomArtist').value.trim();
+  const yt = document.getElementById('plCustomYt').value.trim();
+  if (!title) return;
+  rehearsalPlaylist.push({ uid: 'custom-' + Date.now(), title, artist, audioUrl: '', ytUrl: yt, fromLibrary: false });
+  document.getElementById('plCustomTitle').value = '';
+  renderRehearsalPlaylist();
+  showToast(`"${title}" added to rehearsal`);
+}
+
+function renderRehearsalPlaylist() {
+  const container = document.getElementById('rehearsalPlaylist');
+  const empty = document.getElementById('playlistEmpty');
+  if (!container) return;
+  if (rehearsalPlaylist.length === 0) {
+    container.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  container.innerHTML = rehearsalPlaylist.map((s, i) => `
+    <div class="song-item ${currentRehIdx === i ? 'playing' : ''}" onclick="playRehearsalTrack(${i})">
+      <span class="song-num">${i+1}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:.85rem;font-weight:600;color:var(--t1);">${s.title}</div>
+        <div style="font-size:.7rem;color:var(--t3);">${s.artist || '—'}${s.ytUrl ? ' · YouTube' : ''}${!s.audioUrl && !s.ytUrl ? ' · No audio file' : ''}</div>
+      </div>
+      ${currentRehIdx === i ? '<span style="color:var(--green);font-size:.75rem;">♪</span>' : ''}
+      <button class="btn-h sm danger" style="padding:2px 6px;" onclick="event.stopPropagation();removeFromPlaylist(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeFromPlaylist(idx) {
+  rehearsalPlaylist.splice(idx, 1);
+  if (currentRehIdx >= idx) currentRehIdx--;
+  renderRehearsalPlaylist();
+}
+
+function playRehearsalTrack(idx) {
+  const song = rehearsalPlaylist[idx];
+  if (!song) return;
+  currentRehIdx = idx;
+  if (song.audioUrl) {
+    // Hide any YouTube embed and use the mini-player
+    const ytWrap = document.getElementById('plYtEmbed');
+    if (ytWrap) ytWrap.style.display = 'none';
+    mpLoad(song.audioUrl, song.title, song.artist);
+  } else if (song.ytUrl) {
+    // Extract video ID and embed inline — never open a new tab
+    const ytMatch = song.ytUrl.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    const ytWrap = document.getElementById('plYtEmbed');
+    if (ytMatch && ytWrap) {
+      ytWrap.style.display = 'block';
+      ytWrap.innerHTML = `
+        <div style="font-size:.72rem;color:var(--t3);margin-bottom:4px;padding:0 4px;">
+          Now playing: <strong style="color:var(--t2);">${song.title}</strong>
+        </div>
+        <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;">
+          <iframe
+            src="https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0"
+            style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:8px;"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+          </iframe>
+        </div>`;
+    } else if (ytWrap) {
+      ytWrap.style.display = 'none';
+      showToast(`No embeddable link for "${song.title}"`, true);
+    }
+  } else {
+    showToast(`No audio for "${song.title}"`, true);
+  }
+  renderRehearsalPlaylist();
+}
+
+function filterPlaylistAdd(q) {
+  const ql = q.toLowerCase();
+  document.querySelectorAll('#plLibGrid .add-track-card').forEach(card => {
+    const t = (card.dataset.title || '').toLowerCase();
+    const a = (card.dataset.artist || '').toLowerCase();
+    card.style.display = (!ql || t.includes(ql) || a.includes(ql)) ? '' : 'none';
+  });
+}
+
+// ── Mini player ────────────────────────────────────────────────
+function playTrack(uid) {
+  const t = TRACKS[uid];
+  if (!t || !t.audioUrl) { showToast('No audio file for this track', true); return; }
+  mpLoad(t.audioUrl, t.title, t.artist);
+  renderStemControls(t.stems);
+}
+
+function mpLoad(url, title, artist) {
+  if (miniAudio) { miniAudio.pause(); }
+  miniAudio = new Audio(url);
+  miniAudio.crossOrigin = 'anonymous';
+  miniAudio.addEventListener('timeupdate', mpUpdate);
+  miniAudio.addEventListener('loadedmetadata', () => {
+    const d = miniAudio.duration;
+    document.getElementById('mpDuration').textContent = `${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,'0')}`;
+  });
+  miniAudio.addEventListener('ended', () => { mpPlaying = false; document.getElementById('mpPlayBtn').textContent = '▶'; mpNext(); });
+  document.getElementById('mpTitle').textContent = title;
+  document.getElementById('mpArtist').textContent = artist || '—';
+  document.getElementById('miniPlayer').style.display = '';
+  miniAudio.play().then(() => { mpPlaying = true; document.getElementById('mpPlayBtn').textContent = '⏸'; }).catch(() => {});
+}
+
+function mpUpdate() {
+  if (!miniAudio) return;
+  const ratio = miniAudio.currentTime / (miniAudio.duration || 1);
+  document.getElementById('mpFill').style.width = (ratio * 100) + '%';
+  const s = Math.floor(miniAudio.currentTime);
+  document.getElementById('mpCurrent').textContent = `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+
+function mpToggle() {
+  if (!miniAudio) return;
+  if (mpPlaying) { miniAudio.pause(); mpPlaying = false; document.getElementById('mpPlayBtn').textContent = '▶'; }
+  else { miniAudio.play(); mpPlaying = true; document.getElementById('mpPlayBtn').textContent = '⏸'; }
+}
+
+function mpSeek(e) {
+  if (!miniAudio) return;
+  const bar = e.currentTarget;
+  miniAudio.currentTime = (e.offsetX / bar.offsetWidth) * (miniAudio.duration || 0);
+}
+
+function mpPrev() { if (currentRehIdx > 0) playRehearsalTrack(currentRehIdx - 1); }
+function mpNext() { if (currentRehIdx < rehearsalPlaylist.length - 1) playRehearsalTrack(currentRehIdx + 1); }
+
+function renderStemControls(stems) {
+  const wrap = document.getElementById('mpStems');
+  const list = document.getElementById('mpStemList');
+  if (!stems || !stems.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  list.innerHTML = stems.map(st => `
+    <div class="stem-row">
+      <span class="stem-name">${st.name}</span>
+      <input class="stem-fader-mini" type="range" min="0" max="1" step="0.01" value="${st.gain}">
+      <button class="stem-mute-mini ${st.muted ? 'muted' : ''}" onclick="this.classList.toggle('muted')">M</button>
+    </div>
+  `).join('');
+}
+
+function adjustStemGain(uid, stemId, val) { /* wire to Web Audio on full mixer page */ }
+function toggleStemMute(btn, uid, stemId) { btn.classList.toggle('muted'); }
+
+// ── Setlist switching (page reload) ───────────────────────────
+function switchSetlist(uid) {
+  if (!uid) return;
+  window.location.href = `?setlist=${uid}`;
+}
+
+// ── Toast ──────────────────────────────────────────────────────
+function showToast(msg, err=false) {
+  let t = document.getElementById('hubToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'hubToast';
+    t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:var(--s2);border:1px solid var(--s3);border-radius:9px;padding:10px 16px;font-size:.8rem;font-family:var(--sans);color:var(--t1);z-index:9999;transition:opacity .3s;box-shadow:0 8px 24px #000c;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.borderColor = err ? 'rgba(239,68,68,.3)' : 'rgba(34,197,94,.3)';
+  t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; }, 2500);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── Embedded Mixer Console (right panel) ──────────────────────
+// ══════════════════════════════════════════════════════════════
+let mcCtx = null;
+let mcMasterGain = null;
+let mcStemGraph = {};   // stemId → { audio, source, gain, pan }
+let mcPlaying = false;
+let mcVoxIsolated = false;
+let mcCurrentTrackUid = null;
+
+function mcInit() {
+  if (mcCtx) { if (mcCtx.state === 'suspended') mcCtx.resume(); return; }
+  try {
+    mcCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+    mcMasterGain = mcCtx.createGain();
+    mcMasterGain.gain.value = parseFloat(document.getElementById('mcMasterFader').value || 1);
+    mcMasterGain.connect(mcCtx.destination);
+    document.getElementById('mcEngineLabel').textContent = '● Active';
+    document.getElementById('mcEngineLabel').style.color = 'var(--green)';
+    document.getElementById('mcStartBtn').textContent = '✓ Active';
+    document.getElementById('mcStartBtn').className = 'btn-h sm';
+    document.getElementById('mcStartBtn').style.color = 'var(--green)';
+    document.getElementById('mcPlayBtn').disabled = false;
+  } catch(e) {
+    document.getElementById('mcEngineLabel').textContent = '● No Web Audio';
+  }
+}
+
+function mcLoadTrack(uid) {
+  mcStop();
+  mcCurrentTrackUid = uid;
+  const t = TRACKS[uid];
+  if (!t) return;
+
+  document.getElementById('mcNowPlaying').textContent = t.title + (t.artist ? ' — ' + t.artist : '');
+
+  if (!t.stems || !t.stems.length) {
+    // No stems: load the main audio file as a single strip
+    const strips = document.getElementById('mcStrips');
+    document.getElementById('mcNoStems').style.display = '';
+    if (t.audioUrl) {
+      document.getElementById('mcNoStems').innerHTML =
+        `<div style="width:100%;padding:8px;text-align:center;">
+           <div style="font-size:.72rem;color:var(--t2);margin-bottom:8px;">${t.title}</div>
+           <button class="btn-h sm primary" onclick="mcPlayMain('${t.audioUrl}')">▶ Play Reference Track</button>
+           ${t.youtube ? `<a href="${t.youtube}" target="_blank" class="btn-h sm ghost" style="margin-left:6px;">YouTube ↗</a>` : ''}
+         </div>`;
+      // Bug 2 fix: auto-play immediately on track selection
+      mcPlayMain(t.audioUrl);
+    } else if (t.youtube) {
+      // No audio file but has YouTube — show a link, no crash
+      document.getElementById('mcNoStems').innerHTML =
+        `<div style="padding:16px;font-size:.75rem;color:var(--t3);text-align:center;">
+           No audio file for this track.<br>
+           <a href="${t.youtube}" target="_blank" style="color:var(--acc);font-size:.72rem;">Open on YouTube ↗</a>
+           &nbsp;·&nbsp;
+           <a href="/music/track/${uid}/" style="color:var(--acc);font-size:.72rem;">Add stems →</a>
+         </div>`;
+    } else {
+      document.getElementById('mcNoStems').innerHTML =
+        `<div style="padding:16px;font-size:.75rem;color:var(--t3);text-align:center;">
+           No audio file or stems for this track.<br>
+           <a href="/music/track/${uid}/" style="color:var(--acc);font-size:.72rem;">Add stems in Track Detail →</a>
+         </div>`;
+    }
+    return;
+  }
+
+  // Has stems — ensure Web Audio is running, then build strips and auto-play all stems
+  mcInit();
+  mcInitStemStrips(uid, t.stems);
+}
+
+let mcMainAudio = null;
+function mcPlayMain(url) {
+  if (!mcCtx) mcInit();
+  if (mcCtx && mcCtx.state === 'suspended') mcCtx.resume();
+  if (mcMainAudio) { mcMainAudio.pause(); mcMainAudio = null; }
+  mcMainAudio = new Audio(url);
+  mcMainAudio.crossOrigin = 'anonymous';
+  mcMainAudio.ontimeupdate = mcUpdateProgress;
+  mcMainAudio.onloadedmetadata = () => {
+    document.getElementById('mcPlayBtn').disabled = false;
+  };
+  mcMainAudio.play().then(() => {
+    mcPlaying = true;
+    document.getElementById('mcPlayBtn').textContent = '⏸';
+    if (mcCtx) {
+      try {
+        const src = mcCtx.createMediaElementSource(mcMainAudio);
+        src.connect(mcMasterGain);
+      } catch(e) {}
+    }
+  }).catch(() => {});
+}
+
+function mcInitStemStrips(uid, stems) {
+  // Bug 4 fix: always initialise the audio context before touching Web Audio nodes
+  if (!mcCtx) mcInit();
+  if (mcCtx && mcCtx.state === 'suspended') mcCtx.resume();
+
+  document.getElementById('mcNoStems').style.display = 'none';
+  const container = document.getElementById('mcStrips');
+
+  // Clear old strips and release any previous stem nodes
+  container.querySelectorAll('.mc-strip').forEach(el => el.remove());
+  Object.values(mcStemGraph).forEach(n => { try { n.audio.pause(); n.source.disconnect(); } catch(e) {} });
+  mcStemGraph = {};
+
+  const familyColors = {vox:'#a78bfa',drums:'#f59f00',bass:'#22c55e',keys:'#3b82f6',guitar:'#f97316',fx:'#ec4899',click:'#94a3b8',other:'#64748b'};
+
+  stems.forEach(st => {
+    const color = familyColors[st.family] || '#64748b';
+    const hasAudio = !!st.url;
+
+    // Create Web Audio nodes
+    if (hasAudio && mcCtx) {
+      const audio = new Audio(st.url);
+      audio.crossOrigin = 'anonymous';
+      audio.loop = true;
+      const source = mcCtx.createMediaElementSource(audio);
+      const gain   = mcCtx.createGain();
+      const pan    = mcCtx.createStereoPanner();
+      gain.gain.value = st.muted ? 0 : st.gain;
+      pan.pan.value   = 0;
+      source.connect(gain).connect(pan).connect(mcMasterGain);
+      mcStemGraph[st.id] = { audio, source, gain, pan };
+    }
+
+    const strip = document.createElement('div');
+    strip.className = 'mc-strip';
+    strip.dataset.stemId = st.id;
+    strip.dataset.family = st.family;
+    strip.style.cssText = `
+      display:flex;flex-direction:column;align-items:center;gap:4px;
+      background:var(--s1);border:1px solid var(--s3);border-radius:10px;
+      padding:8px 6px 10px;min-width:58px;max-width:58px;position:relative;
+    `;
+    strip.style.setProperty('--strip-color', color);
+
+    strip.innerHTML = `
+      <div style="width:6px;height:6px;border-radius:50%;background:${color};box-shadow:0 0 5px ${color};margin-bottom:2px;"></div>
+      <div style="font-size:.6rem;font-weight:700;color:var(--t2);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;" title="${st.name}">${st.name.substring(0,7)}</div>
+      <div style="font-size:.55rem;color:var(--t3);font-family:var(--mono);margin-bottom:3px;">${st.family.substring(0,4).toUpperCase()}</div>
+
+      <div style="display:flex;gap:3px;align-items:flex-end;">
+        <!-- VU -->
+        <div style="width:5px;height:70px;background:var(--s3);border-radius:2px;overflow:hidden;position:relative;">
+          <div id="vu-${st.id}" style="position:absolute;bottom:0;left:0;right:0;height:0%;background:linear-gradient(to top,${color} 0%,var(--amber) 80%,var(--red) 95%);transition:height .05s;"></div>
+        </div>
+        <!-- Fader -->
+        <input class="mc-fader" type="range" min="0" max="1" step="0.01" value="${st.gain}"
+          data-stem="${st.id}"
+          oninput="mcFaderChange(${st.id},this.value)"
+          style="-webkit-appearance:none;writing-mode:vertical-lr;direction:rtl;height:70px;width:8px;background:var(--s3);border-radius:4px;cursor:${hasAudio?'grab':'not-allowed'};"
+          ${!hasAudio ? 'disabled title="No stem audio"' : ''}>
+      </div>
+
+      <div style="font-size:.58rem;color:var(--t3);font-family:var(--mono);" id="mc-lvl-${st.id}">${st.gain.toFixed(2)}</div>
+
+      <input type="range" min="-1" max="1" step="0.01" value="0"
+        data-stem="${st.id}"
+        oninput="mcPanChange(${st.id},this.value)"
+        style="-webkit-appearance:none;height:3px;width:44px;background:var(--s3);border-radius:2px;cursor:pointer;accent-color:${color};">
+
+      <div style="display:flex;gap:3px;margin-top:2px;">
+        <button class="mc-mute-btn" data-stem="${st.id}" onclick="mcMute(${st.id},this)"
+          style="font-size:.55rem;font-weight:700;padding:2px 5px;border-radius:3px;border:1px solid var(--s3);background:${st.muted?'rgba(239,68,68,.2)':'transparent'};color:${st.muted?'var(--red)':'var(--t3)'};cursor:pointer;font-family:inherit;">M</button>
+        <button class="mc-solo-btn" data-stem="${st.id}" onclick="mcSolo(${st.id},this)"
+          style="font-size:.55rem;font-weight:700;padding:2px 5px;border-radius:3px;border:1px solid var(--s3);background:transparent;color:var(--t3);cursor:pointer;font-family:inherit;">S</button>
+      </div>
+    `;
+    container.insertBefore(strip, document.getElementById('mcNoStems'));
+  });
+
+  document.getElementById('mcPlayBtn').disabled = false;
+
+  // Bug 4 fix: auto-play all stems that have audio immediately after building strips
+  if (mcCtx && mcCtx.state === 'suspended') mcCtx.resume();
+  Object.values(mcStemGraph).forEach(n => {
+    n.audio.play().catch(() => {});
+  });
+  mcPlaying = true;
+  const pb = document.getElementById('mcPlayBtn');
+  if (pb) pb.textContent = '⏸';
+}
+
+function mcFaderChange(stemId, val) {
+  val = parseFloat(val);
+  const node = mcStemGraph[stemId];
+  if (node) node.gain.gain.value = val;
+  const lbl = document.getElementById('mc-lvl-' + stemId);
+  if (lbl) lbl.textContent = val.toFixed(2);
+}
+
+function mcPanChange(stemId, val) {
+  const node = mcStemGraph[stemId];
+  if (node) node.pan.pan.value = parseFloat(val);
+}
+
+function mcMute(stemId, btn) {
+  const node = mcStemGraph[stemId];
+  const isMuted = btn.style.color === 'var(--red)' || btn.style.color === 'rgb(239, 68, 68)';
+  const newMuted = !isMuted;
+  if (node) node.gain.gain.value = newMuted ? 0 : parseFloat(document.querySelector(`.mc-fader[data-stem="${stemId}"]`)?.value || 0.8);
+  btn.style.background = newMuted ? 'rgba(239,68,68,.2)' : 'transparent';
+  btn.style.color = newMuted ? 'var(--red)' : 'var(--t3)';
+  btn.style.borderColor = newMuted ? 'rgba(239,68,68,.3)' : 'var(--s3)';
+}
+
+let mcSoloActive = false;
+function mcSolo(stemId, btn) {
+  const wasSoloed = btn.classList.contains('mc-soloed');
+  document.querySelectorAll('.mc-solo-btn').forEach(b => {
+    b.classList.remove('mc-soloed');
+    b.style.background = 'transparent';
+    b.style.color = 'var(--t3)';
+    b.style.borderColor = 'var(--s3)';
+  });
+  if (!wasSoloed) {
+    btn.classList.add('mc-soloed');
+    btn.style.background = 'rgba(245,159,0,.2)';
+    btn.style.color = 'var(--amber)';
+    btn.style.borderColor = 'rgba(245,159,0,.3)';
+    mcSoloActive = true;
+    Object.entries(mcStemGraph).forEach(([id, node]) => {
+      const fader = document.querySelector(`.mc-fader[data-stem="${id}"]`);
+      node.gain.gain.value = parseInt(id) === stemId ? parseFloat(fader?.value || 0.8) : 0;
+    });
+  } else {
+    mcSoloActive = false;
+    Object.entries(mcStemGraph).forEach(([id, node]) => {
+      const fader = document.querySelector(`.mc-fader[data-stem="${id}"]`);
+      node.gain.gain.value = parseFloat(fader?.value || 0.8);
+    });
+  }
+}
+
+function mcIsolateVox() {
+  const btn = document.getElementById('mcVoxBtn');
+  mcVoxIsolated = !mcVoxIsolated;
+  btn.style.background = mcVoxIsolated ? 'rgba(167,139,250,.15)' : 'transparent';
+  btn.style.color = mcVoxIsolated ? '#a78bfa' : 'var(--t3)';
+  Object.entries(mcStemGraph).forEach(([id, node]) => {
+    const strip = document.querySelector(`.mc-strip[data-stem-id="${id}"]`);
+    const fader = document.querySelector(`.mc-fader[data-stem="${id}"]`);
+    if (!strip) return;
+    if (mcVoxIsolated) {
+      node.gain.gain.value = strip.dataset.family === 'vox' ? parseFloat(fader?.value || 0.8) : 0;
+    } else {
+      node.gain.gain.value = parseFloat(fader?.value || 0.8);
+    }
+  });
+}
+
+function mcToggle() {
+  if (!mcCtx) { mcInit(); return; }
+  if (mcCtx.state === 'suspended') mcCtx.resume();
+
+  // If there's a main audio (no-stems path)
+  if (mcMainAudio) {
+    if (mcPlaying) { mcMainAudio.pause(); mcPlaying = false; document.getElementById('mcPlayBtn').textContent = '▶'; }
+    else { mcMainAudio.play(); mcPlaying = true; document.getElementById('mcPlayBtn').textContent = '⏸'; }
+    return;
+  }
+
+  mcPlaying = !mcPlaying;
+  document.getElementById('mcPlayBtn').textContent = mcPlaying ? '⏸' : '▶';
+  Object.values(mcStemGraph).forEach(node => {
+    if (mcPlaying) node.audio.play().catch(() => {});
+    else node.audio.pause();
+  });
+}
+
+function mcStop() {
+  mcPlaying = false;
+  document.getElementById('mcPlayBtn').textContent = '▶';
+  document.getElementById('mcProgressFill').style.width = '0%';
+  document.getElementById('mcTime').textContent = '0:00';
+  Object.values(mcStemGraph).forEach(node => { node.audio.pause(); node.audio.currentTime = 0; });
+  if (mcMainAudio) { mcMainAudio.pause(); mcMainAudio.currentTime = 0; }
+  mcStemGraph = {};
+}
+
+function mcSeek(e) {
+  const bar = document.getElementById('mcProgressBar');
+  const ratio = e.offsetX / bar.offsetWidth;
+  if (mcMainAudio && isFinite(mcMainAudio.duration)) {
+    mcMainAudio.currentTime = ratio * mcMainAudio.duration;
+    return;
+  }
+  const first = Object.values(mcStemGraph).find(n => n.audio && isFinite(n.audio.duration));
+  if (!first) return;
+  const t = ratio * first.audio.duration;
+  Object.values(mcStemGraph).forEach(n => { if (n.audio) n.audio.currentTime = t; });
+}
+
+function mcUpdateProgress() {
+  const src = mcMainAudio || Object.values(mcStemGraph).find(n => n.audio?.duration);
+  if (!src) return;
+  const audio = mcMainAudio || src.audio;
+  if (!audio || !isFinite(audio.duration)) return;
+  const ratio = audio.currentTime / audio.duration;
+  document.getElementById('mcProgressFill').style.width = (ratio * 100).toFixed(1) + '%';
+  const s = Math.floor(audio.currentTime);
+  document.getElementById('mcTime').textContent = `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+setInterval(mcUpdateProgress, 100);
+
+function mcSetMaster(val) {
+  val = parseFloat(val);
+  if (mcMasterGain) mcMasterGain.gain.value = val;
+  document.getElementById('mcMasterLabel').textContent = val.toFixed(1);
+}
+
+function mcReset() {
+  document.querySelectorAll('.mc-fader').forEach(f => {
+    f.value = 0.8;
+    const id = f.dataset.stem;
+    const node = mcStemGraph[id];
+    if (node) node.gain.gain.value = 0.8;
+    const lbl = document.getElementById('mc-lvl-' + id);
+    if (lbl) lbl.textContent = '0.80';
+  });
+  document.querySelectorAll('.mc-mute-btn').forEach(b => {
+    b.style.background = 'transparent'; b.style.color = 'var(--t3)'; b.style.borderColor = 'var(--s3)';
+  });
+  document.querySelectorAll('.mc-solo-btn').forEach(b => {
+    b.classList.remove('mc-soloed'); b.style.background = 'transparent'; b.style.color = 'var(--t3)';
+  });
+  mcSoloActive = false; mcVoxIsolated = false;
+  document.getElementById('mcVoxBtn').style.background = 'transparent';
+  document.getElementById('mcVoxBtn').style.color = 'var(--t3)';
+  document.getElementById('mcTranspose').value = 0;
+  document.getElementById('mcTransposeLabel').textContent = '0';
+  document.getElementById('mcMasterFader').value = 1;
+  mcSetMaster(1);
+}
+
+// Hook track selection into mixer
+const _origRenderTrackCtx = renderTrackCtx;
+function renderTrackCtx(uid) {
+  _origRenderTrackCtx(uid);
+  mcLoadTrack(uid);
+}
+
+// ── Init ───────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  renderCatalogGrid('catalogGrid', '', '');
+  renderCatalogGrid('catalogPreview', '', '');
+  renderCatalogGrid('plCatalogGrid', '', '');
+  document.head.insertAdjacentHTML('beforeend', '<style>.hidden{display:none!important}</style>');
+});
+</script>
 {% endblock %}

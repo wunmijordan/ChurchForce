@@ -1,0 +1,333 @@
+{% extends "founder/base_founder.html" %}
+{% block title %}{{ church.name }}{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{% url 'founder:church_list' %}" class="text-muted text-decoration-none small">← Churches</a>
+  <h2 class="fw-bold mb-0">{{ church.name }}</h2>
+  {% if church.is_active %}
+  <span class="plan-badge plan-saas">Active</span>
+  {% else %}
+  <span class="plan-badge plan-inactive">Inactive</span>
+  {% endif %}
+</div>
+
+{% if messages %}{% for m in messages %}
+<div class="alert alert-{% if m.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show mb-3">
+  {{ m }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}{% endif %}
+
+<div class="row g-4">
+
+  {# ── Left: Profile + Stats ── #}
+  <div class="col-12 col-lg-4">
+
+    {# Stats #}
+    <div class="stat-card mb-4">
+      <h6 class="fw-semibold mb-3">Stats</h6>
+      <div class="row g-2 text-center">
+        <div class="col-4"><div class="value text-primary" style="font-size:1.4rem;">{{ members_count }}</div><div class="text-muted small">Members</div></div>
+        <div class="col-4"><div class="value text-success" style="font-size:1.4rem;">{{ units_count }}</div><div class="text-muted small">Units</div></div>
+        <div class="col-4"><div class="value text-warning" style="font-size:1.4rem;">{{ campuses_count }}</div><div class="text-muted small">Campuses</div></div>
+      </div>
+    </div>
+
+    {# Church profile edit #}
+    <div class="stat-card mb-4">
+      <h6 class="fw-semibold mb-3">Church Profile</h6>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="edit">
+        <div class="mb-2">
+          <label class="small text-muted">Name</label>
+          <input name="name" class="form-control form-control-sm mt-1" value="{{ church.name }}"
+                 style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+        </div>
+        <div class="mb-2">
+          <label class="small text-muted">Timezone</label>
+          <input name="timezone" class="form-control form-control-sm mt-1" value="{{ church.timezone }}"
+                 style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+        </div>
+        <div class="mb-2">
+          <label class="small text-muted">Attendance radius (km)</label>
+          <input name="attendance_radius_km" class="form-control form-control-sm mt-1" type="number" step="0.001"
+                 value="{{ church.attendance_radius_km }}"
+                 style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+        </div>
+        <div class="mb-3 form-check">
+          <input class="form-check-input" type="checkbox" name="hide_platform_credit" id="hpc"
+                 {% if church.hide_platform_credit %}checked{% endif %}>
+          <label class="form-check-label small" for="hpc">Hide "Powered by ChurchForce"</label>
+        </div>
+        <button class="btn btn-sm btn-outline-primary w-100">Save Profile</button>
+      </form>
+    </div>
+
+    {# Routing #}
+    <div class="stat-card mb-4">
+      <h6 class="fw-semibold mb-3">Routing</h6>
+      <div class="mb-2">
+        <div class="text-muted small">Slug (trial)</div>
+        <code class="small">workforce.church/{{ church.slug }}/</code>
+      </div>
+      <div class="mb-2">
+        <label class="text-muted small">Subdomain (SaaS)</label>
+        <form method="post" class="d-flex gap-2 mt-1">{% csrf_token %}
+          <input type="hidden" name="action" value="set_plan">
+          <input name="subdomain" class="form-control form-control-sm"
+                 value="{{ church.subdomain|default:'' }}"
+                 placeholder="slug" pattern="[a-z0-9\-]+"
+                 style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+          <button class="btn btn-sm btn-outline-secondary flex-shrink-0" formaction="{% url 'founder:church_detail' church.pk %}"
+                  formmethod="post" name="action" value="set_subdomain">Set</button>
+        </form>
+      </div>
+      <div class="mb-2">
+        <label class="text-muted small">Custom domain (enterprise)</label>
+        <form method="post" class="d-flex gap-2 mt-1">{% csrf_token %}
+          <input name="custom_domain" class="form-control form-control-sm"
+                 value="{{ church.custom_domain|default:'' }}"
+                 placeholder="app.church.org"
+                 style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+          <button class="btn btn-sm btn-outline-secondary flex-shrink-0" formaction="{% url 'founder:church_detail' church.pk %}"
+                  formmethod="post" name="action" value="set_custom_domain">Set</button>
+        </form>
+      </div>
+    </div>
+
+    {# Danger zone #}
+    <div class="stat-card border border-danger" style="border-color:#ef4444 !important;">
+      <h6 class="fw-semibold mb-3 text-danger">Danger Zone</h6>
+      <form method="post" onsubmit="return confirm('{% if church.is_active %}Deactivate{% else %}Activate{% endif %} {{ church.name }}?')">
+        {% csrf_token %}<input type="hidden" name="action" value="toggle_active">
+        <button class="btn btn-sm w-100 {% if church.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+          {% if church.is_active %}Deactivate Church{% else %}Activate Church{% endif %}
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+  {# ── Right: Subscription + Plan management + Payments ── #}
+  <div class="col-12 col-lg-8">
+
+    {# Current subscription #}
+    <div class="stat-card mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-semibold mb-0">Current Subscription</h6>
+        {% if sub %}
+        <span class="plan-badge plan-{% if 'founders' in sub.plan.name %}founders{% elif sub.plan.name == 'saas' %}saas{% elif sub.plan.name == 'white_label' %}enterprise{% elif sub.plan.name == 'trial' %}trial{% else %}inactive{% endif %}">
+          {{ sub.plan.get_name_display }}
+        </span>
+        {% else %}
+        <span class="plan-badge plan-inactive">No subscription</span>
+        {% endif %}
+      </div>
+      {% if sub %}
+      <div class="row g-3">
+        <div class="col-6 col-md-3 text-center">
+          <div class="text-muted small">Interval</div>
+          <div class="fw-semibold small mt-1">{{ sub.get_interval_display }}</div>
+        </div>
+        <div class="col-6 col-md-3 text-center">
+          <div class="text-muted small">Trial</div>
+          <div class="fw-semibold small mt-1">{% if sub.is_trial %}Yes{% else %}No{% endif %}</div>
+        </div>
+        <div class="col-6 col-md-3 text-center">
+          <div class="text-muted small">Expires</div>
+          <div class="fw-semibold small mt-1">
+            {% if sub.plan.name in "founders_saas_lifetime,founders_white_label_lifetime" %}
+            ♾ Never
+            {% elif sub.is_trial and sub.trial_expires_at %}
+            {{ sub.trial_expires_at|date:"d M Y" }}
+            {% elif sub.expires_at %}
+            {{ sub.expires_at|date:"d M Y" }}
+            {% else %}—{% endif %}
+          </div>
+        </div>
+        <div class="col-6 col-md-3 text-center">
+          <div class="text-muted small">Valid</div>
+          <div class="fw-semibold small mt-1 {% if sub.is_valid %}text-success{% else %}text-danger{% endif %}">
+            {% if sub.is_valid %}✓ Yes{% else %}✗ No{% endif %}
+          </div>
+        </div>
+      </div>
+      {% if sub.plan.campus_limit is not None %}
+      <div class="mt-3 pt-3 border-top border-secondary">
+        <div class="text-muted small mb-1">Campus limit: <strong>{% if sub.plan.campus_limit == -1 %}Unlimited{% elif sub.plan.campus_limit == 0 %}None{% else %}{{ sub.plan.campus_limit }}{% endif %}</strong>
+          · Extra campus price: <strong>{% if sub.plan.campus_price_ngn %}₦{{ sub.plan.campus_price_ngn|floatformat:0 }}/mo{% else %}—{% endif %}</strong></div>
+      </div>
+      {% endif %}
+      {% else %}
+      <p class="text-muted small mb-0">No subscription record exists for this church.</p>
+      {% endif %}
+    </div>
+
+    {# Grant / change plan #}
+    <div class="stat-card mb-4">
+      <h6 class="fw-semibold mb-3">Grant or Change Plan</h6>
+      <form method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="set_plan">
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="small text-muted mb-1">Plan</label>
+            <select name="plan_name" class="form-select form-select-sm"
+                    style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+              <optgroup label="Founders (Lifetime — no expiry)">
+                <option value="founders_saas_lifetime">Founders SaaS — Lifetime</option>
+                <option value="founders_white_label_lifetime">Founders White Label — Lifetime</option>
+              </optgroup>
+              <optgroup label="Paid plans">
+                {% for p in all_plans %}
+                {% if 'founders' not in p.name %}
+                <option value="{{ p.name }}" {% if sub and sub.plan == p %}selected{% endif %}>
+                  {{ p.get_name_display }}{% if p.monthly_price_ngn %} — ₦{{ p.monthly_price_ngn|floatformat:0 }}/mo{% endif %}
+                </option>
+                {% endif %}
+                {% endfor %}
+              </optgroup>
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="small text-muted mb-1">Days (non-lifetime)</label>
+            <input type="number" name="days" value="30" min="1" max="3650"
+                   class="form-control form-control-sm"
+                   style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+          </div>
+          <div class="col-6 col-md-3 d-flex align-items-end">
+            <button class="btn btn-primary btn-sm w-100">Grant Plan</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    {# Campus limit override #}
+    <div class="stat-card mb-4">
+      <h6 class="fw-semibold mb-3">Campus Limits (override per-church)</h6>
+      <form method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="set_campus_limit">
+        <div class="row g-3">
+          <div class="col-6 col-md-4">
+            <label class="small text-muted mb-1">Campus limit <span class="text-muted">(−1 = unlimited, 0 = none)</span></label>
+            <input type="number" name="campus_limit" min="-1"
+                   value="{% if sub and sub.plan %}{{ sub.plan.campus_limit }}{% else %}0{% endif %}"
+                   class="form-control form-control-sm"
+                   style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+          </div>
+          <div class="col-6 col-md-4">
+            <label class="small text-muted mb-1">Extra campus price (₦/mo)</label>
+            <input type="number" name="campus_price_ngn" min="0"
+                   value="{% if sub and sub.plan %}{{ sub.plan.campus_price_ngn }}{% else %}0{% endif %}"
+                   class="form-control form-control-sm"
+                   style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+          </div>
+          <div class="col-12 col-md-4 d-flex align-items-end">
+            <button class="btn btn-outline-secondary btn-sm w-100">Update Limits</button>
+          </div>
+        </div>
+        <div class="text-muted mt-2" style="font-size:.72rem;">
+          Note: this edits the plan record directly. Changes apply to all churches on this plan.
+          To set a truly per-church limit, create a custom plan for this church first.
+        </div>
+      </form>
+    </div>
+
+    <div class="stat-card mb-4">
+      <h6 class="fw-semibold mb-3">Music Dev Dataset</h6>
+      <div class="text-muted small mb-2">
+        Seed popular Christian tracks/tags from founder panel after DB reset.
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="seed_music_tracks">
+        <button class="btn btn-sm btn-outline-success w-100">Seed Popular Christian Tracks</button>
+      </form>
+    </div>
+
+    <div class="stat-card mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h6 class="fw-semibold mb-0">Plan Seed Status</h6>
+        <span class="badge bg-{% if is_production_env %}success{% else %}warning{% endif %}-lt">
+          {% if is_production_env %}Prod{% else %}Dev{% endif %}
+        </span>
+      </div>
+      <div class="text-muted small mb-3">
+        Plan-aware bootstrap coverage for <strong>{{ active_plan_name }}</strong>.
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col-12 col-md-4">
+          <div class="p-2 rounded" style="background:#0f172a;border:1px solid #334155;">
+            <div class="text-muted small">Tracks</div>
+            <div class="fw-semibold">{{ track_count }} / {{ expected_track_limit }}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="p-2 rounded" style="background:#0f172a;border:1px solid #334155;">
+            <div class="text-muted small">Bible Cache</div>
+            <div class="fw-semibold">{{ bible_passage_count }} / {{ expected_warm_cache }}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="p-2 rounded" style="background:#0f172a;border:1px solid #334155;">
+            <div class="text-muted small">Active Versions</div>
+            <div class="fw-semibold">{{ bible_version_count }}</div>
+          </div>
+        </div>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="seed_plan_content">
+        <button class="btn btn-sm btn-outline-primary w-100">
+          Refresh Plan Content Pack (Music + Bible)
+        </button>
+      </form>
+      <div class="mt-3">
+        <div class="text-muted small mb-2">Plan entitlements at a glance</div>
+        <div class="table-responsive">
+          <table class="table table-dark table-sm mb-0" style="font-size:.74rem;">
+            <thead>
+              <tr>
+                <th>Plan</th>
+                <th>Track cap</th>
+                <th>Bible versions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in plan_entitlements %}
+              <tr {% if row.plan == active_plan_name %}style="background:rgba(59,130,246,.12);"{% endif %}>
+                <td>{{ row.label }}</td>
+                <td>{{ row.track_cap }}</td>
+                <td>{{ row.bible_versions }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    {# Payment history #}
+    <div class="stat-card">
+      <h6 class="fw-semibold mb-3">Payment History</h6>
+      {% if payments %}
+      <table class="table table-dark table-sm mb-0">
+        <thead><tr><th>Ref</th><th>Plan</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for p in payments %}
+          <tr>
+            <td class="text-muted small">{{ p.reference|truncatechars:16 }}</td>
+            <td class="small">{{ p.plan.get_name_display }}</td>
+            <td class="small">₦{{ p.amount_ngn|floatformat:0 }}</td>
+            <td><span class="badge bg-{% if p.status == 'success' %}success{% elif p.status == 'pending' %}warning{% else %}danger{% endif %}-lt small">{{ p.status }}</span></td>
+            <td class="text-muted small">{{ p.created_at|date:"d M Y" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="text-muted small">No payments recorded.</div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

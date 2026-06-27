@@ -1,62 +1,41 @@
-{% extends "public_base.html" %} {% load static %} {% block title %}Trial Ended
-— ChurchForce{% endblock %} {% block content %}
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-12 col-md-7 col-lg-5 text-center">
-      <div class="mb-4" style="font-size: 4rem">⏰</div>
+{% extends "public_base.html" %}
+{% load static %}
+{% block title %}Account Inactive — ChurchForce{% endblock %}
+{% block content %}
 
-      <h2 class="fw-bold mb-2">Your free trial has ended</h2>
+<div class="container container-tight">
+  <div class="text-center">
+    <div class="mb-4" style="font-size: 4rem">⏸️</div>
 
-      {% if church %}
-      <p class="text-secondary mb-4">
-        <strong class="text-light">{{ church.name }}</strong>'s 14-day trial has
-        expired. Upgrade to keep your data and continue using ChurchForce.
-      </p>
-      {% else %}
-      <p class="text-secondary mb-4">
-        Your 14-day free trial has expired. Upgrade to continue.
-      </p>
-      {% endif %}
+    <h1 class="fw-bold mb-2">This workspace is inactive</h1>
 
-      <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
-        <a
-          href="{% url 'billing:pricing' %}"
-          class="btn btn-lg fw-bold px-5 py-2"
-          style="background: #ff5e01; color: #fff; border: none"
-        >
-          View plans &amp; upgrade
-        </a>
-        <a
-          href="{% url 'login' %}"
-          class="btn btn-outline-secondary btn-lg px-4 py-2"
-        >
-          Sign in to a different account
-        </a>
-      </div>
+    {% if church %}
+    <p class="text-secondary mb-4">
+      <strong class="text-light">{{ church.name }}</strong> does not have an active
+      subscription record.<br>Contact support or choose a routing option to continue.
+    </p>
+    {% else %}
+    <p class="text-secondary mb-4">
+      This organisation does not have an active subscription record.
+    </p>
+    {% endif %}
 
-      <div class="card bg-dark border-secondary mt-5 text-start">
-        <div class="card-body p-4">
-          <h6 class="fw-bold mb-3">What happens to my data?</h6>
-          <ul class="text-secondary mb-0 small">
-            <li class="mb-2">
-              All your guests, members, and records are safely stored.
-            </li>
-            <li class="mb-2">Upgrade at any time to regain full access.</li>
-            <li>
-              Data is retained for 30 days after trial expiry before permanent
-              removal.
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <p class="text-secondary small mt-4">
-        Questions? Contact us at
-        <a href="mailto:support@churchforce.io" class="text-light"
-          >support@churchforce.io</a
-        >
-      </p>
+    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+      <a href="{% url 'billing:pricing' %}" class="btn btn-lg fw-bold px-5 py-2"
+        style="background:#ff5e01;box-shadow:0 2px 5px #000000f3;border-radius:24px;">
+        Routing Options
+      </a>
+      <a href="{% url 'accounts:login' %}" class="btn bg-grey btn-lg px-4 py-2"
+        style="box-shadow:0 2px 5px #000000f3;border-radius:24px;">
+        Login to another Account
+      </a>
     </div>
+
+    <p class="text-secondary small mt-4">
+      Need help?
+      <a href="mailto:support@churchforce.io" class="text-light">Contact Support</a>
+    </p>
   </div>
 </div>
+
 {% endblock %}

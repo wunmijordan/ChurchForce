@@ -4,7 +4,7 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}{{ current_room.name|default:"Chat" }} — ChurchForce{% endblock %}
+{% block title %}{{ current_room.name|default:"Chat" }} — {% if church %}{{ church.name }} {% else %} ChurchForce {% endif %}{% endblock %}
 
 {% block content %}
 
@@ -49,7 +49,7 @@
       {# Mobile collapse: sidebar nav items #}
       <div class="navbar-collapse collapse" data-bs-auto-close="outside" id="navbar-menu" style="max-height:50vh;overflow-y:auto;">
         <ul class="navbar-nav">
-          {% if permissions|can:"dashboard.admin" %}
+          {% if can_admin_dashboard %}
           <li class="nav-item mt-2">
             <a class="nav-link text-white" href="{% url 'dashboard:admin_dashboard' %}">
               <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -74,7 +74,7 @@
             </a>
           </li>
           {% endif %}
-          {% if permissions|can:"guests.view" %}
+          {% if can_view_guests %}
           <li class="nav-item">
             <a class="nav-link text-white" href="{% url 'guests:guest_list' %}">
               <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -92,67 +92,66 @@
           <li class="nav-item">
             <a class="nav-link text-white fs-4" href="#" id="chatroomsToggle">
               <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f703d7ff" stroke-width="2">
+                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#f703d7ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-armchair">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                  <path d="M5 11a2 2 0 0 1 2 2v2h10v-2a2 2 0 1 1 4 0v4a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2z"/>
-                  <path d="M5 11v-5a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v5"/>
-                  <path d="M6 19v2"/><path d="M18 19v2"/>
+                  <path d="M5 11a2 2 0 0 1 2 2v2h10v-2a2 2 0 1 1 4 0v4a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-4a2 2 0 0 1 2 -2z" />
+                  <path d="M5 11v-5a3 3 0 0 1 3 -3h8a3 3 0 0 1 3 3v5" />
+                  <path d="M6 19v2" /><path d="M18 19v2" />
                 </svg>
               </span>
-              <span class="nav-link-title">Rooms</span>
+              <span class="nav-link-title"> My ChatRooms </span>
+              <span id="total-unread-chatrooms"
+                    class="badge bg-gray-lt text-warning rounded-pill"
+                    style="margin-left:8px; font-size:0.7rem; min-width:20px; height:20px; display:none; align-items:center; justify-content:center;">
+              </span>
             </a>
-          </li>
-          <li class="nav-item" id="chatroomsContainer" style="display:none;">
-            <div id="teamSelector" class="team-selector d-flex flex-column mb-3">
-              {% for room in rooms %}
-              <button class="team-btn text-white border-0 py-2 px-3 text-center w-100 {{ room.color_class }} position-relative"
-                      data-team-id="{{ room.id }}" data-room-id="{{ room.id }}"
-                      data-team-color-class="{{ room.color_class }}" data-team-name="{{ room.name }}">
-                <span class="team-badge position-absolute text-warning badge rounded-pill bg-gray"
-                      style="display:none;font-size:.75rem;padding:2px 6px;top:50%;right:6px;"
-                      data-team-badge="{{ room.id }}"></span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                     class="team-icon team-icon-inactive" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 12v.01"/>
-                  <path d="M3 21h18"/><path d="M5 21v-16a2 2 0 0 1 2-2h6m4 10.5v7.5"/><path d="M21 7h-7m3-3l-3 3l3 3"/>
-                </svg>
-                {{ room.name }}
-              </button>
-              {% endfor %}
-            </div>
+            <div id="chatroomsContainer" class="chatrooms-collapsible" style="display:none; background: #1F2937 !important; border: none; width: 100%;">
 
-            {# Per-room user sidebar #}
-            <div id="teamUsersContainer">
-              {% for room in rooms %}
-              <div id="team-users-{{ room.id }}" class="team-users d-none">
-                {% for u in room.enriched_users %}
-                <div class="card shadow-sm border-0 mb-2 user-card" data-user-id="{{ u.id }}" data-member-id="{{ u.member_id }}" data-online="{{ u.is_online }}">
-                  <div class="card-body py-2 px-3 d-flex align-items-center">
-                    <div class="me-3 position-relative">
-                      {# Avatar — clicking opens private chat #}
-                      <a href="tel:{{ u.phone_number }}" class="private-chat-trigger"
-                         data-member-id="{{ u.member_id }}" data-name="{{ u.full_name|escapejs }}"
-                         data-room-id="{{ room.id }}" title="Private chat with {{ u.full_name }}">
-                        {% if u.image %}
-                        <span class="avatar rounded" style="background-image:url('{{ u.image }}');width:40px;height:40px;background-size:cover;"></span>
-                        {% else %}
-                        <span class="avatar d-flex align-items-center justify-content-center rounded text-white fw-bold" style="width:40px;height:40px;font-size:.9rem;">{{ u.initials }}</span>
-                        {% endif %}
-                      </a>
-                      {% if u.is_online %}
-                      <span class="position-absolute top-0 end-0 rounded-circle" style="width:10px;height:10px;background:#22c55e;border:1px solid #111;"></span>
-                      {% endif %}
-                    </div>
-                    <div class="flex-grow-1">
-                      <div class="fw-bold text-truncate" style="color:var(--tblr-{{ u.color_class }});">
-                        {{ u.title|default:"" }} {{ u.full_name }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div id="unitSelector" class="unit-selector d-flex flex-column mb-3 px-2">
+                {% for room in rooms %}
+                  <button class="unit-btn text-white border-0 py-2 px-3 text-center w-100 {{ room.color_class }} position-relative"
+                          data-room-id="{{ room.id }}"
+                          data-unit-color-class="{{ room.color_class }}"
+                          data-unit-name="{{ room.name }}"
+                          data-room-name="{{ room.name }}">
+
+                    <!-- Unread badge -->
+                    <span class="unit-badge position-absolute text-warning badge rounded-pill bg-gray"
+                          style="display:none; font-size: 0.75rem; padding: 2px 6px;
+                                  top: -5px; right: 0;"
+                          data-unit-badge="{{ room.id }}">
+                    </span>
+
+                    <!-- Inactive icon -->
+                    <svg class="unit-icon unit-icon-inactive btn-animate-icon" style="position:absolute; left:8px; top:50%; transform:translateY(-50%);"
+                        xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M13 12v.01" />
+                      <path d="M3 21h18" />
+                      <path d="M5 21v-16a2 2 0 0 1 2 -2h6m4 10.5v7.5" />
+                      <path d="M21 7h-7m3 -3l-3 3l3 3" />
+                    </svg>
+
+                    {{ room.name }}
+
+                    <!-- Active icon -->
+                    <svg class="unit-icon unit-icon-active btn-animate-icon btn-animate-icon-move-start" style="position:absolute; right:8px; top:50%; transform:translateY(-50%);"
+                        xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M13 12v.01" />
+                      <path d="M3 21h18" />
+                      <path d="M5 21v-16a2 2 0 0 1 2 -2h7.5m2.5 10.5v7.5" />
+                      <path d="M14 7h7m-3 -3l3 3l-3 3" />
+                    </svg>
+
+                  </button>
                 {% endfor %}
               </div>
-              {% endfor %}
+
             </div>
           </li>
         </ul>
@@ -161,293 +160,335 @@
   </header>
 
   {# ─────────────── MAIN LAYOUT ─────────────── #}
-  <div class="content-wrapper d-flex flex-row flex-fill" style="overflow:hidden;">
+  <div class="page-body" style="flex:1 1 auto; display:flex; overflow:hidden;">
+    <div class="container-xl d-flex flex-fill border-0 p-0" style="flex:1 1 auto; display:flex; flex-direction:column; overflow:hidden;">
+      <div class="card chat-card flex-fill" style="height:100%; overflow:hidden;">
+        <div class="row g-0 flex-fill" style="height:100%;">
 
-    {# LEFT SIDEBAR (desktop) #}
-    <div class="chat-sidebar d-none d-lg-flex flex-column" style="width:280px;min-width:220px;border-right:1px solid #1f2937;overflow-y:auto;">
-      <div class="p-3">
-        {# Dashboard + Guests links #}
-        {% if permissions|can:"dashboard.admin" %}
-        <a class="btn btn-sm btn-outline-secondary w-100 mb-2 text-start" href="{% url 'dashboard:admin_dashboard' %}">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-2">
-            <path d="M5 12l-2 0l9-9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/><path d="M9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6"/>
-          </svg>
-          Dashboard
-        </a>
-        {% else %}
-        <a class="btn btn-sm btn-outline-secondary w-100 mb-2 text-start" href="{% url 'dashboard:dashboard' %}">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-2">
-            <path d="M5 12l-2 0l9-9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/><path d="M9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6"/>
-          </svg>
-          Dashboard
-        </a>
-        {% endif %}
-        {% if permissions|can:"guests.view" %}
-        <a class="btn btn-sm btn-outline-secondary w-100 mb-3 text-start" href="{% url 'guests:guest_list' %}">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff5e01" stroke-width="2" class="me-2">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/>
-            <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-          </svg>
-          Guests
-        </a>
-        {% endif %}
-
-        <div class="small text-muted text-uppercase fw-bold mb-2 px-1">Rooms</div>
-        <div id="teamSelector" class="team-selector d-flex flex-column gap-1">
-          {% for room in rooms %}
-          <button class="team-btn text-white border-0 py-2 px-3 text-start w-100 rounded {{ room.color_class }} position-relative"
-                  data-team-id="{{ room.id }}" data-room-id="{{ room.id }}"
-                  data-team-name="{{ room.name }}" data-team-color-class="{{ room.color_class }}">
-            <span class="team-badge position-absolute text-warning badge rounded-pill bg-gray"
-                  style="display:none;font-size:.75rem;padding:2px 6px;top:50%;right:6px;"
-                  data-team-badge="{{ room.id }}"></span>
-            {{ room.name }}
-          </button>
-          {% endfor %}
-        </div>
-
-        <hr class="my-3">
-        <div class="small text-muted text-uppercase fw-bold mb-2 px-1">Members</div>
-        <div id="teamUsersContainer">
-          {% for room in rooms %}
-          <div id="team-users-{{ room.id }}" class="team-users d-none">
-            {% for u in room.enriched_users %}
-            <div class="card shadow-sm border-0 mb-1 user-card" data-user-id="{{ u.id }}" data-member-id="{{ u.member_id }}" data-online="{{ u.is_online }}">
-              <div class="card-body py-2 px-2 d-flex align-items-center gap-2">
-                {# Clicking the avatar triggers private chat #}
-                <a href="#" class="private-chat-trigger flex-shrink-0 position-relative"
-                   data-member-id="{{ u.member_id }}" data-name="{{ u.full_name|escapejs }}"
-                   data-room-id="{{ room.id }}" title="Start private chat with {{ u.full_name }}">
-                  {% if u.image %}
-                  <span class="avatar rounded" style="background-image:url('{{ u.image }}');width:36px;height:36px;background-size:cover;"></span>
-                  {% else %}
-                  <span class="avatar d-flex align-items-center justify-content-center rounded text-white fw-bold" style="width:36px;height:36px;font-size:.8rem;">{{ u.initials }}</span>
-                  {% endif %}
-                  {% if u.is_online %}
-                  <span class="position-absolute top-0 end-0 rounded-circle" style="width:8px;height:8px;background:#22c55e;border:1px solid #111;"></span>
-                  {% endif %}
+          <!-- DESKTOP LEFT COLUMN -->
+          <div class="d-none d-lg-flex col-12 col-lg-5 col-xl-3 border-end flex-column" style="display:flex; flex-direction:column; height:100%;">
+            <div class="card-header my-2 p-2 justify-content-center align-items-center border-0 sticky-top">
+              <!-- Back button (desktop only) -->
+              <a class="link-secondary p-0 ms-2 me-auto d-flex chat-back-btn animate-icon-move-start" style="color:white;">
+                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#ff5e01ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-chevrons-left">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M11 7l-5 5l5 5" /><path d="M17 7l-5 5l5 5" />
+                </svg>
+              </a>
+              <!-- Avatar -->
+              <span class="d-flex me-2 gap-2 align-items-center justify-content-center" style="width:40px; height:40px;">
+                {# Dashboard + Guests links #}
+                {% if can_admin_dashboard %}
+                <a class="nav-link text-white animate-icon-pulse" href="{% url 'dashboard:admin_dashboard' %}">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0066ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                      <path d="M5 12l-2 0l9 -9l9 9l-2 0"></path>
+                      <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"></path>
+                      <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"></path>
+                    </svg>
+                  </span>
                 </a>
-                <div class="small text-truncate" style="color:var(--tblr-{{ u.color_class }},#ccc);">
-                  {{ u.title|default:"" }} {{ u.full_name }}
+                {% else %}
+                <a class="nav-link text-white" href="{% url 'dashboard:dashboard' %}">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0066ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                      <path d="M5 12l-2 0l9 -9l9 9l-2 0"></path>
+                      <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"></path>
+                      <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"></path>
+                    </svg>
+                  </span>
+                </a>
+                {% endif %}
+                {% if can_view_guests %}
+                <a class="nav-link text-white" href="{% url 'guests:guest_list' %}">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#ff5e01ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
+                    </svg>
+                  </span>
+                </a>
+                {% endif %}
+              </span>
+            </div>
+
+            <!-- Desktop User list -->
+            <div class="card-body p-0 mt-0 mb-3 scrollable flex-fill">
+              <div class="row g-2">
+
+                <!-- Team Buttons Switcher -->
+                <div id="unitSelector" class="unit-selector d-flex flex-column mb-3">
+                  {% for room in rooms %}
+                    <button class="unit-btn text-white border-0 py-2 px-3 text-center w-100 {{ room.color_class }} position-relative"
+                            data-room-id="{{ room.id }}"
+                            data-unit-color-class="{{ room.color_class }}"
+                            data-unit-name="{{ room.name }}"
+                            data-room-name="{{ room.name }}">
+
+                      <!-- Unread badge -->
+                      <span class="unit-badge position-absolute text-warning badge rounded-pill bg-gray"
+                            style="display:none; font-size: 0.75rem; padding: 2px 6px;
+                                    top: 50%; right: 30px; transform: translateY(-50%);"
+                            data-unit-badge="{{ room.id }}">
+                      </span>
+
+                      <!-- Inactive icon (visible when NOT active) -->
+                      <svg class="unit-icon unit-icon-inactive btn-animate-icon" style="position:absolute; left:8px; top:50%; transform:translateY(-50%);"
+                          xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                          viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M13 12v.01" />
+                        <path d="M3 21h18" />
+                        <path d="M5 21v-16a2 2 0 0 1 2 -2h6m4 10.5v7.5" />
+                        <path d="M21 7h-7m3 -3l-3 3l3 3" />
+                      </svg>
+
+                      {{ room.name }}
+
+                      <!-- Active icon (visible only when active) -->
+                      
+                      <svg class="unit-icon unit-icon-active btn-animate-icon btn-animate-icon-move-start" style="position:absolute; right:8px; top:50%; transform:translateY(-50%);"
+                          xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                          viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M13 12v.01" />
+                        <path d="M3 21h18" />
+                        <path d="M5 21v-16a2 2 0 0 1 2 -2h7.5m2.5 10.5v7.5" />
+                        <path d="M14 7h7m-3 -3l3 3l-3 3" />
+                      </svg>
+                    </button>
+                  {% endfor %}
                 </div>
               </div>
             </div>
-            {% endfor %}
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-
-    {# CHAT COLUMN #}
-    <div class="chat-column col d-flex flex-column" style="height:100%;overflow:hidden;">
-
-      {# Desktop right header #}
-      <div class="d-none d-lg-flex card-header justify-content-center border-0 position-relative align-items-center">
-        <div class="input-icon position-absolute start-50 translate-middle-x">
-          <input type="text" class="form-control text-center rounded-4 border-0 chat-search" placeholder="Search Chat"
-                 style="background:#111827;box-shadow:0 4px 8px #000000d2;height:48px;padding:0 20px;width:250px;">
-        </div>
-        <div class="navbar-nav flex-row ms-auto">
-          {% include "workforce/partials/_notif_dropdown.html" %}
-          {% include "workforce/partials/_user_menu_dropdown.html" %}
-        </div>
-      </div>
-
-      {# Desktop mobile card-header (back + home icon) #}
-      <div class="card-header my-2 p-2 justify-content-center align-items-center border-0 sticky-top d-lg-none">
-        <a class="link-secondary p-0 ms-2 me-auto d-flex chat-back-btn" style="color:white;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff5e01ff" stroke-width="2">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M11 7l-5 5l5 5"/><path d="M17 7l-5 5l5 5"/>
-          </svg>
-        </a>
-        {% if permissions|can:"dashboard.admin" %}
-        <a class="nav-link text-white animate-icon-pulse" href="{% url 'dashboard:admin_dashboard' %}">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0066ffff" stroke-width="2">
-            <path d="M5 12l-2 0l9-9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>
-            <path d="M9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6"/>
-          </svg>
-        </a>
-        {% else %}
-        <a class="nav-link text-white animate-icon-pulse" href="{% url 'dashboard:dashboard' %}">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0066ffff" stroke-width="2">
-            <path d="M5 12l-2 0l9-9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>
-            <path d="M9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6"/>
-          </svg>
-        </a>
-        {% endif %}
-        {% if permissions|can:"guests.view" %}
-        <a class="nav-link text-white ms-2" href="{% url 'guests:guest_list' %}">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff5e01ff" stroke-width="2">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-          </svg>
-        </a>
-        {% endif %}
-      </div>
-
-      {# Chat body #}
-      <div class="card-body mt-0 p-0 d-flex flex-column flex-fill" style="height:100%;overflow:hidden;">
-
-        {# User strip #}
-        <div id="activeUserListWrapper" class="team-user-strip">
-          <div id="activeUserList" class="team-user-strip-inner" aria-hidden="false">
-            {# JS populates avatar nodes here — each has data-member-id for private chat #}
-          </div>
-        </div>
-
-        {# Pinned preview #}
-        <div id="pinnedPreview" class="pinned-preview"></div>
-
-        {# Messages #}
-        <div class="chat-bubbles text-start ps-1 pe-1 pb-1 flex-grow-1" id="chatMessagesContainer" style="overflow-y:auto;position:relative;overflow-x:hidden;">
-          {# Messages loaded dynamically by JS #}
-        </div>
-
-        <!-- Options panel: Reply · Edit · Copy · Forward · Pin · Delete
-           Edit/Delete show only when a single message owned by CURRENT_USER is selected.
-           Forward and Copy work on any selection. -->
-        <div id="chatOptionsPanel" class="options-panel hidden" aria-hidden="true">
-
-          {# Reply #}
-          <button id="replyBtn" title="Reply">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#f59f00" viewBox="0 0 16 16">
-              <path d="M8.021 11.9 3.453 8.62a.72.72 0 0 1 0-1.238L8.021 4.1a.716.716 0 0 1 1.079.619V6c1.5 0 6 0 7 8-2.5-4.5-7-4-7-4v1.281c0 .56-.606.898-1.079.62z"/>
-              <path d="M5.232 4.293a.5.5 0 0 1-.106.7L1.114 7.945l-.042.028a.147.147 0 0 0 0 .252l.042.028 4.012 2.954a.5.5 0 1 1-.593.805L.539 9.073a1.147 1.147 0 0 1 0-1.946l3.994-2.94a.5.5 0 0 1 .699.106"/>
-            </svg>
-          </button>
-
-          {# Edit — only active when exactly one message selected and sender is current user #}
-          <button id="editBtn" title="Edit message"
-                  class="options-btn-owner-only"
-                  style="display:none;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4dabf7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M7 7h-1a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-1"/>
-              <path d="M20.385 6.585a2.1 2.1 0 0 0-2.97-2.97l-8.415 8.385v3h3l8.385-8.415z"/>
-              <path d="M16 5l3 3"/>
-            </svg>
-          </button>
-
-          {# Copy #}
-          <button id="copyBtn" title="Copy text">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#02bd12ff">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M18.333 6a3.667 3.667 0 0 1 3.667 3.667v8.666a3.667 3.667 0 0 1-3.667 3.667h-8.666a3.667 3.667 0 0 1-3.667-3.667v-8.666a3.667 3.667 0 0 1 3.667-3.667zm-3.333-4c1.094 0 1.828.533 2.374 1.514a1 1 0 1 1-1.748.972c-.221-.398-.342-.486-.626-.486h-10c-.548 0-1 .452-1 1v9.998c0 .32.154.618.407.805l.1.065a1 1 0 1 1-.99 1.738a3 3 0 0 1-1.517-2.606v-10c0-1.652 1.348-3 3-3zm1.293 9.293l-3.293 3.292l-1.293-1.292a1 1 0 0 0-1.414 1.414l2 2a1 1 0 0 0 1.414 0l4-4a1 1 0 0 0-1.414-1.414"/>
-            </svg>
-          </button>
-
-          {# Forward #}
-          <button id="forwardBtn" title="Forward to another room">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#748ffc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M15 10h4a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-4"/>
-              <path d="M9 6l6 6l-6 6"/>
-            </svg>
-          </button>
-
-          {# Pin #}
-          <button id="pinBtn" title="Pin message">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#f703d7ff" viewBox="0 0 16 16">
-              <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a6 6 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707s.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a6 6 0 0 1 1.013.16l3.134-3.133a3 3 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146"/>
-            </svg>
-          </button>
-
-          {# Delete — only active for message owner #}
-          <button id="deleteBtn" title="Delete message"
-                  class="options-btn-owner-only"
-                  style="display:none;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f03e3e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M4 7l16 0"/>
-              <path d="M10 11l0 6"/><path d="M14 11l0 6"/>
-              <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/>
-              <path d="M9 7v-3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
-            </svg>
-          </button>
-
-        </div>
-
-        {# Sticky date header #}
-        <div id="stickyDateHeader"></div>
-
-        {# Scroll-to-bottom #}
-        <div id="scrollToBottomBtn" class="scroll-to-bottom hidden" title="Scroll to bottom">
-          <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7l5 5l5-5"/><path d="M7 13l5 5l5-5"/>
-          </svg>
-        </div>
-      </div>
-
-      {# Typing indicator #}
-      <span class="team-typing position-absolute bottom-0 start-50 translate-middle-x text-xs text-muted" style="display:none;"></span>
-
-      {# Message input — all authenticated members can type #}
-      <div class="card-footer border-0">
-        <div class="input-group input-group-flat border-0 d-flex flex-column p-2"
-             style="box-shadow:0 4px 8px #000000d2;border-radius:1rem;background:#0c1420;">
-
-          {# Reply preview #}
-          <div id="replyPreview" class="d-none d-flex reply-preview text-white p-2 mb-1 justify-content-between align-items-center"
-               style="border-radius:6px;border-left:4px solid #018f14ff;background:#111827;box-shadow:0 4px 8px #0000004d;">
-            <span id="replyPreviewText"></span>
-            <span id="cancelReply" class="p-0 border-0 d-flex align-items-center justify-content-center" style="cursor:pointer;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,0,0,1)" stroke-width="2">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12"/><path d="M6 6l12 12"/>
-              </svg>
-            </span>
           </div>
 
-          {# Guest preview #}
-          <div id="guestPreviewContainer"></div>
 
-          {# Input row #}
-          <div class="d-flex align-items-end justify-content-center w-100">
-            {# Guest attach (shown only to members with guest.view perm via JS) #}
-            <div class="guest-controls" style="display:none;">
-              <a href="#" class="link-secondary dropdown p-2 text-purple d-flex align-items-center justify-content-center" id="openUserGuestPopup" style="flex:0 0 auto;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                  <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/><path d="M6 21v-2a4 4 0 0 1 4-4h4"/>
-                  <path d="M19 22v-6"/><path d="M22 19l-3-3l-3 3"/>
-                </svg>
-              </a>
+          {# CHAT COLUMN #}
+          <div class="chat-column col d-flex flex-column" style="height:100%;overflow:hidden;">
+
+            {# Desktop right header #}
+            <div class="d-none d-lg-flex card-header justify-content-center border-0 position-relative align-items-center">
+              <div class="input-icon position-absolute start-50 translate-middle-x">
+                <input type="text" class="form-control text-center rounded-4 border-0 chat-search" placeholder="Search Chat"
+                      style="background:#111827;box-shadow:0 4px 8px #000000d2;height:48px;padding:0 20px;width:250px;">
+              </div>
+              <div class="navbar-nav flex-row ms-auto">
+                {% include "workforce/partials/_notif_dropdown.html" %}
+                {% include "workforce/partials/_user_menu_dropdown.html" %}
+              </div>
             </div>
 
-            {# File attach #}
-            <input type="file" id="fileInput" class="d-none">
-            <a href="#" id="attachFileBtn" class="link-secondary text-teal p-2 d-flex align-items-center justify-content-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <path d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5-6.5a3 3 0 0 0-6-6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5-6.5"/>
-              </svg>
-            </a>
+            
 
-            {# Text input #}
-            <textarea class="form-control border-0 flex-grow-1" id="chatInput" placeholder="Type message…" rows="1"
-                      style="resize:none;overflow:hidden;background:transparent;"></textarea>
+            {# Chat body #}
+            <div class="card-body mt-0 p-0 d-flex flex-column flex-fill" style="height:100%;overflow:hidden;">
 
-            {# Send #}
-            <a href="#" id="sendButton" class="link-secondary p-2 text-green d-flex align-items-center justify-content-center" style="flex:0 0 auto;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.55.55 0 0 1-1 0l-3.5-7l-7-3.5a.55.55 0 0 1 0-1l18-6.5"/>
-              </svg>
-            </a>
-          </div>
+              {# Sub-room trigger — sticky top-right of chat container #}
+              <button id="subRoomTriggerBtn" title="Sub-Rooms">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-door">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M14 12v.01" />
+                  <path d="M3 21h18" />
+                  <path d="M6 21v-16a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v16" />
+                </svg>
+              </button>
 
-          {# File preview #}
-          <div id="filePreviewContainer" class="d-none mt-2">
-            <div id="filePreviewContent" class="d-flex align-items-center gap-2"></div>
-            <button id="cancelFilePreview" class="btn btn-sm btn-outline-danger mt-1">Remove</button>
+              <div id="chatOverlay" style="
+                position:absolute; top:0; left:0; right:0; bottom:0;
+                pointer-events:none; z-index:60; overflow:hidden;">
+
+                {# User strip — initially hidden, toggles when banner is clicked. FIRST so it sits at top:0 and pushes banner+pinned down via JS #}
+                <div id="activeUserListWrapper" class="unit-user-strip">
+                  <div id="activeUserList" class="unit-user-strip-inner" aria-hidden="false">
+                    {# JS populates avatar nodes here #}
+                  </div>
+                </div>
+
+                {# banner and pinnedPreview are moved here by JS #}
+              </div>
+
+              {# Pinned preview — sticky below banner (and below strip when visible) #}
+              <div id="pinnedPreview" class="pinned-preview"></div>
+
+              {# Messages scroll container — banner + pinned are sticky inside it #}
+              <div class="chat-bubbles text-start ps-1 pe-1 pb-1 flex-grow-1" id="chatMessagesContainer" style="overflow-y:auto;position:relative;overflow-x:hidden;">
+                {# Messages loaded dynamically by JS #}
+              </div>
+
+              <!-- Options panel: Reply · Edit · Copy · Forward · Pin · Delete
+                Edit/Delete show only when a single message owned by CURRENT_USER is selected.
+                Forward and Copy work on any selection. -->
+              <div id="chatOptionsPanel" class="options-panel hidden" aria-hidden="true">
+
+                {# Reply #}
+                <button id="replyBtn" title="Reply">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#f59f00" viewBox="0 0 16 16">
+                    <path d="M8.021 11.9 3.453 8.62a.72.72 0 0 1 0-1.238L8.021 4.1a.716.716 0 0 1 1.079.619V6c1.5 0 6 0 7 8-2.5-4.5-7-4-7-4v1.281c0 .56-.606.898-1.079.62z"/>
+                    <path d="M5.232 4.293a.5.5 0 0 1-.106.7L1.114 7.945l-.042.028a.147.147 0 0 0 0 .252l.042.028 4.012 2.954a.5.5 0 1 1-.593.805L.539 9.073a1.147 1.147 0 0 1 0-1.946l3.994-2.94a.5.5 0 0 1 .699.106"/>
+                  </svg>
+                </button>
+
+                {# Edit — only active when exactly one message selected and sender is current user #}
+                <button id="editBtn" title="Edit message"
+                        class="options-btn-owner-only"
+                        style="display:none;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4dabf7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M7 7h-1a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-1"/>
+                    <path d="M20.385 6.585a2.1 2.1 0 0 0-2.97-2.97l-8.415 8.385v3h3l8.385-8.415z"/>
+                    <path d="M16 5l3 3"/>
+                  </svg>
+                </button>
+
+                {# Copy #}
+                <button id="copyBtn" title="Copy text">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#02bd12ff">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M18.333 6a3.667 3.667 0 0 1 3.667 3.667v8.666a3.667 3.667 0 0 1-3.667 3.667h-8.666a3.667 3.667 0 0 1-3.667-3.667v-8.666a3.667 3.667 0 0 1 3.667-3.667zm-3.333-4c1.094 0 1.828.533 2.374 1.514a1 1 0 1 1-1.748.972c-.221-.398-.342-.486-.626-.486h-10c-.548 0-1 .452-1 1v9.998c0 .32.154.618.407.805l.1.065a1 1 0 1 1-.99 1.738a3 3 0 0 1-1.517-2.606v-10c0-1.652 1.348-3 3-3zm1.293 9.293l-3.293 3.292l-1.293-1.292a1 1 0 0 0-1.414 1.414l2 2a1 1 0 0 0 1.414 0l4-4a1 1 0 0 0-1.414-1.414"/>
+                  </svg>
+                </button>
+
+                {# Forward #}
+                <button id="forwardBtn" title="Forward to another room">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke=" #ffe600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-forward-up-double">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M11 14l4 -4l-4 -4" />
+                    <path d="M16 14l4 -4l-4 -4" /><path d="M15 10h-7a4 4 0 1 0 0 8h1" />
+                  </svg>
+                </button>
+
+                {# React (emoji picker — same set as dashboard feed) #}
+                <button type="button" id="chatReactPickerBtn" title="React">
+                  <span style="font-size:1.1rem;line-height:1;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke=" #ff4800" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-mood-spark">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M21 12a9 9 0 1 0 -8.994 9" />
+                      <path d="M9 10h.01" />
+                      <path d="M15 10h.01" />
+                      <path d="M9.5 15a3.5 3.5 0 0 0 5 0" />
+                      <path d="M19 22.5a4.75 4.75 0 0 1 3.5 -3.5a4.75 4.75 0 0 1 -3.5 -3.5a4.75 4.75 0 0 1 -3.5 3.5a4.75 4.75 0 0 1 3.5 3.5" />
+                    </svg>
+                  </span>
+                </button>
+
+                {# Pin #}
+                <button id="pinBtn" title="Pin message">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#f703d7ff" viewBox="0 0 16 16">
+                    <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a6 6 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707s.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a6 6 0 0 1 1.013.16l3.134-3.133a3 3 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146"/>
+                  </svg>
+                </button>
+
+                {# Delete — only active for message owner #}
+                <button id="deleteBtn" title="Delete message"
+                        class="options-btn-owner-only"
+                        style="display:none;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f03e3e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M4 7l16 0"/>
+                    <path d="M10 11l0 6"/><path d="M14 11l0 6"/>
+                    <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/>
+                    <path d="M9 7v-3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+                  </svg>
+                </button>
+              </div>
+
+              {# Sticky date header #}
+              <div id="stickyDateHeader"></div>
+
+              {# Scroll-to-bottom #}
+              <div id="scrollToBottomBtn" class="scroll-to-bottom hidden" title="Scroll to bottom">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7l5 5l5-5"/><path d="M7 13l5 5l5-5"/>
+                </svg>
+              </div>
+            </div>
+
+            {# Typing indicator is injected by JS into #chatMessagesContainer as a bubble row #}
+
+            {# No-send notice for members without unit membership #}
+            <!--{% if not user_can_send %}
+            <div id="cannotSendNotice" class="text-center py-2 px-3" style="background:#0c1420;font-size:.75rem;color:#94a3b8;border-top:1px solid #1f2937;">
+              {% if user_is_trainee_only %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2" style="vertical-align:middle;margin-right:4px;"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 9h.01"/><path d="M11 12h1v4h1"/><path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9-9 9s-9-1.8-9-9s1.8-9 9-9z"/></svg>
+                Trainees can read but not send messages here.
+              {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2" style="vertical-align:middle;margin-right:4px;"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 9h.01"/><path d="M11 12h1v4h1"/><path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9-9 9s-9-1.8-9-9s1.8-9 9-9z"/></svg>
+                You must be assigned to a unit to send messages.
+              {% endif %}
+            </div>
+            {% endif %}-->
+
+            {# Message input — visible to members with send permission #}
+            <div class="card-footer border-0" id="chatInputFooter">
+              <div class="input-group input-group-flat border-0 d-flex flex-column p-2"
+                  style="box-shadow:0 4px 8px #000000d2;border-radius:1rem;background:#0c1420;">
+
+                {# Reply preview #}
+                <div id="replyPreview" class="d-none d-flex reply-preview text-white p-2 mb-1 justify-content-between align-items-center"
+                    style="border-radius:6px;border-left:4px solid var(--reply-accent, #475569);background:#111827;box-shadow:0 4px 8px #0000004d;padding: 0.5rem;margin-bottom: 0.5rem;position: relative;">
+                  <span id="replyPreviewText"></span>
+                  <span id="cancelReply" class="p-0 border-0 d-flex align-items-center justify-content-center" style="cursor:pointer;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,0,0,1)" stroke-width="2">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12"/><path d="M6 6l12 12"/>
+                    </svg>
+                  </span>
+                </div>
+
+                {# Guest preview #}
+                <div id="guestPreviewContainer"></div>
+
+                {# Input row #}
+                <div class="d-flex align-items-end justify-content-center w-100">
+                  {# Guest attach (shown only to members with guest.view perm via JS) #}
+                  <div class="guest-controls" style="display:none;">
+                    <a href="#" class="link-secondary dropdown p-2 text-purple d-flex align-items-center justify-content-center" id="openUserGuestPopup" style="flex:0 0 auto;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/><path d="M6 21v-2a4 4 0 0 1 4-4h4"/>
+                        <path d="M19 22v-6"/><path d="M22 19l-3-3l-3 3"/>
+                      </svg>
+                    </a>
+                  </div>
+
+                  {# File attach #}
+                  <input type="file" id="fileInput" class="d-none">
+                  <a href="#" id="attachFileBtn" class="link-secondary text-teal p-2 d-flex align-items-center justify-content-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5-6.5a3 3 0 0 0-6-6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5-6.5"/>
+                    </svg>
+                  </a>
+
+                  {# Text input #}
+                  <textarea class="form-control border-0 flex-grow-1" id="chatInput" placeholder="Type message…" rows="1"
+                            style="resize:none;overflow:hidden;background:transparent;"></textarea>
+
+                  {# Send #}
+                  <a href="#" id="sendButton" class="link-secondary p-2 text-green d-flex align-items-center justify-content-center" style="flex:0 0 auto;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.55.55 0 0 1-1 0l-3.5-7l-7-3.5a.55.55 0 0 1 0-1l18-6.5"/>
+                    </svg>
+                  </a>
+                </div>
+
+                {# File preview #}
+                <div id="filePreviewContainer" class="d-none mt-2">
+                  <div id="filePreviewContent" class="d-flex align-items-center gap-2"></div>
+                  <button id="cancelFilePreview" class="btn btn-sm btn-outline-danger mt-1">Remove</button>
+                </div>
+              </div>
+
+              {# Mention dropdown #}
+              <div id="mentionDropdown" class="mention-dropdown d-none"></div>
+            </div>
+
+            <div id="preview" class="preview"></div>
           </div>
         </div>
-
-        {# Mention dropdown #}
-        <div id="mentionDropdown" class="mention-dropdown d-none"></div>
       </div>
-
-      <div id="preview" class="preview"></div>
     </div>
   </div>
 </div>
@@ -474,15 +515,15 @@
    side-conversation directly. The WebSocket sends a private_request action
    to pair the two members' channels.
 ───────────────────────────────────────────────────────────────────────────── -->
-<div class="modal fade" id="privateChatModal" tabindex="-1" aria-hidden="true">
+<div class="modal modal-blur fade" id="privateChatModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
-    <div class="modal-content" style="border-radius:16px;background:#111827;border:1px solid #1f2937;">
-      <div class="modal-header border-0 pb-0">
+    <div class="modal-content">
+      <div class="modal-header pb-0">
         <div class="d-flex align-items-center gap-3">
           <span id="pcAvatarSlot"></span>
           <div>
             <h5 class="modal-title mb-0 fw-bold" id="pcName">Private Chat</h5>
-            <div class="text-secondary small" id="pcSubtitle">Direct message in this room</div>
+            <div class="small" id="pcSubtitle">Direct message in this room</div>
           </div>
         </div>
         <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal"></button>
@@ -492,8 +533,8 @@
           <div class="text-center text-muted small py-3">Start a private conversation…</div>
         </div>
       </div>
-      <div class="modal-footer border-0 pt-0 flex-column">
-        <div class="input-group input-group-flat w-100" style="border-radius:12px;background:#0c1420;padding:8px;">
+      <div class="modal-footer border-0 pt-0 flex-column bg-gray-900" style="border-radius:0 0 36px 36px;">
+        <div class="input-group input-group-flat w-100" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:1rem;background:#0c1420;"">
           <textarea id="pcInput" class="form-control border-0" rows="1" placeholder="Type a private message…"
                     style="resize:none;background:transparent;overflow:hidden;"
                     oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';"></textarea>
@@ -513,6 +554,75 @@
 {% endblock %}
 
 {% block extra_js %}
+{# Scoped URL bases — MUST be inside a block so Django renders them #}
+<span id="chatUrlSubRoom" style="display:none;" data-url="{% url 'workforce:create_sub_room' %}"></span>
+<span id="chatUrlUpload"  style="display:none;" data-url="{% url 'workforce:upload_file' %}"></span>
+<script>
+  // Derive the workforce base URL from the actual browser path (request.path).
+  // This always includes the church slug on root-domain trial routing
+  // (e.g. /my-church/workforce/) and is simply /workforce/ on subdomain routing.
+  // We split on "workforce/" and keep everything up to and including it.
+  (function () {
+    var p = "{{ request.path|escapejs }}";
+    var idx = p.indexOf("workforce/");
+    window.WORKFORCE_BASE = idx !== -1 ? p.slice(0, idx + "workforce/".length) : "/workforce/";
+  })();
+  // Reliable CSRF token from template — used as primary source over document.cookie
+  window.CF_CSRF = "{{ csrf_token }}";
+</script>
+
+{# Church brand color injected as CSS variable for edited-tag and other themed elements #}
+<style>
+  :root {
+    --church-primary: {{ church.primary_color|default:'#748ffc' }};
+    --church-primary-alpha22: {{ church.primary_color|default:'#748ffc' }}22;
+  }
+  /* edit-diff: subtle underline for words changed during edit — no colour distortion */
+  .edit-diff {
+    background: none !important;
+    color: inherit !important;
+    text-decoration: underline dotted var(--church-primary, #748ffc);
+    text-underline-offset: 3px;
+  }
+  /* edit compose textarea */
+  .edit-compose-wrap textarea {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid #374151 !important;
+    border-radius: 0 !important;
+    outline: none !important;
+    padding: 2px 0 !important;
+    color: #f1f5f9 !important;
+    font-size: inherit !important;
+  }
+  .edit-compose-wrap textarea:focus { border-bottom-color: var(--church-primary, #748ffc) !important; box-shadow: none !important; }
+</style>
+
+<script>
+// Apply chat background from church settings (replaces hardcoded CSS)
+(function applyChatBg() {
+  const bgUrl  = "{{ chat_bg_url|default:''|escapejs }}";
+  const bgType = "{{ chat_bg_type|default:'logo'|escapejs }}";
+  const container = document.getElementById("chatMessagesContainer");
+  if (!container) return;
+  if (bgType === "upload" && bgUrl) {
+    container.style.backgroundImage = `url('${bgUrl}')`;
+    container.style.backgroundSize  = "cover";
+    container.style.backgroundPosition = "center";
+    container.style.backgroundRepeat = "no-repeat";
+  } else if (bgType === "logo" && bgUrl) {
+    container.style.backgroundImage = `url('${bgUrl}')`;
+    container.style.backgroundSize  = "30%";
+    container.style.backgroundPosition = "center";
+    container.style.backgroundRepeat = "no-repeat";
+    container.style.backgroundAttachment = "local";
+    container.style.opacity_overlay = "0.07"; // applied via pseudo via data attr
+    container.dataset.bgLogo = "1";
+  } else {
+    container.style.backgroundImage = "none";
+  }
+})();
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/textarea-caret@3.1.0/index.min.js"></script>
 
@@ -528,6 +638,21 @@ const LAST_MESSAGES = JSON.parse('{{ last_messages_json|default:"[]"|escapejs }}
 
 const CURRENT_USER_ID = {{ current_user_id }};
 const CURRENT_ROOM_ID = {{ current_room.id|default:'null' }};
+const CHURCH_NAME = "{{ church.name|default:'ChurchForce'|escapejs }}";
+const CHURCH_SLOGAN = "{{ church.slogan|default:''|escapejs }}";
+const CHURCH_DATE_FORMAT = "{{ church_date_format|default:'%d %b %Y'|escapejs }}";
+const CHURCH_TIME_FORMAT = "{{ church_time_format|default:'%H:%M'|escapejs }}";
+const ALL_MEMBERS = JSON.parse('{{ all_members_json|default:"[]"|escapejs }}');
+// Chat settings — set from church settings "Chat" tab
+const CHAT_DEFAULT_TIER_MEMBERS = JSON.parse('{{ chat_default_tier_members_json|default:"[]"|escapejs }}');
+const CHAT_BG_URL  = "{{ chat_bg_url|default:''|escapejs }}";
+const CHAT_BG_TYPE = "{{ chat_bg_type|default:'logo'|escapejs }}"; // 'logo' | 'upload' | 'none'
+
+// Send / privilege permissions
+//const USER_CAN_SEND = {{ user_can_send|yesno:"true,false" }};
+const USER_IS_PRIVILEGED = {{ current_user_is_privileged|yesno:"true,false" }};
+const ROOM_SEND_PERMISSIONS = JSON.parse('{{ room_send_permissions_json|default:"{}"|escapejs }}');
+const ROOM_PRIVILEGED = JSON.parse('{{ room_privileged_json|default:"{}"|escapejs }}');
 
 // Safe capability resolution
 const CAN_VIEW_GUESTS =
@@ -557,8 +682,10 @@ function connectSocket(roomId) {
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  // Assign active socket globally
-  window.activeChatSocket = connectSocket(CURRENT_ROOM_ID);
+  // Assign active socket globally — chat_room.js creates and manages the real socket.
+  // We set activeChatSocket to null here; chat_room.js overwrites it after DOMContentLoaded.
+  // DO NOT open a second WebSocket here — it causes double delivery and send failures.
+  window.activeChatSocket = null;
 
 
   // ── Show guest controls if allowed ──────────────────────────
@@ -569,58 +696,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   // ───────────────── PRIVATE CHAT MODAL ──────────────────────
-
+  // chat_room.js owns the private-chat-trigger click delegation and the
+  // openPrivateChatModal function. The variables below are kept so the
+  // legacy pcSendBtn fallback above still works if somehow chat_room.js
+  // hasn't loaded yet.
   let pcRecipientMemberId = null;
   let pcRoomId = null;
 
+  // Intercept trigger clicks ONLY if chat_room.js hasn't handled them
+  // (chat_room.js registers its listener on DOMContentLoaded — same phase,
+  //  but it uses stopImmediatePropagation on pcSendBtn so there's no
+  //  double-fire there. For the trigger we rely on chat_room.js's own
+  //  document-level listener which runs first and calls openPrivateChatModal.)
+
   const modalEl = document.getElementById('privateChatModal');
-  const pcModal = modalEl ? new bootstrap.Modal(modalEl) : null;
+  const pcModal = modalEl ? (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, {backdrop:true,keyboard:true})) : null;
 
-
-  document.addEventListener('click', e => {
-    const trigger = e.target.closest('.private-chat-trigger');
-    if (!trigger || !pcModal) return;
-
-    e.preventDefault();
-
-    const memberId = trigger.dataset.memberId;
-    const name = trigger.dataset.name;
-    const roomId = trigger.dataset.roomId;
-    const imgEl = trigger.querySelector('.avatar');
-
-    if (String(memberId) === String(CURRENT_USER_ID)) return;
-
-    pcRecipientMemberId = memberId;
-    pcRoomId = roomId;
-
-    document.getElementById('pcName').textContent = name;
-    document.getElementById('pcSubtitle').textContent = `Private · same room`;
-
-    const slot = document.getElementById('pcAvatarSlot');
-    slot.innerHTML = imgEl
-      ? imgEl.outerHTML
-          .replace(/width:\d+px/, 'width:40px')
-          .replace(/height:\d+px/, 'height:40px')
-      : `<span class="avatar" style="width:40px;height:40px;">${name[0]}</span>`;
-
-    document.getElementById('pcMessages').innerHTML =
-      '<div class="text-center text-muted small py-3">Start a private conversation…</div>';
-
-    if (window.activeChatSocket?.readyState === WebSocket.OPEN) {
-      window.activeChatSocket.send(JSON.stringify({
-        action: 'private_request',
-        requester_sender_id: CURRENT_USER_ID,
-        recipient_member_id: memberId,
-      }));
-    }
-
-    pcModal.show();
+  // Ensure body/backdrop cleanup on hide (belt-and-suspenders alongside chat_room.js)
+  modalEl?.addEventListener('hidden.bs.modal', () => {
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('padding-right');
+    document.body.style.removeProperty('overflow');
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
   });
 
 
   // ── Send private message ───────────────────────────────────
-
+  // NOTE: chat_room.js owns the pcSendBtn handler (sets data-cr-handled="1").
+  // This block only fires if chat_room.js hasn't claimed it yet (shouldn't happen in normal flow).
   document.getElementById('pcSendBtn')?.addEventListener('click', e => {
+    // If chat_room.js already handled this button, bail out immediately
+    if (document.getElementById('pcSendBtn')?.dataset?.crHandled === '1') return;
     e.preventDefault();
 
     const input = document.getElementById('pcInput');
@@ -785,24 +891,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // ───────────────── Incoming private messages handler ─────────
-
+// chat_room.js owns all private message handling via handlePrivateIncoming().
+// This stub is kept only for any third-party code that may call window.handlePrivateMessage.
 function handlePrivateMessage(data) {
-
-  if (data.type !== 'private_message') return;
-
-  const msgs = document.getElementById('pcMessages');
-  if (!msgs) return;
-
-  const isMe = String(data.sender_id) === String(CURRENT_USER_ID);
-
-  const div = document.createElement('div');
-  div.className = isMe ? 'text-end' : 'text-start';
-
-  div.innerHTML =
-    `<span class="badge ${isMe ? 'bg-green-lt' : 'bg-warning-lt'} text-white px-3 py-2 rounded-3">${data.message}</span>`;
-
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
+  // Delegate to chat_room.js's handler if available
+  if (typeof window.handlePrivateMessage_cr === 'function') {
+    window.handlePrivateMessage_cr(data);
+  }
 }
 
 
@@ -811,6 +906,7 @@ window.CHAT_ROOMS = {{ rooms_json|default:'[]'|safe }};
 
 </script>
 
+<script src="{% static 'js/reactions.js' %}"></script>
 <script src="{% static 'js/chat_room.js' %}"></script>
 
 {% endblock %}

@@ -24,11 +24,15 @@ def _sender_membership(request, church):
     Resolve the request user's UnitMembership for use as the message sender.
     Returns the first active membership for this user in this church.
     """
-    return UnitMembership.raw_objects.filter(
-        church=church,
-        workforce_member__member__user=request.user,
-        is_active=True,
-    ).select_related("workforce_member__member__user").first()
+    return (
+        UnitMembership.raw_objects.filter(
+            church=church,
+            workforce_member__member__user=request.user,
+            is_active=True,
+        )
+        .select_related("workforce_member__member__user")
+        .first()
+    )
 
 
 @login_required
@@ -74,9 +78,12 @@ def send_bulk_message(request):
 
     # Dispatch SMS for each recipient that has a phone number
     from messaging.sms import send_sms
+
     sent = 0
     failed = 0
-    for guest in recipients_qs.exclude(phone_number="").exclude(phone_number__isnull=True):
+    for guest in recipients_qs.exclude(phone_number="").exclude(
+        phone_number__isnull=True
+    ):
         log = send_sms(
             phone=guest.phone_number,
             message=form.cleaned_data["body"],
@@ -97,13 +104,17 @@ def send_bulk_message(request):
     messages.success(
         request,
         f"Message dispatched — {sent} sent, {failed} failed."
-        + (" (SMS not configured — using stub provider)" if failed == 0 and sent == 0 else ""),
+        + (
+            " (SMS not configured — using stub provider)"
+            if failed == 0 and sent == 0
+            else ""
+        ),
     )
     return redirect("guests:guest_list")
 
 
 @login_required
-def send_guest_message(request, guest_id):
+def send_guest_message(request, uid):
     """
     Send an individual SMS to a single guest.
     Requires: messaging.send permission or guest assigned to the requester.
@@ -112,9 +123,7 @@ def send_guest_message(request, guest_id):
     if not church:
         return redirect("guests:guest_list")
 
-    guest = get_object_or_404(
-        GuestEntry.raw_objects.filter(church=church), id=guest_id
-    )
+    guest = get_object_or_404(GuestEntry.raw_objects.filter(church=church), uid=uid)
 
     # Permission: must have send permission OR be the assigned follow-up officer
     wf_member = getattr(request, "workforce_member", None)
@@ -132,7 +141,7 @@ def send_guest_message(request, guest_id):
     if request.method != "POST":
         return redirect("guests:guest_list")
 
-    body    = request.POST.get("body", "").strip()
+    body = request.POST.get("body", "").strip()
     subject = request.POST.get("subject", "").strip() or "No Subject"
 
     if not body:
@@ -153,6 +162,7 @@ def send_guest_message(request, guest_id):
     msg_obj.recipients.add(guest)
 
     from messaging.sms import send_sms
+
     send_sms(
         phone=guest.phone_number or "",
         message=body,
@@ -182,16 +192,14 @@ def get_guests_by_status(request):
         return JsonResponse({"error": "Unauthorised."}, status=403)
 
     status_ids = request.GET.getlist("status[]")
-    qs = GuestEntry.raw_objects.filter(
-        church=church, is_active=True, is_deleted=False
-    )
+    qs = GuestEntry.raw_objects.filter(church=church, is_active=True, is_deleted=False)
     if status_ids:
         qs = qs.filter(status_id__in=status_ids)
 
     guests = [
         {
-            "id":    g.id,
-            "name":  g.full_name,
+            "id": g.id,
+            "name": g.full_name,
             "phone": bool(g.phone_number),  # presence only — never expose phone to JS
         }
         for g in qs
@@ -215,7 +223,11 @@ def message_log(request):
 
     logs = MessageLog.raw_objects.filter(church=church).order_by("-created_at")[:200]
 
-    return render(request, "messaging/message_log.html", {
-        "logs":       logs,
-        "page_title": "Message Log",
-    })
+    return render(
+        request,
+        "messaging/message_log.html",
+        {
+            "logs": logs,
+            "page_title": "Message Log",
+        },
+    )

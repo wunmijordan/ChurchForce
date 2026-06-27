@@ -1,0 +1,100 @@
+{% extends "marketing/base_marketing.html" %}
+{% load static humanize %}
+{% block title %}Pricing{% endblock %}
+{% block meta_desc %}ChurchForce is free for every church. Choose path URL, subdomain, or custom domain routing.{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+  <div class="text-center mb-5">
+    <h1 class="fw-bold mb-2" style="font-size:2.5rem;">Free for Every Church</h1>
+    <p class="text-secondary lead">All features included. Pick how people reach you online.</p>
+  </div>
+
+  <div class="row g-4 justify-content-center">
+    {% for plan in plans %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card-plan h-100 p-4 {% if plan.highlight %}popular{% endif %}">
+        {% if plan.highlight %}
+        <div class="text-center mb-3">
+          <span class="badge px-3 py-1 rounded-pill" style="background:#ff5e0122;color:#ff5e01;border:1px solid #ff5e01;font-size:.75rem;">
+            ⭐ Most Popular
+          </span>
+        </div>
+        {% endif %}
+
+        <h3 class="fw-bold mb-1">{{ plan.label }}</h3>
+        <p class="text-secondary small mb-4">{{ plan.description }}</p>
+
+        {# Price blocks — one per interval, JS shows the active one #}
+        {% for interval, price in plan.prices.items %}
+        <div class="price-display d-none mb-4" data-interval="{{ interval }}">
+          {% if price == 0 %}
+          <div class="fw-bold mb-0" style="font-size:2.4rem;">Free</div>
+          <div class="text-secondary small">{{ plan.duration }}</div>
+          {% else %}
+          <div class="fw-bold mb-0" style="font-size:2.4rem;">
+            ₦{{ price|intcomma }}
+          </div>
+          <div class="text-secondary small interval-label">/ month</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+        {# Campus add-on note for SaaS #}
+        {% if plan.campus_limit and plan.campus_limit > 0 %}
+        <div class="mb-3 p-2 rounded" style="background: #0f172a;border:1px solid #334155;font-size:.78rem;color: #94a3b8;">
+          <span style="color: #22c55e;">{{ plan.campus_limit }} Campuses</span> Included
+          {% if plan.campus_price_ngn %}
+          <span class="fst-italic">(<span style="color: #f59e0b;">+ ₦{{ plan.campus_price_ngn|intcomma }}/month</span> per extra Campus)</span>
+          {% endif %}
+        </div>
+        {% elif plan.campus_limit == -1 %}
+        <div class="mb-3 p-2 rounded" style="background: #0f172a;border:1px solid #334155;font-size:.78rem;color: #94a3b8;">
+          <span style="color: #22c55e;">Unlimited Campuses</span> Included
+        </div>
+        {% endif %}
+
+        <ul class="list-unstyled mb-4">
+          {% for feat in plan.features %}
+          <li class="d-flex align-items-start gap-2 py-1" style="font-size:.875rem;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" style="flex-shrink:0;margin-top:2px;"><path d="M20 6L9 17l-5-5"/></svg>
+            {{ feat }}
+          </li>
+          {% endfor %}
+        </ul>
+
+        <div class="mt-auto">
+          {% if plan.key == 'trial' %}
+          <a href="{{ signup_url }}" class="cf-btn w-100 text-center">Get Started Free</a>
+          {% else %}
+          <a href="{{ signup_url }}?intent={{ plan.key }}"
+             class="cf-btn w-100 text-center {% if not plan.highlight %}cf-btn-outline{% endif %}">
+            {{ plan.cta|default:"Get Started" }}
+          </a>
+          <p class="text-center text-secondary mt-2 mb-0" style="font-size:.72rem;">
+            Sign up free, then switch to this routing from Account settings.
+          </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# FAQ / notes #}
+  <div class="text-center mt-5 text-secondary small">
+    ChurchForce is free for churches. Routing options are included at no cost.<br>
+    Questions? <a href="mailto:hello@churchforce.io" class="text-secondary">hello@churchforce.io</a>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.price-display[data-interval="monthly"]').forEach(el => {
+  el.classList.remove('d-none');
+});
+</script>
+{% endblock %}

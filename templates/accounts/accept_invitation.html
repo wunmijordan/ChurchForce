@@ -1,4 +1,4 @@
-{% extends "public_base.html" %}
+{% extends base_template %}
 {% load static widget_tweaks %}
 
 {% block title %}Accept Invitation — {{ church.name }}{% endblock %}
@@ -52,8 +52,12 @@
 
             <div class="mb-3">
               <label class="form-label">Username <span class="text-danger">*</span></label>
-              <input type="text" name="username" class="form-control"
-                     placeholder="Choose a username" required autocomplete="username">
+              <div class="input-group">
+                {% if church.settings.username_prefix %}<span class="input-group-text">{{ church.settings.username_prefix }}</span>{% endif %}
+                <input type="text" name="username" class="form-control"
+                       placeholder="Choose a username" required autocomplete="username">
+                {% if church.settings.username_use_church_slug_suffix %}<span class="input-group-text">.{{ church.slug }}</span>{% endif %}
+              </div>
             </div>
 
             <div class="row">
@@ -86,7 +90,7 @@
       </div>
 
       <p class="text-center text-secondary small mt-3">
-        Already have an account? <a href="{% url 'login' %}" class="text-light">Sign in</a>
+        Already have an account? <a href="{% url 'accounts:login' %}" class="text-light">Login</a>
       </p>
 
     </div>

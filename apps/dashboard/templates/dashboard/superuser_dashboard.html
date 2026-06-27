@@ -1,76 +1,148 @@
-{% extends "base.html" %}
-{% block title %}Church Management{% endblock %}
+{% extends base_template %}
+{% load static access_tags %}
+{% block title %}Operator Panel — {{ church.name }}{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-  <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+<div class="container-xl py-4">
+
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
     <div>
-      <h2 class="mb-1 fw-bold">Church Management</h2>
-      <div class="text-secondary">Superuser dashboard for scoped and global views.</div>
+      <h2 class="fw-bold mb-0">⚙️ Operator Control Panel</h2>
+      <p class="text-muted small mb-0">
+        Superuser cross-tenant operations · Context: <strong>{{ church.name }}</strong>
+      </p>
     </div>
-    <div class="text-secondary small">Total: {{ total_count }}</div>
-  </div>
-
-  <div class="card bg-dark border-secondary mb-3">
-    <div class="card-body">
-      <div class="d-flex flex-wrap gap-2 align-items-center">
-        <div class="btn-group" role="group" aria-label="Scope">
-          <a class="btn btn-sm {% if scope != 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?scope=scoped&status={{ status }}&q={{ query|urlencode }}">Scoped</a>
-          <a class="btn btn-sm {% if scope == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?scope=all&status={{ status }}&q={{ query|urlencode }}">All Churches</a>
-        </div>
-
-        <form class="d-flex flex-wrap gap-2 align-items-center" method="get">
-          <input type="hidden" name="scope" value="{{ scope }}">
-          <select name="status" class="form-select form-select-sm" style="width: 160px;">
-            <option value="active" {% if status == 'active' %}selected{% endif %}>Active only</option>
-            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive only</option>
-            <option value="all" {% if status == 'all' %}selected{% endif %}>All statuses</option>
-          </select>
-          <input type="text" name="q" value="{{ query }}" placeholder="Search name, slug, domain" class="form-control form-control-sm" style="width: 240px;">
-          <button class="btn btn-sm btn-outline-secondary" type="submit">Filter</button>
-        </form>
-      </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="/founder/" target="_blank" class="btn btn-sm btn-outline-primary" style="border-radius:20px;">
+        Full Founder Panel ↗
+      </a>
+      <a href="/admin/" target="_blank" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">
+        Django Admin ↗
+      </a>
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="action" value="seed_plans">
+        <button class="btn btn-sm btn-outline-secondary" style="border-radius:20px;">Seed Plans</button>
+      </form>
     </div>
   </div>
 
-  <div class="card bg-dark border-secondary">
-    <div class="card-body">
-      {% if churches %}
-      <div class="table-responsive">
-        <table class="table table-sm table-vcenter">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Slug</th>
-              <th>Subdomain</th>
-              <th>Custom Domain</th>
-              <th>Plan</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for c in churches %}
-            <tr>
-              <td class="fw-semibold">{{ c.name }}</td>
-              <td>{{ c.slug }}</td>
-              <td>{{ c.subdomain|default:"-" }}</td>
-              <td>{{ c.custom_domain|default:"-" }}</td>
-              <td>{{ c.plan.name|default:"-" }}</td>
-              <td>
-                {% if c.is_active %}
-                  <span class="badge bg-green-lt">Active</span>
-                {% else %}
-                  <span class="badge bg-red-lt">Inactive</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-        <div class="text-secondary">No churches found for this filter.</div>
-      {% endif %}
+  {% if msg_ok %}<div class="alert alert-success alert-dismissible fade show" style="border-radius:12px;">{{ msg_ok }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endif %}
+  {% if msg_err %}<div class="alert alert-danger alert-dismissible fade show" style="border-radius:12px;">{{ msg_err }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endif %}
+
+  <div class="row g-3 mb-4">
+    {% with s=stats %}
+    <div class="col-6 col-md-4 col-lg-2"><div class="card bg-dark border-secondary text-center py-3" style="border-radius:16px;"><div class="fw-bold fs-4" style="color:#22c55e;">{{ s.total_churches }}</div><div class="text-muted small">Churches</div></div></div>
+    <div class="col-6 col-md-4 col-lg-2"><div class="card bg-dark border-secondary text-center py-3" style="border-radius:16px;"><div class="fw-bold fs-4" style="color:#6366f1;">{{ s.active_churches }}</div><div class="text-muted small">Active</div></div></div>
+    <div class="col-6 col-md-4 col-lg-2"><div class="card bg-dark border-secondary text-center py-3" style="border-radius:16px;"><div class="fw-bold fs-4" style="color:#f59e0b;">{{ s.trial_churches }}</div><div class="text-muted small">Trial</div></div></div>
+    <div class="col-6 col-md-4 col-lg-2"><div class="card bg-dark border-secondary text-center py-3" style="border-radius:16px;"><div class="fw-bold fs-4" style="color:#0ea5e9;">{{ s.paid_churches }}</div><div class="text-muted small">Paid</div></div></div>
+    <div class="col-6 col-md-4 col-lg-2"><div class="card bg-dark border-secondary text-center py-3" style="border-radius:16px;"><div class="fw-bold fs-4" style="color:#8b5cf6;">{{ s.total_members }}</div><div class="text-muted small">Members</div></div></div>
+    <div class="col-6 col-md-4 col-lg-2"><div class="card bg-dark border-secondary text-center py-3" style="border-radius:16px;"><div class="fw-bold fs-4" style="color:#22c55e;">₦{{ s.revenue_total|floatformat:0 }}</div><div class="text-muted small">Revenue</div></div></div>
+    {% endwith %}
+  </div>
+
+  <div class="d-flex gap-2 mb-3 flex-wrap">
+    <form class="d-flex gap-2 flex-grow-1" method="get">
+      <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm bg-dark border-secondary text-white" placeholder="Search churches…" style="border-radius:8px;max-width:280px;">
+      <select name="status" class="form-select form-select-sm bg-dark border-secondary text-white" style="width:130px;border-radius:8px;">
+        <option value="active"   {% if status == 'active'   %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+        <option value="all"      {% if status == 'all'      %}selected{% endif %}>All</option>
+      </select>
+      <button class="btn btn-sm btn-outline-primary" style="border-radius:8px;">Search</button>
+    </form>
+    <a href="/founder/churches/create/" target="_blank" class="btn btn-sm btn-outline-success" style="border-radius:8px;">+ New Church</a>
+  </div>
+
+  <div class="card bg-dark border-secondary mb-4" style="border-radius:16px;">
+    <div class="table-responsive">
+      <table class="table table-dark table-hover mb-0" style="font-size:.82rem;">
+        <thead><tr><th>Church</th><th>Plan</th><th>Status</th><th>Expires</th><th>Operations</th></tr></thead>
+        <tbody>
+          {% for c in churches %}{% with obj=c.obj sub=c.sub %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ obj.name }}</div>
+              <div class="text-muted" style="font-size:.68rem;">{% if obj.subdomain %}{{ obj.subdomain }}.workforce.church{% else %}{{ obj.slug }}{% endif %}</div>
+            </td>
+            <td><span class="badge {% if 'founders' in c.plan_name %}bg-purple-lt{% elif c.plan_name == 'white_label' %}bg-orange-lt{% elif c.plan_name == 'saas' %}bg-green-lt{% elif c.plan_name == 'trial' %}bg-blue-lt{% else %}bg-secondary-lt{% endif %}" style="font-size:.65rem;">{{ c.plan_name }}</span></td>
+            <td>{% if c.is_valid %}<span class="badge bg-success-lt" style="font-size:.65rem;">Valid</span>{% else %}<span class="badge bg-danger-lt" style="font-size:.65rem;">Expired</span>{% endif %}{% if not obj.is_active %}<span class="badge bg-secondary-lt ms-1" style="font-size:.65rem;">Inactive</span>{% endif %}</td>
+            <td class="text-muted" style="font-size:.72rem;">{% if c.days_left is not None %}{% if c.days_left > 0 %}{{ c.days_left }}d{% else %}<span class="text-danger">Expired</span>{% endif %}{% else %}—{% endif %}</td>
+            <td>
+              <div class="dropdown">
+                <button class="btn btn-xs btn-outline-secondary dropdown-toggle" style="font-size:.65rem;border-radius:6px;" data-bs-toggle="dropdown">Actions</button>
+                <div class="dropdown-menu bg-dark border-secondary" style="min-width:260px;">
+                  <div class="px-3 py-2">
+                    <div class="text-muted mb-1" style="font-size:.65rem;font-weight:700;text-transform:uppercase;">Grant Plan</div>
+                    <form method="post" class="d-flex flex-column gap-1">{% csrf_token %}
+                      <input type="hidden" name="action" value="grant_plan">
+                      <input type="hidden" name="church_id" value="{{ obj.id }}">
+                      <select name="plan_key" class="form-select form-select-sm bg-dark text-white border-secondary" style="border-radius:6px;">
+                        <optgroup label="Founders (Lifetime)"><option value="founders_saas_lifetime">Founders SaaS Lifetime</option><option value="founders_white_label_lifetime">Founders WL Lifetime</option></optgroup>
+                        <optgroup label="Paid"><option value="saas">PRO / SaaS</option><option value="white_label">Enterprise</option></optgroup>
+                        <optgroup label="Other"><option value="trial">Trial (reset)</option></optgroup>
+                      </select>
+                      <div class="d-flex gap-1">
+                        <input type="number" name="days" value="30" min="1" max="3650" class="form-control form-control-sm bg-dark text-white border-secondary" style="width:64px;border-radius:6px;">
+                        <small class="text-muted d-flex align-items-center">days</small>
+                        <button class="btn btn-primary btn-sm ms-auto" style="border-radius:6px;">Grant</button>
+                      </div>
+                    </form>
+                  </div>
+                  <div class="px-3 py-2 border-top border-secondary">
+                    <div class="text-muted mb-1" style="font-size:.65rem;font-weight:700;text-transform:uppercase;">Extend</div>
+                    <form method="post" class="d-flex gap-1 align-items-center">{% csrf_token %}
+                      <input type="hidden" name="action" value="extend"><input type="hidden" name="church_id" value="{{ obj.id }}">
+                      <input type="number" name="days" value="30" min="1" class="form-control form-control-sm bg-dark text-white border-secondary" style="width:64px;border-radius:6px;">
+                      <small class="text-muted">days</small>
+                      <button class="btn btn-outline-success btn-sm ms-auto" style="border-radius:6px;">+Extend</button>
+                    </form>
+                  </div>
+                  <div class="px-3 py-2 border-top border-secondary">
+                    <div class="text-muted mb-1" style="font-size:.65rem;font-weight:700;text-transform:uppercase;">Subdomain</div>
+                    <form method="post" class="d-flex gap-1">{% csrf_token %}
+                      <input type="hidden" name="action" value="set_subdomain"><input type="hidden" name="church_id" value="{{ obj.id }}">
+                      <input type="text" name="subdomain" value="{{ obj.subdomain|default:'' }}" placeholder="slug" class="form-control form-control-sm bg-dark text-white border-secondary" style="border-radius:6px;">
+                      <button class="btn btn-outline-secondary btn-sm" style="border-radius:6px;">Set</button>
+                    </form>
+                  </div>
+                  <div class="px-3 py-2 border-top border-secondary">
+                    <div class="text-muted mb-1" style="font-size:.65rem;font-weight:700;text-transform:uppercase;">Custom Domain</div>
+                    <form method="post" class="d-flex gap-1">{% csrf_token %}
+                      <input type="hidden" name="action" value="set_custom_domain"><input type="hidden" name="church_id" value="{{ obj.id }}">
+                      <input type="text" name="custom_domain" value="{{ obj.custom_domain|default:'' }}" placeholder="app.church.org" class="form-control form-control-sm bg-dark text-white border-secondary" style="border-radius:6px;">
+                      <button class="btn btn-outline-secondary btn-sm" style="border-radius:6px;">Set</button>
+                    </form>
+                  </div>
+                  <div class="px-3 py-2 border-top border-secondary d-flex gap-2">
+                    <form method="post" class="flex-fill">{% csrf_token %}
+                      <input type="hidden" name="action" value="toggle_active"><input type="hidden" name="church_id" value="{{ obj.id }}">
+                      <button class="btn btn-sm w-100 {% if obj.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}" style="border-radius:6px;font-size:.65rem;" onclick="return confirm('{% if obj.is_active %}Deactivate{% else %}Activate{% endif %} {{ obj.name }}?')">{% if obj.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+                    </form>
+                    <a href="/founder/churches/{{ obj.id }}/" target="_blank" class="btn btn-sm btn-outline-secondary flex-shrink-0" style="border-radius:6px;font-size:.65rem;">Detail ↗</a>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% endwith %}{% empty %}
+          <tr><td colspan="5" class="text-muted text-center py-4">No churches match.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
+
+  <div class="card bg-dark border-secondary" style="border-radius:16px;">
+    <div class="card-header border-secondary"><h6 class="mb-0 fw-bold">Subscription Plans</h6></div>
+    <div class="table-responsive">
+      <table class="table table-dark table-sm mb-0" style="font-size:.78rem;">
+        <thead><tr><th>Name</th><th>Price/mo</th><th>Campus limit</th><th>Multi-campus</th><th>White label</th></tr></thead>
+        <tbody>
+          {% for p in all_plans %}<tr><td class="fw-semibold">{{ p.name }}</td><td>{% if p.monthly_price_ngn %}₦{{ p.monthly_price_ngn|floatformat:0 }}{% else %}Free{% endif %}</td><td>{% if p.campus_limit == -1 %}∞{% elif p.campus_limit == 0 %}None{% else %}{{ p.campus_limit }}{% endif %}</td><td>{% if p.multi_campus %}<span class="text-success">✓</span>{% else %}—{% endif %}</td><td>{% if p.white_label %}<span class="text-success">✓</span>{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="5" class="text-muted text-center py-2">No plans seeded.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
 {% endblock %}

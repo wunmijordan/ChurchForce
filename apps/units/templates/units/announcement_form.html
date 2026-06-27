@@ -1,0 +1,38 @@
+{% extends base_template %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-xl py-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="mb-0 fw-bold">{{ page_title }}</h2>
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'units:detail' unit.slug %}">Back to Unit</a>
+  </div>
+
+  <div class="card bg-dark border-secondary">
+    <div class="card-body p-4">
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Title</label>
+          {{ form.title }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Body</label>
+          {{ form.body }}
+        </div>
+        <div class="form-check mb-3">
+          {{ form.is_pinned }}
+          <label class="form-check-label">Pin announcement</label>
+        </div>
+        <div class="form-check mb-3">
+          {{ form.is_banner }}
+          <label class="form-check-label">Show in dashboard banner</label>
+        </div>
+        <button class="btn btn-primary" type="submit">Save</button>
+        <a class="btn btn-outline-secondary" href="{% url 'units:detail' unit.slug %}">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

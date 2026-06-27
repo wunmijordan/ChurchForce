@@ -195,40 +195,80 @@ document.addEventListener('DOMContentLoaded', () => {
     const addButton = document.getElementById('addSocialMediaField');
     const form = document.querySelector('form');
     if(!container || !addButton) return;
+    if (container.dataset.smBound === '1') return;
+    container.dataset.smBound = '1';
+
+    const defaultSocialIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-restore"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3.06 13a9 9 0 1 0 .49 -4.087" /><path d="M3 4.001v5h5" /><path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></svg>`;
+    const platformIcons = {
+      linkedin: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="#037ae9ff" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 11v5"/><path d="M8 8v.01"/><path d="M12 16v-5"/><path d="M16 16v-3a2 2 0 1 0-4 0"/><path d="M3 7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4h-10a4 4 0 0 1-4-4z"/></svg>`,
+      whatsapp: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="#03f74cff" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9l-5.05.9"/><path d="M9 10a.5.5 0 0 0 1 0v-1a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/></svg>`,
+      instagram: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="#de08f1ff" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 8a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4h-8a4 4 0 0 1-4-4z"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0-6 0"/><path d="M16.5 7.5v.01"/></svg>`,
+      twitter: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#ffffffff" stroke="#000000ff" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 4l11.733 16h4.267l-11.733-16z"/><path d="M4 20l6.768-6.768m2.46-2.46l6.772-6.772"/></svg>`,
+      tiktok: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="#25ECE6" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M21 7.917v4.034a9.948 9.948 0 0 1-5-1.951v4.5a6.5 6.5 0 1 1-8-6.326v4.326a2.5 2.5 0 1 0 4 2v-11.5h4.083a6.005 6.005 0 0 0 4.917 4.917z"/></svg>`,
+    };
+    const iconFor = (type) => platformIcons[type] || defaultSocialIcon;
+
+    function updateResetVisibility(field) {
+      const typeInput = field.querySelector('input[name="social_media_type[]"]');
+      const menu = field.querySelector('.dropdown-menu');
+      if (!menu) return;
+      let resetOption = field.querySelector('.social-media-option[data-type=""]');
+      if (!resetOption) {
+        const li = document.createElement('li');
+        li.innerHTML = '<a class="dropdown-item social-media-option" href="#" data-type="" style="color:#f59f00;font-weight:600;">Reset</a>';
+        menu.appendChild(li);
+        resetOption = li.querySelector('.social-media-option');
+      }
+      // Keep reset visible so users can always clear selected platform.
+      resetOption.style.display = '';
+      resetOption.style.color = '#f59f00';
+      resetOption.style.fontWeight = '600';
+      // Keep title in sync with current row state.
+      if (!typeInput?.value) resetOption.title = 'Clear platform selection';
+    }
 
     function updateDropdownLogo(field){
       const typeInput = field.querySelector('input[name="social_media_type[]"]');
       const dropdownBtn = field.querySelector('button.socialMediaDropdown');
+      if (!dropdownBtn) return;
       if(typeInput?.value){
-        const option = field.querySelector(`.dropdown-item[data-type="${typeInput.value}"]`);
-        if(option) dropdownBtn.innerHTML = option.getAttribute('data-icon') + '<span class="visually-hidden">Toggle Dropdown</span>';
+        dropdownBtn.innerHTML = iconFor(typeInput.value) + '<span class="visually-hidden">Toggle Dropdown</span>';
+        return;
       }
+      dropdownBtn.innerHTML = defaultSocialIcon + '<span class="visually-hidden">Toggle Dropdown</span>';
+      updateResetVisibility(field);
     }
 
     function toggleAddButton(){
-      const allFields = container.querySelectorAll('.social-media-field');
-      let anySelected = false;
-      allFields.forEach(f=>{
-        const typeInput = f.querySelector('input[name="social_media_type[]"]');
-        if(typeInput?.value) anySelected=true;
-      });
-      addButton.style.display = anySelected ? 'inline-block' : 'none';
+      // Keep visible so users can add more rows immediately.
+      addButton.style.display = 'inline-block';
     }
 
     container.querySelectorAll('.social-media-field').forEach(updateDropdownLogo);
     toggleAddButton();
 
-    addButton.addEventListener('click', () => {
+    // Ensure only one click handler even if scripts are re-applied.
+    const addButtonFresh = addButton.cloneNode(true);
+    addButton.parentNode.replaceChild(addButtonFresh, addButton);
+    addButtonFresh.addEventListener('click', () => {
       const firstChild = container.firstElementChild;
       if(!firstChild) return;
-      const newField = firstChild.cloneNode(true);
-      const handleInput = newField.querySelector('input[name="social_media_handle[]"]');
-      const typeInput = newField.querySelector('input[name="social_media_type[]"]');
-      const dropdownBtn = newField.querySelector('button.socialMediaDropdown');
-      if(handleInput) handleInput.value=''; handleInput.placeholder='Enter handle/link';
-      if(typeInput) typeInput.value='';
-      if(dropdownBtn) dropdownBtn.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M12 14m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M12 7l0 4" /><path d="M6.7 17.8l2.8 -2" /><path d="M17.3 17.8l-2.8 -2" /></svg><span class="visually-hidden">Toggle Dropdown</span>`;
+      const menu = firstChild.querySelector('.dropdown-menu');
+      const menuHtml = menu ? menu.innerHTML : '';
+      const newField = document.createElement('div');
+      newField.className = 'social-media-field mb-2';
+      newField.innerHTML = `
+        <div class="input-group input-group-flat flex-grow-1 position-relative" style="width: 100%;">
+          <button type="button" class="btn bg-grey text-white border-0 d-flex align-items-center justify-content-center socialMediaDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="width: 38px; height: 38px; padding: 0;">
+            ${defaultSocialIcon}<span class="visually-hidden">Toggle Dropdown</span>
+          </button>
+          <input type="text" name="social_media_handle[]" class="form-control bg-grey text-white border-0" placeholder="Enter Social Media Handle/Link" value="">
+          <input type="hidden" name="social_media_type[]" value="">
+          <ul class="dropdown-menu dropdown-menu-end">${menuHtml}</ul>
+        </div>
+      `;
       container.appendChild(newField);
+      updateDropdownLogo(newField);
       toggleAddButton();
     });
 
@@ -237,20 +277,27 @@ document.addEventListener('DOMContentLoaded', () => {
       if(!optionEl) return;
       e.preventDefault();
       const selectedType = optionEl.getAttribute('data-type') || '';
-      const selectedIconSVG = optionEl.getAttribute('data-icon') || '';
       const fieldGroup = optionEl.closest('.social-media-field');
       const typeInput = fieldGroup.querySelector('input[name="social_media_type[]"]');
       const handleInput = fieldGroup.querySelector('input[name="social_media_handle[]"]');
       const dropdownBtn = fieldGroup.querySelector('button.socialMediaDropdown');
       if(typeInput) typeInput.value = selectedType;
-      if(dropdownBtn) dropdownBtn.innerHTML = selectedIconSVG + '<span class="visually-hidden">Toggle Dropdown</span>';
+      if(dropdownBtn) dropdownBtn.innerHTML = iconFor(selectedType) + '<span class="visually-hidden">Toggle Dropdown</span>';
       if(handleInput){
+        if(!selectedType){
+          handleInput.value = '';
+          handleInput.placeholder = 'Enter Social Media Handle/Link';
+          handleInput.focus();
+          toggleAddButton();
+          return;
+        }
         let handle = handleInput.value.trim();
         for(const [type,url] of Object.entries(baseUrls)) if(handle.startsWith(url)) handle=handle.slice(url.length);
         handleInput.value = handle;
-        handleInput.placeholder = selectedType && baseUrls[selectedType] ? baseUrls[selectedType] : 'Enter handle/link';
+        handleInput.placeholder = selectedType && baseUrls[selectedType] ? baseUrls[selectedType] : 'Enter Social Media Handle/Link';
         handleInput.focus();
       }
+      updateResetVisibility(fieldGroup);
       toggleAddButton();
     });
 

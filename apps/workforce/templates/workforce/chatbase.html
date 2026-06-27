@@ -28,95 +28,288 @@
 
   <main>{% block content %}{% endblock %}</main>
 
-  <!-- ── Android PWA install modal ── -->
+  <!-- Android PWA Install Modal -->
   <div id="installModal" class="pwa-modal d-none">
     <div class="pwa-modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><span class="fst-italic me-1">Install</span> <strong style="color:#ff5e01;">ChurchForce</strong></h5>
-        <button class="btn-animate-icon btn-animate-icon-rotate closeModal border-0 bg-transparent">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+        <h5 class="modal-title">
+          <span class="fst-italic me-1">Install</span> <strong style="color: #ff5e01ff;"> ChurchForceApp</strong>
+        </h5>
+        <button class="btn-animate-icon btn-animate-icon-rotate closeModal">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-x">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M18 6l-12 12" /><path d="M6 6l12 12" />
+          </svg>
         </button>
       </div>
       <div class="modal-body">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <img src="{% static 'images/icons/icon-192x192.png' %}" style="width:60px;height:60px;border-radius:10px;">
-          <div class="text-secondary">Get the full experience on your device.</div>
-          <button id="installBtn" class="btn btn-gray btn-animate-icon btn-animate-icon-move-down" style="border:none;box-shadow:0 4px 8px #000e;width:150px;border-radius:12px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#806885ff" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 11l5 5l5-5"/><path d="M12 4l0 12"/></svg>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <img src="/static/images/icons/icon-192x192.png"
+              style="width:60px; height:60px; border-radius:10px;">
+          <div class="text-secondary">
+            Get the full experience on your device.
+          </div>
+          <button id="installBtn" class="btn btn-gray btn-animate-icon btn-animate-icon-move-down" 
+                  style="border: none; box-shadow: 0 4px 8px #000000ee;
+                          width: 150px; border-radius: 12px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#806885ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-download">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
+              <path d="M7 11l5 5l5 -5" /><path d="M12 4l0 12" />
+            </svg>
             Install
           </button>
+        </div>
+        <div class="form-check mt-3 text-start">
+          <input class="form-check-input" type="checkbox" id="dontShowInstall">
+          <label class="form-check-label text-muted" for="dontShowInstall">
+            Do not show again
+          </label>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── iOS install modal ── -->
+  <!-- iOS Install Modal -->
   <div id="iosInstallModal" class="pwa-modal d-none">
     <div class="pwa-modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><span class="fst-italic">Install</span> <strong style="color:#ff5e01;">ChurchForce</strong></h5>
-        <button id="closeIosModal" class="btn-animate-icon btn-animate-icon-rotate closeModal border-0 bg-transparent">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+        <h5 class="modal-title">
+          <span class="fst-italic">Install</span> <strong style="color: #ff5e01ff;"> ChurchForceApp</strong>
+        </h5>
+        <button id="closeIosModal" class="btn-animate-icon btn-animate-icon-rotate closeModal">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-x">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M18 6l-12 12" /><path d="M6 6l12 12" />
+          </svg>
         </button>
       </div>
       <div class="modal-body">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <img src="{% static 'images/icons/icon-192x192.png' %}" style="width:60px;height:60px;border-radius:10px;">
-          <div style="flex:1;line-height:1.35;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <img src="/static/images/icons/icon-192x192.png"
+              style="width:60px; height:60px; border-radius:10px;">
+          <div style="flex:1; line-height:1.35;">
             <span class="text-muted mb-2">Get the full experience on your device.</span><br>
-            Tap
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#806885" stroke-width="2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9h-1a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1"/><path d="M12 14v-11"/><path d="M9 6l3-3l3 3"/></svg>
-            then <strong>"Add to Home Screen"</strong>
+            Tap 
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#806885ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-share-2">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9h-1a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-8a2 2 0 0 0 -2 -2h-1" />
+              <path d="M12 14v-11" /><path d="M9 6l3 -3l3 3" />
+            </svg><br>
+            then, <strong>"Add to Home Screen"</strong>
           </div>
+        </div>
+        <div class="form-check mt-3 text-start">
+          <input class="form-check-input" type="checkbox" id="dontShowIOSInstall">
+          <label class="form-check-label text-muted" for="dontShowIOSInstall">
+            Do not show again
+          </label>
         </div>
       </div>
     </div>
   </div>
 
   <style>
-  .pwa-modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);display:flex;justify-content:center;align-items:center;z-index:9999;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s;}
-  .pwa-modal.show{opacity:1;visibility:visible;}
-  .pwa-modal-content{background:#111827;color:#fff;border-radius:18px;padding:18px 24px;box-shadow:0 6px 18px #000e;width:90%;max-width:380px;position:relative;backdrop-filter:blur(6px);transform:translateY(-20px);transition:transform .3s;}
-  .pwa-modal.show .pwa-modal-content{transform:translateY(0);}
-  .pwa-modal .modal-header{display:flex;align-items:center;justify-content:center;position:relative;padding-right:45px;}
-  .pwa-modal .modal-header .closeModal{position:absolute;background:none;border:none;color:#f00;font-size:20px;cursor:pointer;right:10px;top:50%;transform:translateY(-50%);}
+  /* Modal overlay */
+  .pwa-modal {
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.4);
+    box-shadow: 0 6px 18px #000000ee;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+    opacity:0;
+    visibility:hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  /* Show modal */
+  .pwa-modal.show {
+    opacity:1;
+    visibility:visible;
+  }
+
+  /* Modal content */
+  .pwa-modal-content {
+    background:#111827;
+    color:white;
+    border-radius:18px;
+    padding:18px 24px;
+    box-shadow:0 6px 18px #000000ee;
+    width:90%;
+    max-width:380px;
+    position:relative;
+    backdrop-filter:blur(6px);
+    transform: translateY(-20px);
+    transition: transform 0.3s ease;
+  }
+
+  /* Animate modal content on show */
+  .pwa-modal.show .pwa-modal-content {
+    transform: translateY(0);
+  }
+
+  /* Center modal header title */
+  .pwa-modal .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative; /* needed for absolute close button */
+    padding-right: 45px; /* space so title stays centered */
+  }
+
+  /* Position close button to far right */
+  .pwa-modal .modal-header .closeModal {
+    position: absolute;
+    background:none;
+    border:none;
+    color: #ff0101ff;
+    font-size:20px;
+    cursor:pointer;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
   </style>
 
   <script>
   let deferredPrompt;
+
   const installModal = document.getElementById('installModal');
-  const installBtn   = document.getElementById('installBtn');
-  const iosModal     = document.getElementById('iosInstallModal');
+  const installBtn = document.getElementById('installBtn');
+  const iosModal = document.getElementById('iosInstallModal');
 
-  function showModal(m){m.classList.remove('d-none');requestAnimationFrame(()=>m.classList.add('show'));}
-  function hideModal(m){m.classList.remove('show');setTimeout(()=>m.classList.add('d-none'),300);}
+  const dontShowInstall = document.getElementById('dontShowInstall');
+  const dontShowIOSInstall = document.getElementById('dontShowIOSInstall');
 
-  window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault(); deferredPrompt = e; showModal(installModal);
+  const closeBtns = document.querySelectorAll('.closeModal');
+
+  const INSTALL_KEY = "pwaInstallHidden";
+  const INSTALL_SNOOZE = "pwaInstallSnooze";
+
+  /* -----------------------------------
+    Helpers
+  ----------------------------------- */
+
+  function isInstalled() {
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true
+    );
+  }
+
+  function shouldShowModal() {
+    if (isInstalled()) return false;
+
+    if (localStorage.getItem(INSTALL_KEY) === "true")
+      return false;
+
+    const snooze = localStorage.getItem(INSTALL_SNOOZE);
+    if (snooze && Date.now() < Number(snooze))
+      return false;
+
+    return true;
+  }
+
+  function snoozeModal(days = 7) {
+    const nextTime = Date.now() + (days * 24 * 60 * 60 * 1000);
+    localStorage.setItem(INSTALL_SNOOZE, nextTime);
+  }
+
+  /* -----------------------------------
+    Modal Controls
+  ----------------------------------- */
+
+  function showModal(modal) {
+    if (!shouldShowModal()) return;
+
+    modal.classList.remove('d-none');
+    requestAnimationFrame(() => {
+      modal.classList.add('show');
+    });
+  }
+
+  function hideModal(modal) {
+    modal.classList.remove('show');
+
+    setTimeout(() => {
+      modal.classList.add('d-none');
+    }, 300);
+  }
+
+  /* -----------------------------------
+    ANDROID INSTALL
+  ----------------------------------- */
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    if (!shouldShowModal()) return;
+
+    e.preventDefault();
+    deferredPrompt = e;
+
+    setTimeout(() => showModal(installModal), 800);
   });
+
   installBtn.addEventListener('click', async () => {
     if (!deferredPrompt) return;
+
     hideModal(installModal);
+
     deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
+    const choice = await deferredPrompt.userChoice;
+
+    if (choice.outcome === 'accepted') {
+      localStorage.setItem(INSTALL_KEY, "true");
+    }
+
     deferredPrompt = null;
   });
-  document.querySelectorAll('.closeModal').forEach(btn => btn.addEventListener('click', e => {
-    const m = e.target.closest('.pwa-modal');
-    hideModal(m);
-    if (m === iosModal) localStorage.setItem('iosInstallDismissed', 'true');
-  }));
-  document.addEventListener('DOMContentLoaded', () => {
+
+  /* -----------------------------------
+    CLOSE BUTTONS
+  ----------------------------------- */
+
+  closeBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const modal = e.target.closest('.pwa-modal');
+
+      // permanent hide if checkbox checked
+      if (
+        dontShowInstall?.checked ||
+        dontShowIOSInstall?.checked
+      ) {
+        localStorage.setItem(INSTALL_KEY, "true");
+      } else {
+        snoozeModal(); // hide for 7 days
+      }
+
+      hideModal(modal);
+    });
+  });
+
+  /* -----------------------------------
+    iOS INSTALL
+  ----------------------------------- */
+
+  document.addEventListener("DOMContentLoaded", () => {
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    if (isIOS && !window.navigator.standalone && !localStorage.getItem('iosInstallDismissed'))
-      setTimeout(() => showModal(iosModal), 800);
+    const isStandalone = window.navigator.standalone === true;
+
+    if (
+      isIOS &&
+      !isStandalone &&
+      shouldShowModal()
+    ) {
+      setTimeout(() => showModal(iosModal), 1200);
+    }
   });
   </script>
 
   <!-- ── Notification settings modal ── -->
   <div class="modal fade" id="notifSettingsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content rounded-3 shadow">
+      <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Notification Settings</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -164,15 +357,17 @@
       updateSettings:   "{% url 'notifications:update_user_settings' %}",
       markAllRead:      "{% url 'notifications:mark_all_read' %}",
       guestList:        "{% url 'guests:guest_list' %}",
-      dashboard:        "{% if permissions|can:'dashboard.admin' %}{% url 'dashboard:admin_dashboard' %}{% else %}{% url 'dashboard:dashboard' %}{% endif %}",
+      dashboard:        "{% if can_admin_dashboard %}{% url 'dashboard:admin_dashboard' %}{% else %}{% url 'dashboard:dashboard' %}{% endif %}",
     },
     csrfToken: "{{ csrf_token }}",
     user: {
       id:              {{ request.user.id|default:'null' }},
+      name:            "{{ request.user.full_name|default:request.user.username|escapejs }}",
+      title:           "{{ request.user.title|default:''|escapejs }}",
       isAuthenticated: {{ request.user.is_authenticated|yesno:'true,false' }},
-      isAdmin:         {{ request|is_admin|yesno:'true,false' }},
-      canViewGuests:   {% if permissions|can:"guests.view" %}true{% else %}false{% endif %},
-      canManageGuests: {% if permissions|can:"guests.view_all" %}true{% else %}false{% endif %},
+      isAdmin:         {{ nav_is_admin|yesno:'true,false' }},
+      canViewGuests:   {% if can_view_guests %}true{% else %}false{% endif %},
+      canManageGuests: {% if can_view_all_guests %}true{% else %}false{% endif %},
     },
     sound: {
       userSound:        "{{ notification_settings.notification_sound|default:'chime1' }}",
@@ -191,8 +386,85 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/bootstrap5@6.1.19/index.global.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script id="4v4g36">
+  window.CHURCH_PRIMARY = "{{ request.church.primary_color|default:'#206ac486' }}";
+
+  document.addEventListener("DOMContentLoaded", function () {
+
+      // ---- THEME ENGINE ----
+      const primary = window.CHURCH_PRIMARY;
+
+      function hexToRgb(hex) {
+          hex = hex.replace("#", "");
+          if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
+          const bigint = parseInt(hex, 16);
+          return {
+              r: (bigint >> 16) & 255,
+              g: (bigint >> 8) & 255,
+              b: bigint & 255
+          };
+      }
+
+      function getLuminance({ r, g, b }) {
+          return (0.299 * r + 0.587 * g + 0.114 * b);
+      }
+
+      function getContrastColor(hex) {
+          return getLuminance(hexToRgb(hex)) > 160 ? "#000" : "#fff";
+      }
+
+      function adjustColor(hex, percent) {
+          const { r, g, b } = hexToRgb(hex);
+          const adjust = c => Math.min(255, Math.max(0, c + (percent / 100) * 255));
+          return `rgb(${adjust(r)}, ${adjust(g)}, ${adjust(b)})`;
+      }
+
+      const root = document.documentElement;
+      root.style.setProperty("--church-primary", primary);
+      root.style.setProperty("--church-primary-contrast", getContrastColor(primary));
+      root.style.setProperty("--church-primary-light", adjustColor(primary, 20));
+      root.style.setProperty("--church-primary-dark", adjustColor(primary, -20));
+
+      // ---- MODAL ALTERNATION ----
+      let flip = false;
+
+      document.addEventListener("show.bs.modal", function (event) {
+          const modal = event.target;
+
+          // Header logic (existing)
+          const header = modal.querySelector(".modal-header");
+          if (header) {
+              header.classList.add("modal-header-themed");
+              header.classList.remove("modal-header-a", "modal-header-b");
+              header.classList.add(flip ? "modal-header-a" : "modal-header-b");
+              flip = !flip;
+          }
+
+          // NEW: content styling
+          const content = modal.querySelector(".modal-content");
+          if (content) {
+              content.classList.add("modal-content-themed");
+          }
+      });
+
+  });
+  </script>
   <script src="{% static 'js/custom.js' %}"></script>
   {% block extra_js %}{% endblock %}
+
+  {# ── Bible slash modal for chat ─────────────────────────────────── #}
+  {% load static %}
+  <script>
+    window.CSRF_TOKEN          = "{{ csrf_token }}";
+    window.BIBLE_SEARCH_URL    = "{% url 'bible:search' %}";
+    window.BIBLE_SHARE_URL     = "{% url 'bible:share_to_feed' %}";
+    window.BIBLE_BOOK_LIST_URL = "{% url 'bible:book_list' %}";
+    window.BIBLE_CHAPTER_URL   = "{% url 'bible:chapter_verses' %}";
+    window.BIBLE_TRANSLATIONS_URL = "{% url 'bible:translations_list' %}";
+    window.DISC_CREATE_URL         = "{% url 'bible:ajax_create_plan_discussion' %}";
+    window.DISC_LIST_URL_TEMPLATE  = "{% url 'bible:ajax_list_plan_discussions' entry_id=0 %}";
+  </script>
+  {% include "bible/widgets/slash_modal.html" %}
 
 </body>
 </html>

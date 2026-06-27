@@ -1,312 +1,1686 @@
-{% extends 'base.html' %}
-{% load static form_tags access_tags widget_tweaks %}
+{% extends base_template %}
+{% load static form_tags access_tags widget_tweaks user_avatar_tags %}
 
 {% block title %}{{ page_title }} — {{ church.name }}{% endblock %}
 
 {% block content %}
-<div class="page-wrapper">
-
-  <!-- HEADER -->
+<div class="page-wrapper py-5">
   <div class="page-header d-print-none">
     <div class="container-xl">
       <div class="row g-2 align-items-center">
         <div class="col">
-          <kbd class="bg-green-lt">
+          <kbd class="bg-green-lt" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
             <h2 class="page-title mb-0">{{ page_title }}</h2>
           </kbd>
         </div>
         <div class="col-auto ms-auto">
-          <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary btn-sm">
-            ← Back to team
-          </a>
+          <div class="d-flex gap-2 align-items-center flex-wrap">
+            {% if edit_mode and all_members %}
+            <select id="memberJumpSelect"
+                    class="form-select form-select-sm"
+                    style="max-width:150px;box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                    onchange="if(this.value) window.location=this.value">
+              <option value="">Select member to edit…</option>
+              {% for m in all_members %}
+              <option value="{% url 'accounts:edit_user' m.username %}?section=edit"
+                      {% if m.username == user_obj.username %}selected{% endif %}>
+                {{ m.title|default:"" }} {{ m.full_name|default:m.username }}
+              </option>
+              {% endfor %}
+            </select>
+            {% endif %}
+            <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary btn-sm" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+              Back to Workforce
+            </a>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- BODY -->
-  <div class="page-body">
-    <div class="container py-4">
-      <div class="card shadow-sm">
+  <div class="page-body d-print-none">
+    <div class="container-xl pb-5">
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger mb-3">{{ form.non_field_errors }}</div>
+      {% endif %}
 
-        <div class="card-header">
-          <h3 class="card-title mb-0">
-            {% if edit_mode %}
-              Editing:
-              <span class="text-warning">
-                {{ user_obj.title|default:"" }} {{ user_obj.full_name }}
-              </span>
-            {% else %}
-              Add New Team Member
-            {% endif %}
-          </h3>
-        </div>
+      <div class="row g-0" style="min-height:80vh;">
+        <div class="col-12 col-lg-auto" style="width:220px;flex-shrink:0;">
+          <div class="card bg-grey h-100" style="border-radius:36px 0 0 36px;border-right:none;">
+            <div class="card-body p-3">
+              <div class="text-center mb-4 pt-2">
+                <div id="avatar-wrapper"
+                  class="position-relative d-inline-block"
+                  style="width:100px;height:100px;">
+                  {% if not edit_mode %}
+                    {# ---------------- CREATE MODE ---------------- #}
+                    <img
+                      id="sidebar-preview-img"
+                      src="{% static 'images/default_image.jpg' %}"
+                      alt="New Member"
+                      style="
+                        width:100px;
+                        height:100px;
+                        object-fit:cover;
+                        border-radius:24px;
+                        box-shadow:0 4px 4px #00000055;">
+                  {% else %}
+                    {# ---------------- EDIT MODE ---------------- #}
 
-        <div class="card-body">
-
-          <!-- IMAGE PREVIEW -->
-          <div class="mb-4 text-center">
-            <img id="preview-img"
-                 src="{% if user_obj and user_obj.image %}{{ user_obj.image.url }}{% else %}{% static 'images/default_image.jpg' %}{% endif %}"
-                 class="rounded shadow-sm"
-                 style="width:100px;height:100px;object-fit:cover;">
-          </div>
-
-          <form id="userForm" method="post" enctype="multipart/form-data" novalidate>
-            {% csrf_token %}
-
-            {% if form.non_field_errors %}
-              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-            {% endif %}
-
-            <!-- ───────── STANDARD FIELDS ───────── -->
-            <div class="row g-3">
-              {% for field in form.visible_fields %}
-                {% if field.name not in "password,confirm_password,unit_assignments" %}
-                <div class="col-md-6">
-                  <label class="form-label">
-                    {{ field.label }}
-                    {% if field.field.required %}
-                      <span class="text-danger">*</span>
+                    {% if user_obj.image %}
+                      <img
+                        id="sidebar-preview-img"
+                        src="{{ user_obj.image.url }}"
+                        alt="{{ user_obj.username }}"
+                        style="
+                          width:100px;
+                          height:100px;
+                          object-fit:cover;
+                          border-radius:24px;
+                          box-shadow:0 4px 4px {{ user_obj.color_hex }};">
+                    {% else %}
+                      <span
+                        id="sidebar-preview-img"
+                        class="avatar avatar-xl d-inline-flex align-items-center justify-content-center"
+                        style="
+                          width:100px;
+                          height:100px;
+                          border-radius:24px;
+                          background:{{ user_obj.color_hex }}22;
+                          box-shadow:0 4px 4px {{ user_obj.color_hex }};">
+                        {{ user_obj.initials }}
+                      </span>
                     {% endif %}
+                  {% endif %}
+
+                  <!-- Hover Overlay -->
+                  <div id="avatar-overlay"
+                      class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                      style="
+                          border-radius:24px;
+                          background:rgba(0,0,0,0.55);
+                          opacity:0;
+                          cursor:pointer;
+                          transition:0.3s;
+                      ">
+                      <i class="ti ti-camera text-white" style="font-size:28px;"></i>
+                  </div>
+
+                  <!-- Progress Ring -->
+                  <svg id="upload-progress-ring"
+                      width="100" height="100"
+                      class="position-absolute top-0 start-0 d-none">
+                    <circle
+                        cx="60"
+                        cy="60"
+                        r="54"
+                        stroke="#00E676"
+                        stroke-width="4"
+                        fill="none"
+                        stroke-dasharray="339"
+                        stroke-dashoffset="339"
+                    />
+                  </svg>
+                </div>
+                <div class="mt-3">
+                  <label class="btn btn-sm btn-outline-secondary mb-0"
+                    style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                    for="{{ form.image.id_for_label }}">
+                    {% if edit_mode %}Change Picture{% else %}Upload Picture{% endif %}
                   </label>
 
-                  {% if field.name == 'image' %}
-                    <input type="file"
-                           name="image"
-                           accept="image/*"
-                           class="form-control"
-                           onchange="previewImage(this)">
-                  {% else %}
-                    {% render_field field class="form-control" %}
-                  {% endif %}
-
-                  {% if field.errors %}
-                    <div class="text-danger small mt-1">
-                      {{ field.errors.0 }}
-                    </div>
-                  {% endif %}
-
-                  {% if field.help_text %}
-                    <div class="form-text text-secondary">
-                      {{ field.help_text }}
-                    </div>
-                  {% endif %}
+                  <input
+                    type="file"
+                    name="image"
+                    id="id_image"
+                    accept="image/*"
+                    class="d-none"
+                    onchange="handleFile(this.files[0])">
                 </div>
-                {% endif %}
-              {% endfor %}
-            </div>
 
+                <div id="avatar-save-indicator"
+                    class="text-success small mt-2 d-none">
+                    ✓ Saved
+                </div>
 
-            <!-- ───────── UNIT ASSIGNMENTS (NEW SYSTEM) ───────── -->
-            {% if request|is_admin %}
-            <div class="mt-5">
+                <div id="avatar-cancel"
+                    class="text-danger small mt-1 d-none"
+                    style="cursor:pointer;">
+                    Cancel Upload
+                </div>
 
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="fw-bold text-yellow mb-0">Unit Assignments</h4>
-
-                <button type="button"
-                        class="btn btn-outline-secondary btn-sm"
-                        onclick="addAssignment()">
-                  + Add Unit
-                </button>
               </div>
 
-              <div id="unit-assignment-builder"></div>
+              <nav class="d-flex flex-column gap-3">
 
-              <!-- hidden json payload -->
-              <input type="hidden"
-                     name="unit_assignments"
-                     id="unitAssignmentsInput">
-
-            </div>
-            {% endif %}
-
-
-            <!-- ───────── PASSWORD SECTION ───────── -->
-            {% if edit_mode %}
-            <div class="mt-4">
-              <button type="button"
-                      id="togglePasswordBtn"
-                      class="btn btn-outline-secondary btn-sm">
-                Change password
-              </button>
-
-              <div id="passwordFields"
-                   class="row g-3 mt-2"
-                   style="display:none;">
-            {% else %}
-              <div id="passwordFields" class="row g-3 mt-4">
-            {% endif %}
-
-              {% for field in form.visible_fields %}
-                {% if field.name == 'password' or field.name == 'confirm_password' %}
-                <div class="col-md-6">
-                  <label class="form-label">{{ field.label }}</label>
-                  {% render_field field class="form-control" type="password" %}
-                  {% if field.errors %}
-                    <div class="text-danger small mt-1">
-                      {{ field.errors.0 }}
-                    </div>
-                  {% endif %}
-                </div>
+                {# ── Batch Add & Bulk Upload (create mode only) ── #}
+                {% if not edit_mode %}
+                <a href="#" data-section="batch"
+                   class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none section-nav-link {% if section == 'batch' %}text-white bg-gray-900 active{% else %}text-muted{% endif %}"
+                   style="font-size:.875rem;transition:all .15s;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                  Batch Add
+                </a>
+                <a href="#" data-section="import"
+                   class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none section-nav-link {% if section == 'import' %}text-white bg-gray-900 active{% else %}text-muted{% endif %}"
+                   style="font-size:.875rem;transition:all .15s;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                  Import CSV
+                </a>
                 {% endif %}
-              {% endfor %}
+
+                {% if edit_mode %}
+                <a href="#" data-section="profile"
+                   class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none section-nav-link {% if section == 'profile' %}text-white bg-gray-900 active{% else %}text-muted{% endif %}"
+                   style="font-size:.875rem;transition:all .15s;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                  Member Profile
+                </a>
+                <a href="#" data-section="edit"
+                   class="d-flex align-items-center gap-2 px-3 py-2 text-decoration-none section-nav-link {% if section == 'edit' or not section or not edit_mode %}text-white bg-gray-900 active{% else %}text-muted{% endif %}"
+                   style="font-size:.875rem;transition:all .15s;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                  Edit Member
+                </a>
+                {% endif %}
+              </nav>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="card bg-grey h-100" style="border-radius:0 36px 36px 0;">
+            <div class="card-body p-4 p-lg-5">
+              {% if edit_mode %}
+              <div id="section-profile" class="uf-section" {% if section != 'profile' %}style="display:none"{% endif %}>
+                <div class="d-flex align-items-start justify-content-between mb-4">
+                  <div>
+                    <h2 class="fw-bold mb-1">{{ user_obj.title }} {{ user_obj.full_name }}'s Profile</h2>
+                    <p class="text-muted mb-0 small">Current Member Profile and Assignments.</p>
+                  </div>
+                  <a href="#" class="btn bg-grey btn-sm section-nav-link" data-section="edit" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">Edit Member</a>
+                </div>
+
+                <div class="row g-4 pb-4">
+                  <div class="col-12 col-xl-4">
+                    <div class="card bg-gray-900 mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      <div class="card-body p-4 mb-3 text-center">
+                        {% if user_obj.image %}
+                        <img id="form-preview-img" src="{{ user_obj.image.url }}" alt="{{ user_obj.username }}"
+                            style="width:200px;height:200px;object-fit:cover;border-radius:24px;box-shadow:0 4px 8px #000000d2;">
+                        {% else %}
+                        <span class="avatar avatar-xl bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                            style="width:200px;height:200px;border-radius:24px;background:{{ user_obj.color_hex }}22;box-shadow:0 4px 8px #000000d2;">
+                          {{ user_obj.initials }}
+                        </span>
+                        {% endif %}
+
+                        <h3 class="fw-bold mb-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#323738" class="icon icon-tabler icons-tabler-filled icon-tabler-user">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 2a5 5 0 1 1 -5 5l.005 -.217a5 5 0 0 1 4.995 -4.783z" />
+                            <path d="M14 14a5 5 0 0 1 5 5v1a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-1a5 5 0 0 1 5 -5h4z" />
+                          </svg>
+                          {{ user_obj.title|default:"" }} {{ user_obj.full_name }}
+                        </h3>
+                        <div class="mt-1">
+                          {% if user_obj.phone_number %}
+                          <a href="tel:{{ user_obj.phone_number }}" class="text-white" title="Call">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2">
+                              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                              <path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5-2.5l5 2v4a2 2 0 0 1-2 2a16 16 0 0 1-15-15a2 2 0 0 1 2-2"/>
+                              <path d="M15 7a2 2 0 0 1 2 2"/><path d="M15 3a6 6 0 0 1 6 6"/>
+                            </svg>
+                          </a>
+                          {{ user_obj.phone_number|default:"" }}
+                          {% endif %}
+                        </div>
+                        <div class="mt-1">
+                          {% if user_obj.email %}
+                          <a href="mailto:{{ user_obj.email }}" class="text-white" title="Mail">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                  viewBox="0 0 24 24" fill="#04e2ff">
+                              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                              <path d="M22 7.535v9.465a3 3 0 0 1-2.824 2.995l-.176.005h-14a3 3 0 0 1-2.995-2.824l-.005-.176v-9.465l9.445 6.297.116.066a1 1 0 0 0 .878 0l.116-.066z"/>
+                              <path d="M19 4c1.08 0 2.027.57 2.555 1.427l-9.555 6.37-9.555-6.37a2.999 2.999 0 0 1 2.354-1.42l.201-.007z"/>
+                            </svg>
+                          </a>
+                          {{ user_obj.email|default:"" }}
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-12 col-xl-8">
+                    <div class="card bg-gray-900 h-100"
+                        style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      <div class="card-body p-4">
+
+                        <div class="row g-3">
+                          <div class="col-6 col-md-4">
+                            <div class="card bg-cyan-lt text-center py-3 px-2" style="box-shadow:inset 0 2px 2px #000000d2;border-radius:24px;">
+                              <div class="fw-bold fs-5 text-white">
+                                {% if trainee_profile %}
+                                  Trainee
+                                {% else %}
+                                  {{ workforce_profile.stage.name|default:"—" }}
+                                {% endif %}
+                              </div>
+                              <div class="text-muted small">Stage</div>
+                            </div>
+                          </div>
+                          <div class="col-6 col-md-4">
+                            <div class="card bg-cyan-lt text-center py-3 px-2" style="box-shadow:inset 0 2px 2px #000000d2;border-radius:24px;">
+                              <div class="fw-bold fs-5 text-white">{{ assigned_workforce_role.role.name|default:"—" }}</div>
+                              <div class="text-muted small">Workforce Role</div>
+                            </div>
+                          </div>
+                          <div class="col-6 col-md-4">
+                            <div class="card bg-cyan-lt text-center py-3 px-2" style="box-shadow:inset 0 2px 2px #000000d2;border-radius:24px;">
+                              <div class="fw-bold fs-5 text-white">{{ member_memberships|length }}</div>
+                              <div class="text-muted small">Units / Groups</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row g-2 py-4">
+                  <div class="col-12">
+                    <div class="card bg-cyan-lt h-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      <div class="card-body text-white p-4">
+                        <h3 class="fw-semibold mb-3">Assignments</h3>
+                        {% if member_memberships %}
+                        <div class="row g-2">
+                          {% for membership in member_memberships %}
+                          <div class="col-12 col-md-6">
+                              <div class="p-3"
+                                  style="border-radius:24px;box-shadow:inset 0 2px 2px #000000d2;background:{{ membership.unit__color_hex }}1a;border:1px solid {% if membership.is_probation and membership.is_active %}#f76707{% elif membership.is_probation and not membership.is_active %}#6c757d{% else %}{{ membership.unit__color_hex }}55{% endif %};">
+                              <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                <div class="fw-semibold text-white">{{ membership.unit__name }}</div>
+                                <div class="d-flex align-items-center gap-1">
+                                  {% if membership.is_probation and membership.is_active %}
+                                  <span class="badge bg-orange-lt" title="Serving probation in this unit">⚠ Probation</span>
+                                  {% elif membership.is_probation and not membership.is_active %}
+                                  <span class="badge bg-secondary-lt" title="Temporarily unavailable during probation">Locked</span>
+                                  {% endif %}
+                                  <span class="badge bg-secondary-lt text-uppercase">{{ membership.unit__unit_type }}</span>
+                                </div>
+                              </div>
+                              <div class="text-muted small">
+                                {% if membership.roles %}
+                                  {{ membership.roles|join:", " }}
+                                {% else %}
+                                  No specific role selected
+                                {% endif %}
+                                {% if membership.is_probation and not membership.is_active %}
+                                  <div class="text-warning mt-1">This unit/group is the probation hold record and is temporarily unavailable.</div>
+                                {% elif membership.is_probation and membership.is_active %}
+                                  <div class="text-warning mt-1">Serving probation here.</div>
+                                {% endif %}
+                              </div>
+                            </div>
+                          </div>
+                          {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted mb-0">No active unit or group assignments yet.</p>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>{# /section-profile #}
+              {% endif %}{# /if edit_mode — profile section #}
+ 
+              {# ── Edit/Create form — always rendered; display toggled by JS in edit mode ── #}
+              <div id="section-edit" class="uf-section" {% if edit_mode and section == 'profile' %}style="display:none"{% elif not edit_mode and section in 'batch,import' %}style="display:none"{% endif %}>
+                <form id="userForm" method="post" enctype="multipart/form-data" novalidate>
+                  {% csrf_token %}
+                  <input type="hidden" name="section" value="edit">
+                  {{ form.unit_assignments }}
+                  {# Per-unit probation: comma-sep unit IDs on probation — seeded from server on edit load #}
+                  <input type="hidden" id="id_unit_prob_ids"   name="unit_prob_ids"
+                         value="{% if edit_mode %}{{ probation_unit_ids|join:',' }}{% endif %}">
+                  {# Disciplinary unit pairs: "unitId:discUnitId" comma-sep — seeded from server on edit load #}
+                  <input type="hidden" id="id_unit_disc_pairs" name="unit_disc_pairs"
+                         value="{% if edit_mode %}{% for hold in probation_hold_memberships %}{% if hold.is_probation and hold.workforce_member %}{% for service in probation_service_memberships %}{% if service.workforce_member_id == hold.workforce_member_id %}{{ hold.unit_id }}:{{ service.unit_id }}{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endif %}{% endfor %}{% endif %}">
+                  <input type="hidden" id="id_group_prob_ids"  name="group_prob_ids"  value="">
+                  <input type="hidden" id="id_group_disc_pairs" name="group_disc_pairs" value="">
+                  {{ form.group_assignments }}
+
+                  <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                      <h3 class="fw-bold mb-1">{% if edit_mode %}Edit Member{% else %}Add Member{% endif %}</h3>
+                      <p class="text-muted mb-0 small">Workforce stage controls whether this member is active. Inductee is hidden because it belongs to the guest pipeline only.</p>
+                    </div>
+                  </div>
+                  {% if form.image.errors %}<div class="text-danger small mb-3">{{ form.image.errors.0 }}</div>{% endif %}
+
+
+                  <div class="card bg-gray-900 mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                    <div class="card-body p-4">
+                      <h3 class="fw-semibold mb-3 text-cyan">Personal Details</h3>
+                      <div class="row g-3">
+                        <div class="col-md-3">
+                          <label class="form-label">{{ form.title.label }}</label>
+                          {% render_field form.title class="form-select bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                        </div>
+                        <div class="col-md-9">
+                          <label class="form-label">{{ form.full_name.label }} <span class="text-danger">*</span></label>
+                          {% render_field form.full_name class="form-control bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                          {% if form.full_name.errors %}<div class="text-danger small">{{ form.full_name.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">{{ form.email.label }}</label>
+                          {% render_field form.email class="form-control bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                          {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">{{ form.phone_number.label }}</label>
+                          {% render_field form.phone_number class="form-control bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">{{ form.date_of_birth.label }}</label>
+                          {% render_field form.date_of_birth class="form-control bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">{{ form.marital_status.label }}</label>
+                          {% render_field form.marital_status class="form-select bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                        </div>
+                        <div class="col-12">
+                          <label class="form-label">{{ form.address.label }}</label>
+                          {% render_field form.address class="form-control bg-gray-800" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" rows="3" %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="card bg-grey mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                    <div class="card-body p-4">
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="fw-semibold mb-0 text-cyan">Credentials</h3>
+                        {% if edit_mode %}
+                        <button type="button" id="togglePasswordBtn" class="btn btn-xs btn-outline-secondary" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                          Change password
+                        </button>
+                        {% endif %}
+                      </div>
+                      <div class="row g-3">
+                        <div class="col-md-6">
+                          <label class="form-label">{{ form.username.label }}</label>
+                          {# Determine prefix and suffix from church settings #}
+                          {% with prefix=church.settings.username_prefix|default:"" suffix_on=church.settings.username_use_church_slug_suffix|default:False %}
+              
+                          {% if prefix or suffix_on %}
+                          {# Input-group with decorators #}
+                          <div class="input-group input-group-flat" id="usernameGroup" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+                            {% if prefix %}
+                            <span class="input-group-text font-monospace text-muted"
+                                  style="background:{{ church.primary_color }}22;box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 0 0 24px;border-right:0;padding-inline:1rem;">{{ prefix }}</span>
+                            {% endif %}
+                            <input
+                              type="text"
+                              name="username"
+                              id="id_username"
+                              class="form-control font-monospace"
+                              placeholder="memberusername"
+                              autocomplete="username"
+                              required
+                              style="box-shadow:inset 0 4px 8px #000000d2;{% if not prefix %}border-radius:24px 0 0 24px;{% elif not suffix_on %}border-radius:0 24px 24px 0;{% else %}border-radius:0;{% endif %}"
+                              value="{{ form.username.value|default:'' }}"
+                            >
+                            {% if suffix_on %}
+                            <span class="input-group-text font-monospace text-muted"
+                                  id="suffixLabel"
+                                  style="background:{{ church.primary_color }}22;box-shadow:inset 0 4px 8px #000000d2;border-radius:0 24px 24px 0;border-left:0;">
+                              .{{ church.slug }}
+                            </span>
+                            {% endif %}
+                          </div>
+              
+                          {# Live validation hint #}
+                          <div class="form-text" id="usernameHint" style="font-size:.75rem;"></div>
+              
+                          {# Hidden field that submits only the bare username (no prefix/suffix) #}
+                          {# The backend receives just the username; prefix/suffix are cosmetic only #}
+              
+                          {% else %}
+                          {# No prefix/suffix — plain field #}
+                          {% render_field form.username class="form-control" placeholder="myusername" autocomplete="username" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                          {% endif %}
+              
+                          {% endwith %}
+                          {% if form.username.help_text %}<div class="form-text">{{ form.username.help_text }}</div>{% endif %}
+                        </div>
+                        
+                      </div>
+                      <div id="passwordFields" class="row g-3 mt-1{% if edit_mode %} d-none{% endif %}">
+                        <div class="col-md-6">
+                          <label class="form-label">{{ form.password.label }}</label>
+                          {% render_field form.password class="form-control" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" type="password" %}
+                          {% if form.password.help_text %}<div class="form-text">{{ form.password.help_text }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">{{ form.confirm_password.label }}</label>
+                          {% render_field form.confirm_password class="form-control" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" type="password" %}
+                          {% if form.confirm_password.errors %}<div class="text-danger small">{{ form.confirm_password.errors.0 }}</div>{% endif %}
+                        </div>
+                      </div>
+                      <div class="row g-3 mt-2">
+                        {% if can_manage_members and form.is_superuser %}
+                        <div class="col-md-6 d-flex align-items-end">
+                          <div class="card bg-grey w-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                            <div class="card-body d-flex py-3 gap-2">
+                              <span class="d-flex align-items-center mb-0">
+                                {% render_field form.is_superuser style="box-shadow:inset 0 4px 8px #000000d2;" %}
+                              </span>
+                              <span>Superuser</span>
+                            </div>
+                          </div>
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+
+                  {% if can_manage_members %}
+                  <div class="card mb-4" style="background:{{ church.primary_color }}0F;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                    <div class="card-body p-4">
+                      <h3 class="fw-semibold mb-3 text-cyan">Workforce Assignment</h3>
+                      {% if trainee_profile %}
+                      <div class="alert alert-warning mb-4" style="border-radius:24px;box-shadow:inset 0 4px 8px #000000d2;">
+                        This member is still in induction training. Regular Unit/Group assignments, Workforce role, and Workforce stage are locked here until promotion. Only probation unit assignment is available.
+                      </div>
+                      {% elif is_global_probation %}
+                      <div class="alert alert-danger mb-4" style="border-radius:24px;box-shadow:inset 0 4px 8px #000000d2;">
+                        <strong>Global Disciplinary Probation.</strong>
+                        This member is serving probation across <em>all</em> their active unit memberships simultaneously.
+                        Assignment cards are locked until at least one unit clears probation.
+                      </div>
+                      {% elif probation_hold_memberships or probation_service_memberships %}
+                      <div class="alert alert-warning mb-4" style="border-radius:24px;box-shadow:inset 0 4px 8px #000000d2;">
+                        <strong>Unit-Level Disciplinary Probation.</strong>
+                        {% if probation_hold_memberships %}
+                          Disciplined from:
+                          <strong>
+                            {% for membership in probation_hold_memberships %}
+                              {{ membership.unit.name }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                          </strong>.
+                        {% endif %}
+                        {% if probation_service_memberships %}
+                          Serving probation in:
+                          <strong>
+                            {% for membership in probation_service_memberships %}
+                              {{ membership.unit.name }}
+                              {% if membership.unit_id != membership.workforce_member.member.trainee_profiles.first.preferred_unit_id %}
+                                <span class="text-muted small">(transferred from preferred unit)</span>
+                              {% endif %}
+                              {% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                          </strong>.
+                        {% endif %}
+                        <span class="text-success fw-semibold">All other unit and group assignments remain fully manageable.</span>
+                      </div>
+                      {% endif %}
+                      <div class="row g-3">
+                        {% if is_hq_assigned %}
+                        <div class="col-12">
+                          <div class="alert alert-info mb-0 d-flex align-items-center gap-2"
+                               style="border-radius:18px;box-shadow:inset 0 4px 8px #000000d2;font-size:.85rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" class="flex-shrink-0">
+                              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+                              <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            <div>
+                              <strong>HQ-Assigned Member.</strong>
+                              Member ID <code>{{ hq_member.custom_id|default:"—" }}</code>
+                              and Workforce Stage are managed by HQ.
+                              {% if hq_member %}<span class="text-muted">(HQ stage: {{ hq_member.workforce_stage|default:"—" }})</span>{% endif %}
+                              Campus-level <strong>Workforce Role</strong>, <strong>Role Label</strong>,
+                              <strong>Trainee Status</strong>, and unit/group assignments are campus-driven and editable here.
+                            </div>
+                          </div>
+                        </div>
+                        {% endif %}
+                        {% if not trainee_profile %}
+                        <div class="col-md-6">
+                          <label class="form-label">{{ form.workforce_roles.label }}</label>
+                          {% render_field form.workforce_roles class="form-select" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" data-role-control="true" %}
+                          {% if form.workforce_roles.errors %}<div class="text-danger small">{{ form.workforce_roles.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">{{ form.workforce_stage.label }}</label>
+                          {% render_field form.workforce_stage class="form-select" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" data-stage-control="true" %}
+                          <div id="workforceStageHelp" class="form-text">{{ form.workforce_stage.help_text }}</div>
+                          {% if form.workforce_stage.errors %}<div class="text-danger small">{{ form.workforce_stage.errors.0 }}</div>{% endif %}
+                          {% if workforce_profile and workforce_profile.stage and workforce_profile.stage.slug == 'probationer' %}
+                            {% with prob_count=probation_unit_ids|length %}
+                            <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
+                              {% if prob_count > 0 %}
+                                <span class="badge bg-orange-lt">
+                                  ⚠ Unit Probation
+                                  <span class="badge bg-orange ms-1" style="font-size:.65rem;">{{ prob_count }}</span>
+                                </span>
+                                <span class="text-muted" style="font-size:.72rem;">
+                                  Serving probation in {{ prob_count }} Unit{{ prob_count|pluralize }}.
+                                  See locked card{{ prob_count|pluralize }} below.
+                                </span>
+                              {% else %}
+                                <span class="badge bg-orange-lt">⚠ Global Probation</span>
+                                <span class="text-muted" style="font-size:.72rem;">
+                                  All Memberships on probation.
+                                </span>
+                              {% endif %}
+                            </div>
+                            {% endwith %}
+                          {% endif %}
+                        </div>
+                        {% if form.set_probation %}
+                        <div class="col-12">
+                          <div class="form-check form-switch mt-2">
+                            {% render_field form.set_probation class="form-check-input" data-probation-toggle="true" %}
+                            <label class="form-check-label" for="{{ form.set_probation.id_for_label }}">
+                              Set probation
+                            </label>
+                            <div class="form-text text-muted" style="font-size:.72rem;">
+                              Applies probation across <strong>all</strong> Unit &amp; Group Memberships
+                              and sets the Member's stage to Probationer automatically.
+                              To set probation on a specific Unit only — or send to a Disciplinary Unit —
+                              use the Probation toggle on each Unit/Group card below.
+                            </div>
+                          </div>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+
+                        {# Trainee probation unit — only visible for active trainees #}
+                        {% if trainee_profile %}
+                        <div class="col-12">
+                          <div class="mt-4 p-3 bg-gray-800" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                              <span class="badge" style="background:#7c3c0044;color:#f59f00;border-radius:8px;">🎓 Trainee</span>
+                              <span class="small text-muted">
+                                Induction course:
+                                {% if trainee_profile.lms_enrollment %}
+                                  <strong class="text-white">{{ trainee_profile.lms_enrollment.course.title }}</strong>
+                                  — {{ trainee_profile.lms_enrollment.get_status_display }}
+                                {% else %}Not yet enrolled{% endif %}
+                              </span>
+                            </div>
+
+                            <label class="form-label small text-warning fw-semibold">Assign Probation Unit</label>
+                            {% if trainee_profile.probation_unit %}
+                              {# Already assigned — show record only, disabled #}
+                              <input type="text"
+                                    class="form-control bg-dark text-white border-secondary"
+                                    style="border-radius:12px;opacity:.75;"
+                                    value="{{ trainee_profile.probation_unit.name }}"
+                                    disabled readonly>
+                              <div class="form-text text-muted" style="font-size:.72rem;">
+                                Probation Unit assigned. Preferred Unit after probation:
+                                <strong>{{ trainee_profile.preferred_unit.name|default:"Not specified" }}</strong>
+                              </div>
+                            {% else %}
+                              {# Not yet assigned — show selector #}
+                              <select name="probation_unit_id"
+                                      class="form-select bg-gray-900 text-white"
+                                      style="border-radius:24px;box-shadow:inset 0 4px 8px #000000d2;"
+                                      {% if not trainee_probation_assignment_enabled %}disabled{% endif %}>
+                                <option value="">Select Probation Unit (optional)</option>
+                                {% for unit in available_units %}
+                                <option value="{{ unit.id }}">{{ unit.name }}</option>
+                                {% endfor %}
+                              </select>
+                              <div class="form-text text-muted" style="font-size:.72rem;">
+                                {% if trainee_probation_assignment_enabled %}
+                                Assign a Unit for this Trainee to serve during their probation period.
+                                Once assigned it cannot be changed here — use the Unit panel to manage Membership.<br>
+                                {% else %}
+                                This becomes available once Induction Training has been completed and the Trainee is ready for promotion.<br>
+                                {% endif %}
+                                Their preferred Unit is: <strong>{{ trainee_profile.preferred_unit.name|default:"Not yet specified" }}</strong>.
+                              </div>
+                            {% endif %}
+                          </div>
+                        </div>
+                        {% endif %}
+                      </div>
+
+                      {% if not trainee_profile %}
+                      <hr class="my-4 border-secondary">
+
+                      <div class="row g-4">
+                        <div class="col-12 col-xl-6" id="unitAssignmentsSection">
+                          <div class="card bg-grey h-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                            <div class="card-body p-4">
+                              <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="fw-semibold mb-0">Units</h4>
+                                <button type="button" id="addUnitBtn" class="btn btn-sm btn-outline-secondary d-none"
+                                        style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                                  Add Unit
+                                </button>
+                              </div>
+                              <div class="input-group mb-3" style="border-radius:24px;">
+                                <span class="input-group-text bg-dark text-muted" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 0 0 24px;min-width:70px;">Unit</span>
+                                {% render_field form.unit_choice class="form-select bg-grey" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:0;" data-assignment-select="unit" %}
+                                <span class="input-group-text bg-dark text-muted" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:0;min-width:70px;">Role</span>
+                                {% render_field form.unit_role_choice class="form-select bg-grey" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:0 24px 24px 0;" disabled="disabled" data-assignment-role="unit" %}
+                              </div>
+                              <div id="unitAssignmentHelp" class="form-text mb-3">Select a unit first, then choose its role and add it to the list.</div>
+                              {% if form.unit_assignments.errors %}<div class="text-danger small mb-3">{{ form.unit_assignments.errors.0 }}</div>{% endif %}
+                              <div id="unitAssignmentsCard" class="d-flex flex-column gap-2"></div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="col-12 col-xl-6" id="groupAssignmentsSection">
+                          <div class="card bg-grey h-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                            <div class="card-body p-4">
+                              <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="fw-semibold mb-0">Groups</h4>
+                                <button type="button" id="addGroupBtn" class="btn btn-sm btn-outline-secondary d-none"
+                                        style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                                  Add Group
+                                </button>
+                              </div>
+                              <div class="input-group mb-3" style="border-radius:24px;">
+                                <span class="input-group-text bg-dark text-muted" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 0 0 24px;" style="min-width:70px;">Group</span>
+                                {% render_field form.group_choice class="form-select bg-grey" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:0;" data-assignment-select="group" %}
+                                <span class="input-group-text bg-dark text-muted" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:0;min-width:70px;">Role</span>
+                                {% render_field form.group_role_choice class="form-select bg-grey" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:0 24px 24px 0;" disabled="disabled" data-assignment-role="group" %}
+                              </div>
+                              <div id="groupAssignmentHelp" class="form-text mb-3">Select a group first, then choose its role and add it to the list.</div>
+                              {% if form.group_assignments.errors %}<div class="text-danger small mb-3">{{ form.group_assignments.errors.0 }}</div>{% endif %}
+                              <div id="groupAssignmentsCard" class="d-flex flex-column gap-2"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  {% if edit_mode and user_memberships %}
+                  <div class="card bg-gray-900 mt-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                    <div class="card-body p-4">
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                          <h4 class="fw-semibold mb-0 text-cyan">Transfer to Another Unit</h4>
+                          <small class="text-muted">Move this member from one of their current units to a different one.</small>
+                        </div>
+                        <button class="btn btn-sm btn-ghost text-muted gap-1" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#transferSection"
+                                style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-transfer">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M20 10h-16l5.5 -6" /><path d="M4 14h16l-5.5 6" />
+                          </svg>
+                          Transfer
+                        </button>
+                      </div>
+                      <div id="transferSection" class="collapse">
+                        {# Transfer form is OUTSIDE #userForm to avoid nested-form HTML bug #}
+                        {# It is submitted independently via its own submit button            #}
+                        <div class="alert alert-info small py-2 mb-2">
+                          Submitting the transfer will NOT save any other unsaved edits on this page.
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                              <label class="form-label small fw-semibold">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-transfer-out">
+                                  <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 19v2h16v-14l-8 -4l-8 4v2" />
+                                  <path d="M13 14h-9" /><path d="M7 11l-3 3l3 3" />
+                                </svg>
+                                From (Current Unit)
+                              </label>
+                              <select id="transferFromSelect" class="form-select"
+                                      style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+                                {% for mem in user_memberships %}
+                                  <option value="{{ mem.id }}">
+                                    {{ mem.unit.name }}
+                                    {% if mem.is_probation %}(probation){% endif %}
+                                    {% if mem.is_unit_head %}(unit head){% endif %}
+                                  </option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                  
+                            <div class="col-auto d-flex align-items-end pb-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-arrow-big-right-lines">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12.089 3.634a2 2 0 0 0 -1.089 1.78l-.001 2.585l-1.999 .001a1 1 0 0 0 -1 1v6l.007 .117a1 1 0 0 0 .993 .883l1.999 -.001l.001 2.587a2 2 0 0 0 3.414 1.414l6.586 -6.586a2 2 0 0 0 0 -2.828l-6.586 -6.586a2 2 0 0 0 -2.18 -.434l-.145 .068z" />
+                                <path d="M3 8a1 1 0 0 1 .993 .883l.007 .117v6a1 1 0 0 1 -1.993 .117l-.007 -.117v-6a1 1 0 0 1 1 -1z" /><path d="M6 8a1 1 0 0 1 .993 .883l.007 .117v6a1 1 0 0 1 -1.993 .117l-.007 -.117v-6a1 1 0 0 1 1 -1z" />
+                              </svg>
+                            </div>
+                  
+                            <div class="col-md-5">
+                              <label class="form-label small fw-semibold">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-transfer-in">
+                                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                  <path d="M4 18v3h16v-14l-8 -4l-8 4v3" /><path d="M4 14h9" /><path d="M10 11l3 3l-3 3" />
+                                </svg>
+                                To (New Unit)
+                              </label>
+                              <select id="transferToSelect" class="form-select"
+                                      style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+                                <option value="">Select New Unit</option>
+                                {% for unit in available_units %}
+                                  <option value="{{ unit.id }}">{{ unit.name }}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                          </div>
+                  
+                          <div class="row mt-3">
+                            <div class="col-md-6">
+                              <div class="form-check">
+                                <input type="checkbox" id="editTransferProbation" class="form-check-input">
+                                <label class="form-check-label small" for="editTransferProbation">
+                                  Mark as Probationer in the New Unit
+                                </label>
+                              </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                              <button type="button" id="transferSubmitBtn" class="btn btn-sm bg-warning-lt"
+                                      style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                                Transfer Member
+                              </button>
+                            </div>
+                          </div>
+                      </div>
+                    </div>
+                  </div>
+                  {% endif %}
+                  {% endif %}
+
+                  <div class="d-flex gap-3 mt-4 flex-wrap">
+                    <button type="submit" class="btn btn-success fw-bold px-5"
+                            style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      {% if edit_mode %}Save Changes{% else %}Create Member{% endif %}
+                    </button>
+                    <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary px-4"
+                        style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      Cancel
+                    </a>
+                    {% if edit_mode and can_manage_members %}
+                    <button type="button" class="btn btn-danger ms-auto" 
+                            data-bs-target="#deleteUserModal" data-bs-toggle="modal"
+                            data-user-name="{{ user_obj.title|default:'' }} {{ user_obj.full_name|default:user_obj.username }}"
+                            style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                      Delete Member
+                    </button>
+                    {% endif %}
+                  </div>
+                </form>
+              </div>{# /section-edit #}
+
+              {# ── Batch Add section — rendered inside the right panel ── #}
+              {% if not edit_mode %}
+              <div id="section-batch" class="uf-section" {% if section != 'batch' %}style="display:none"{% endif %}>
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                  <div>
+                    <h3 class="fw-bold mb-1">Batch Add Members</h3>
+                    <p class="text-muted small mb-0">Add up to 10 members at once. Each row uses the same logic as the single form.</p>
+                  </div>
+                  <a href="#" data-section="edit" class="btn btn-sm btn-secondary section-nav-link"
+                     style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">← Single Add</a>
+                </div>
+                <form method="post" action="{% url 'accounts:batch_create_users' %}"
+                      id="batchUserForm" enctype="multipart/form-data">
+                  {% csrf_token %}
+
+                  <div id="batchUserRows" class="d-flex flex-column gap-3">
+                    <div class="batch-user-row p-3 bg-cyan-lt"
+                         style="border-radius:24px;box-shadow:0 4px 8px #000000d2;">
+                      <div class="row g-2 mb-1 d-none d-xl-flex text-muted"
+                           style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">
+                        <div class="col-xl-1">Title</div>
+                        <div class="col-xl-2">Full Name</div>
+                        <div class="col-xl-2">Phone</div>
+                        <div class="col-xl-1">Stage</div>
+                        <div class="col-xl-1">Role</div>
+                        <div class="col-xl-1">Unit</div>
+                        <div class="col-xl-1">Group</div>
+                        <div class="col-xl-auto">Photo</div>
+                      </div>
+                      <div class="row g-2 align-items-center">
+                        <div class="col-6 col-xl-1">
+                          <label class="form-label d-xl-none small text-muted mb-1">Title</label>
+                          <select name="title[]" class="form-select form-select-sm"
+                                  style="box-shadow:inset 0 4px 8px #000000d2;border-radius:12px;">
+                            <option value="">—</option>
+                            {% for val, label in user_title_choices %}{% if val %}<option value="{{ val }}">{{ label }}</option>{% endif %}{% endfor %}
+                          </select>
+                        </div>
+                        <div class="col-12 col-xl-2">
+                          <label class="form-label d-xl-none small text-muted mb-1">Full Name</label>
+                          <input type="text" name="full_name[]" class="form-control form-control-sm"
+                                 placeholder="Full Name" required
+                                 style="box-shadow:inset 0 4px 8px #000000d2;border-radius:12px;">
+                        </div>
+                        <div class="col-6 col-xl-2">
+                          <label class="form-label d-xl-none small text-muted mb-1">Phone</label>
+                          <input type="text" name="phone[]" class="form-control form-control-sm"
+                                 placeholder="Phone"
+                                 style="box-shadow:inset 0 4px 8px #000000d2;border-radius:12px;">
+                        </div>
+                        <div class="col-6 col-xl-1">
+                          <label class="form-label d-xl-none small text-muted mb-1">Stage</label>
+                          <select name="workforce_stage_id[]" class="form-select form-select-sm"
+                                  style="box-shadow:inset 0 4px 8px #000000d2;border-radius:12px;">
+                            <option value="">— Stage —</option>
+                            {% for stage in workforce_stages %}
+                              <option value="{{ stage.id }}">{{ stage.name }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                        <div class="col-6 col-xl-1">
+                          <label class="form-label d-xl-none small text-muted mb-1">Role</label>
+                          <select name="workforce_role_id[]" class="form-select form-select-sm"
+                                  style="box-shadow:inset 0 4px 8px #000000d2;border-radius:12px;">
+                            <option value="">— Role —</option>
+                            {% for role in workforce_roles_list %}
+                              <option value="{{ role.id }}">{{ role.name }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                        <div class="col-6 col-xl-1">
+                          <label class="form-label d-xl-none small text-muted mb-1">Unit</label>
+                          <select name="unit_id[]" class="form-select form-select-sm"
+                                  style="box-shadow:inset 0 4px 8px #000000d2;border-radius:12px;">
+                            <option value="">— Unit —</option>
+                            {% for unit in batch_units %}
+                              <option value="{{ unit.id }}">{{ unit.name }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                        <div class="col-6 col-xl-1">
+                          <label class="form-label d-xl-none small text-muted mb-1">Group</label>
+                          <select name="group_id[]" class="form-select form-select-sm"
+                                  style="box-shadow:inset 0 4px 8px #000000d2;border-radius:12px;">
+                            <option value="">— Group —</option>
+                            {% for grp in batch_groups %}
+                              <option value="{{ grp.id }}">{{ grp.name }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                        <div class="col-12 col-xl-auto d-flex align-items-center gap-2">
+                          <input type="file" name="image[]" class="form-control form-control-sm"
+                                 accept="image/*" style="border-radius:12px;max-width:120px;">
+                          <button type="button" class="btn btn-sm text-danger remove-user-row" title="Remove">✕</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="d-flex align-items-center gap-3 mt-3 flex-wrap">
+                    <button type="button" id="addUserRow" class="btn btn-sm btn-outline-secondary"
+                            style="border-radius:12px;">+ Add Row</button>
+                    <span id="userRowCount" class="text-muted small">1 / 10</span>
+                    <div class="ms-auto">
+                      <button type="submit" class="btn btn-primary fw-bold px-4"
+                              style="border-radius:12px;">Create All Members</button>
+                    </div>
+                  </div>
+                </form>
+              </div>{# /section-batch #}
+
+              {# ── Import section ── #}
+              <div id="section-import" class="uf-section" {% if section != 'import' %}style="display:none"{% endif %}>
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                  <div>
+                    <h3 class="fw-bold mb-1">Import Members</h3>
+                    <p class="text-muted small mb-0">Upload a CSV or Excel file to add members in bulk.</p>
+                  </div>
+                  <a href="{% url 'accounts:bulk_upload_template' %}?type=members"
+                     class="btn btn-sm btn-outline-warning"
+                     style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">⬇ Download Template</a>
+                </div>
+                <form method="post" action="{% url 'accounts:bulk_upload_users' %}"
+                      enctype="multipart/form-data">
+                  {% csrf_token %}
+                  <input type="hidden" name="upload_type" value="members">
+                  <div class="mb-4">
+                    <label class="form-label fw-semibold">CSV file</label>
+                    <input type="file" name="bulk_file" class="form-control"
+                           accept=".csv" required style="border-radius:12px;">
+                  </div>
+                  <button type="submit" class="btn btn-primary w-100" style="border-radius:24px;">
+                    Import CSV
+                  </button>
+                </form>
+              </div>{# /section-import #}
+              {% endif %}{# /not edit_mode #}
 
             </div>
-
-
-            <!-- ───────── ACTIONS ───────── -->
-            <div class="mt-4 d-flex gap-3 flex-wrap">
-              <button type="submit" class="btn btn-success fw-bold px-5">
-                {% if edit_mode %}Save changes{% else %}Create member{% endif %}
-              </button>
-
-              <a href="{% url 'accounts:user_list' %}"
-                 class="btn btn-secondary px-4">
-                Cancel
-              </a>
-
-              {% if edit_mode and request|is_admin %}
-              <button type="submit"
-                      name="delete_user"
-                      class="btn btn-danger ms-auto"
-                      onclick="return confirm('Delete this member?')">
-                Delete member
-              </button>
-              {% endif %}
-            </div>
-
-          </form>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
+{# ── Standalone Transfer Form (outside #userForm to prevent nested-form bug) ── #}
+{% if edit_mode and user_obj %}
+<form id="transferFormStandalone" method="post" action="{% url 'units:transfer_member' %}" style="display:none;">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{% url 'accounts:edit_user' user_obj.username %}?section=edit">
+  <input type="hidden" id="tf_membership_id" name="membership_id" value="">
+  <input type="hidden" id="tf_to_unit_id" name="to_unit_id" value="">
+  <input type="hidden" id="tf_is_probation" name="is_probation" value="">
+</form>
+{% endif %}
+{% endblock %}
 
-<!-- ========================================================= -->
-<!-- SCRIPTS -->
-<!-- ========================================================= -->
-
+{% block extra_js %}
 <script>
-/* IMAGE PREVIEW */
-function previewImage(input){
-  const img=document.getElementById('preview-img');
-  if(input.files[0]) img.src=URL.createObjectURL(input.files[0]);
-}
+(function () {
+  /* ── No-reload section switcher for user_form ── */
+  var ACTIVE_CLS   = ['text-white', 'bg-gray-900', 'active'];
+  var INACTIVE_CLS = ['text-muted'];
 
+  function switchSection(target) {
+    /* hide all panels */
+    document.querySelectorAll('.uf-section').forEach(function (el) {
+      el.style.display = 'none';
+    });
+    /* show target */
+    var panel = document.getElementById('section-' + target);
+    if (panel) panel.style.display = '';
 
-/* PASSWORD TOGGLE */
-const toggleBtn=document.getElementById('togglePasswordBtn');
-const pwFields=document.getElementById('passwordFields');
+    /* update nav link classes */
+    document.querySelectorAll('.section-nav-link').forEach(function (l) {
+      var isActive = l.dataset.section === target;
+      ACTIVE_CLS.forEach(function (c) {
+        l.classList.toggle(c, isActive);
+      });
+      INACTIVE_CLS.forEach(function (c) {
+        l.classList.toggle(c, !isActive);
+      });
+    });
 
-if(toggleBtn && pwFields){
-  toggleBtn.onclick=()=>{
-    const hidden=pwFields.style.display==='none';
-    pwFields.style.display=hidden?'flex':'none';
-    if(!hidden){
-      pwFields.querySelectorAll('input').forEach(i=>i.value='');
-    }
-  };
-}
+    /* keep URL in sync without reload */
+    try {
+      history.replaceState(null, '', '?section=' + target);
+    } catch (e) {}
+  }
 
-
-/* ===========================================================
-   UNIT → ROLE BUILDER
-=========================================================== */
-
-const UNITS = [
-{% for u in form.available_units %}
-{ id: {{ u.id }}, name: "{{ u.name|escapejs }}" },
-{% endfor %}
-];
-
-const UNIT_ROLES = [
-{% for r in form.available_unit_roles %}
-{ id: {{ r.id }}, name: "{{ r.name|escapejs }}", unit: {{ r.unit_id }} },
-{% endfor %}
-];
-
-const container=document.getElementById("unit-assignment-builder");
-const hidden=document.getElementById("unitAssignmentsInput");
-
-let assignments=[];
-
-function addAssignment(){
-  assignments.push({unit:null,roles:[]});
-  renderAssignments();
-}
-
-function renderAssignments(){
-  container.innerHTML="";
-
-  assignments.forEach((row,i)=>{
-
-    const unitOptions=UNITS.map(u=>
-      `<option value="${u.id}" ${u.id==row.unit?'selected':''}>${u.name}</option>`
-    ).join("");
-
-    const roleOptions=UNIT_ROLES
-      .filter(r=>r.unit==row.unit)
-      .map(r=>
-        `<option value="${r.id}" ${row.roles.includes(r.id)?'selected':''}>${r.name}</option>`
-      ).join("");
-
-    container.innerHTML+=`
-      <div class="border rounded p-3 mb-3">
-
-        <div class="row g-3 align-items-center">
-
-          <div class="col-md-5">
-            <label class="form-label">Unit</label>
-            <select class="form-select"
-                    onchange="changeUnit(${i},this.value)">
-              <option value="">Select Unit</option>
-              ${unitOptions}
-            </select>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label">Roles</label>
-            <select multiple
-                    class="form-select"
-                    onchange="changeRoles(${i},this)">
-              ${roleOptions}
-            </select>
-          </div>
-
-          <div class="col-md-1 text-end">
-            <button type="button"
-                    class="btn btn-outline-danger btn-sm"
-                    onclick="removeAssignment(${i})">
-              ✕
-            </button>
-          </div>
-
-        </div>
-      </div>`;
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest('.section-nav-link');
+    if (!link) return;
+    e.preventDefault();
+    var target = link.dataset.section;
+    if (target) switchSection(target);
   });
 
-  hidden.value=JSON.stringify(assignments);
-}
-
-function changeUnit(i,val){
-  assignments[i].unit=parseInt(val);
-  assignments[i].roles=[];
-  renderAssignments();
-}
-
-function changeRoles(i,el){
-  assignments[i].roles=[...el.selectedOptions].map(o=>parseInt(o.value));
-  hidden.value=JSON.stringify(assignments);
-}
-
-function removeAssignment(i){
-  assignments.splice(i,1);
-  renderAssignments();
-}
-
+  /* On load: ensure only the server-rendered active section is visible.
+     (Server already sets display:none on inactive ones, this just guards
+      against any CSS that overrides it.) */
+  var initial = '{{ section|default:"" }}';
+  if (!initial) {
+    {% if edit_mode %}initial = 'edit';{% else %}initial = 'edit';{% endif %}
+  }
+  /* Don't call switchSection on load — server already set visibility. */
+})();
 </script>
 
+{{ workforce_roles_data|json_script:"workforce-role-data" }}
+<script>
+const ROLES_URL = "{% url 'accounts:unit_roles_json' %}";
+const WORKFORCE_ROLES = JSON.parse(document.getElementById("workforce-role-data").textContent);
+
+// ── Avatar preview & upload (works in both create and edit mode) ──────────
+(function() {
+    const avatarInput  = document.getElementById("id_image");
+    const previewImg   = document.getElementById("sidebar-preview-img");
+    if (!avatarInput) return;
+
+    const avatarWrapper = document.getElementById("avatar-wrapper");
+    const overlay       = document.getElementById("avatar-overlay");
+
+    // Hover effect
+    if (avatarWrapper && overlay) {
+        avatarWrapper.addEventListener("mouseenter", () => overlay.style.opacity = "1");
+        avatarWrapper.addEventListener("mouseleave", () => overlay.style.opacity = "0");
+        overlay.addEventListener("click", () => avatarInput.click());
+        avatarWrapper.addEventListener("dragover", e => { e.preventDefault(); overlay.style.opacity = "1"; });
+        avatarWrapper.addEventListener("drop", e => {
+            e.preventDefault();
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+    }
+
+    avatarInput.addEventListener("change", function() {
+        if (this.files.length) handleFile(this.files[0]);
+    });
+
+    function handleFile(file) {
+        if (!file.type.startsWith("image/")) return;
+        compressImage(file, 800, 0.8).then(blob => {
+            previewLocal(blob);
+            {% if edit_mode and user_obj %}
+            uploadImage(blob);
+            {% else %}
+            // Create mode: put compressed blob back into the file input so it
+            // travels with the form POST when the admin clicks "Create Member".
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(new File([blob], file.name || "photo.jpg", {type: "image/jpeg"}));
+                avatarInput.files = dt.files;
+            } catch(e) { /* DataTransfer not supported — original file will POST instead */ }
+            {% endif %}
+        });
+    }
+
+    function previewLocal(blob) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            if (previewImg) previewImg.src = e.target.result;
+            // Also update form-preview-img if it exists (right panel)
+            const fp = document.getElementById("form-preview-img");
+            if (fp) fp.src = e.target.result;
+        };
+        reader.readAsDataURL(blob);
+    }
+
+    {% if edit_mode and user_obj %}
+    const progressRing   = document.getElementById("upload-progress-ring");
+    const progressCircle = progressRing ? progressRing.querySelector("circle") : null;
+    const saveIndicator  = document.getElementById("avatar-save-indicator");
+    const cancelBtn      = document.getElementById("avatar-cancel");
+    let currentXHR = null;
+
+    function uploadImage(blob) {
+        const url = "{% url 'accounts:upload_user_avatar' user_obj.username %}";
+        const formData = new FormData();
+        formData.append("avatar", blob);
+
+        currentXHR = new XMLHttpRequest();
+        currentXHR.open("POST", url);
+        currentXHR.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+
+        if (progressRing) progressRing.classList.remove("d-none");
+        if (cancelBtn) cancelBtn.classList.remove("d-none");
+
+        currentXHR.upload.onprogress = function(e) {
+            if (e.lengthComputable && progressCircle) {
+                const offset = 339 - (e.loaded / e.total) * 339;
+                progressCircle.style.strokeDashoffset = offset;
+            }
+        };
+        currentXHR.onload = function() {
+            if (progressRing) progressRing.classList.add("d-none");
+            if (cancelBtn) cancelBtn.classList.add("d-none");
+            if (currentXHR.status === 200) {
+                const resp = JSON.parse(currentXHR.responseText);
+                if (previewImg) previewImg.src = resp.image_url;
+                if (saveIndicator) {
+                    saveIndicator.classList.remove("d-none");
+                    setTimeout(() => saveIndicator.classList.add("d-none"), 2000);
+                }
+            }
+        };
+        currentXHR.send(formData);
+    }
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener("click", function() {
+            if (currentXHR) { currentXHR.abort(); }
+            if (progressRing) progressRing.classList.add("d-none");
+            if (cancelBtn) cancelBtn.classList.add("d-none");
+        });
+    }
+    {% endif %}
+
+    function compressImage(file, maxWidth, quality) {
+        return new Promise(resolve => {
+            const img = new Image();
+            const reader = new FileReader();
+            reader.onload = e => img.src = e.target.result;
+            reader.readAsDataURL(file);
+            img.onload = function() {
+                const canvas = document.createElement("canvas");
+                const scale = Math.min(1, maxWidth / img.width);
+                canvas.width  = img.width  * scale;
+                canvas.height = img.height * scale;
+                canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(blob => resolve(blob), "image/jpeg", quality);
+            };
+        });
+    }
+})();
+
+const toggleBtn = document.getElementById('togglePasswordBtn');
+const pwFields = document.getElementById('passwordFields');
+if (toggleBtn && pwFields) {
+  toggleBtn.addEventListener('click', () => {
+    const hidden = pwFields.classList.contains('d-none');
+    pwFields.classList.toggle('d-none', !hidden);
+    if (!hidden) pwFields.querySelectorAll('input').forEach((input) => {
+      input.value = '';
+    });
+  });
+}
+
+function parseAssignments(raw) {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+async function loadRoles(unitId, roleSelect, helpNode) {
+  roleSelect.innerHTML = '<option value="">Select Role</option>';
+  roleSelect.disabled = true;
+  if (!unitId) {
+    if (helpNode) helpNode.textContent = 'Select a unit or group first.';
+    return;
+  }
+
+  try {
+    const response = await fetch(`${ROLES_URL}?unit_id=${unitId}`);
+    const data = await response.json();
+    const roles = data.roles || [];
+    roleSelect.innerHTML = '<option value="">Select Role</option>' + roles.map((role) => (
+      `<option value="${role.id}">${role.name}</option>`
+    )).join('');
+    roleSelect.disabled = false;
+    if (helpNode) helpNode.textContent = roles.length ? 'Optional: choose a role before adding this assignment.' : 'No roles defined for this selection yet.';
+  } catch (err) {
+    if (helpNode) helpNode.textContent = 'Could not load roles right now.';
+  }
+}
+
+function setupAssignmentComposer(config) {
+  const hiddenInput = document.getElementById(config.hiddenId);
+  const unitSelect  = document.getElementById(config.unitId);
+  const roleSelect  = document.getElementById(config.roleId);
+  const addBtn      = document.getElementById(config.addBtnId);
+  const listNode    = document.getElementById(config.listId);
+  const helpNode    = document.getElementById(config.helpId);
+  if (!hiddenInput || !unitSelect || !roleSelect || !addBtn || !listNode) return;
+
+  // Per-card probation state: unit_id(str) → { isProb:bool, discUnitId:str, discUnitName:str }
+  const probState = new Map();
+
+  const syncHidden = () => {
+    hiddenInput.value = JSON.stringify(assignments.map((row) => ({
+      unit: row.unit,
+      role: row.role || '',
+    })));
+    // write per-unit probation hidden fields if this composer owns them
+    if (config.probUnitProbIds) {
+      const probEl = document.getElementById(config.probUnitProbIds);
+      if (probEl) probEl.value = [...probState.entries()]
+        .filter(([, s]) => s.isProb).map(([uid]) => uid).join(',');
+    }
+    if (config.probUnitDiscPairs) {
+      const discEl = document.getElementById(config.probUnitDiscPairs);
+      if (discEl) discEl.value = [...probState.entries()]
+        .filter(([, s]) => s.isProb && s.discUnitId)
+        .map(([uid, s]) => `${uid}:${s.discUnitId}`).join(',');
+    }
+  };
+
+  let assignments = parseAssignments(hiddenInput.value);
+  // Seed probation state from hidden fields on edit load
+  (() => {
+    const probEl = config.probUnitProbIds ? document.getElementById(config.probUnitProbIds) : null;
+    const discEl = config.probUnitDiscPairs ? document.getElementById(config.probUnitDiscPairs) : null;
+    const probIds = probEl ? (probEl.value||'').split(',').filter(Boolean) : [];
+    const discPairs = discEl ? (discEl.value||'').split(',').filter(Boolean) : [];
+    probIds.forEach(uid => {
+      if (!probState.has(uid)) probState.set(uid, { isProb:true, discUnitId:'', discUnitName:'' });
+      else probState.get(uid).isProb = true;
+    });
+    discPairs.forEach(pair => {
+      const [uid, did] = pair.split(':');
+      if (!probState.has(uid)) probState.set(uid, { isProb:true, discUnitId:did, discUnitName:'' });
+      else { probState.get(uid).isProb = true; probState.get(uid).discUnitId = did; }
+    });
+  })();
+
+  const canAdd = () => Boolean(unitSelect.value);
+  const refreshAddButton = () => addBtn.classList.toggle('d-none', !canAdd());
+
+  // Build disciplinary unit <select> options — use the list injected for this composer
+  const buildDiscOptions = (currentDiscId) => {
+    const allUnits = config.allUnitsKey ? (window[config.allUnitsKey] || []) : (window.__allUnits || []);
+    const opts = [`<option value="">— Global (all memberships) —</option>`];
+    allUnits.forEach(u => {
+      opts.push(`<option value="${u.id}"${String(u.id)===String(currentDiscId)?' selected':''}>${u.name}</option>`);
+    });
+    return opts.join('');
+  };
+
+  const render = () => {
+    listNode.innerHTML = '';
+    if (!assignments.length) {
+      listNode.innerHTML = `<div class="text-muted small">No ${config.labelPlural.toLowerCase()} added yet.</div>`;
+      syncHidden();
+      return;
+    }
+
+    assignments.forEach((row, index) => {
+      const uid = String(row.unit);
+      if (!probState.has(uid)) probState.set(uid, { isProb:false, discUnitId:'', discUnitName:'' });
+      const state = probState.get(uid);
+
+      const card = document.createElement('div');
+      card.className = 'mb-2 p-3';
+      card.style.cssText = 'border-radius:24px;box-shadow:inset 0 2px 2px #000000d2;';
+      card.innerHTML = `
+        <div class="d-flex align-items-center justify-content-between gap-3">
+          <div class="flex-grow-1">
+            <div class="fw-semibold text-white">${row.unit_name}</div>
+            <div class="text-muted small role-display">${row.role_name || 'No specific role selected'}</div>
+            <div class="role-edit-wrap mt-2" style="display:none;">
+              <select class="form-select form-select-sm role-edit-select"
+                      style="border-radius:12px;box-shadow:inset 0 2px 4px #000000bb;">
+                <option value="">Loading roles…</option>
+              </select>
+              <div class="d-flex gap-2 mt-1">
+                <button type="button" class="btn btn-xs btn-success role-save-btn" style="border-radius:12px;font-size:.75rem;padding:2px 10px;">Save</button>
+                <button type="button" class="btn btn-xs btn-ghost text-muted role-cancel-btn" style="border-radius:12px;font-size:.75rem;padding:2px 10px;">Cancel</button>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex flex-column gap-1 align-items-end">
+            <button type="button" class="btn btn-sm text-cyan edit-role-btn"
+                    style="box-shadow:0 4px 8px #000000d2;border-radius:24px;" title="Change role">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+            <button type="button" class="btn btn-sm text-danger remove-card-btn"
+                    style="box-shadow:0 4px 8px #000000d2;border-radius:24px;" title="Remove">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M20 6a1 1 0 0 1 .117 1.993l-.117.007h-.081l-.919 11a3 3 0 0 1-2.824 2.995l-.176.005h-8c-1.598 0-2.904-1.249-2.992-2.75l-.005-.167-.923-11.083h-.08a1 1 0 0 1-.117-1.993l.117-.007zm-10 4a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1m4 0a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1"/>
+                <path d="M14 2a2 2 0 0 1 2 2a1 1 0 0 1-1.993.117l-.007-.117h-4l-.007.117a1 1 0 0 1-1.993-.117a2 2 0 0 1 1.85-1.995l.15-.005z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="mt-2 d-flex align-items-center gap-3 flex-wrap">
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input prob-toggle" type="checkbox"
+                   id="prob_${uid}_${config.hiddenId}" ${state.isProb ? 'checked' : ''}>
+            <label class="form-check-label text-warning small"
+                   for="prob_${uid}_${config.hiddenId}">Probation</label>
+          </div>
+          <div class="disc-unit-wrap flex-grow-1" style="display:${state.isProb?'':'none'}">
+            ${state.isProb && state.discUnitId ? `
+              <div class="small text-warning fw-semibold probation-serving-label"></div>
+              <select class="form-select form-select-sm disc-unit-select d-none"
+                      style="border-radius:12px;box-shadow:inset 0 2px 4px #000000bb;">
+                ${buildDiscOptions(state.discUnitId)}
+              </select>
+            ` : `
+              <select class="form-select form-select-sm disc-unit-select"
+                      style="border-radius:12px;box-shadow:inset 0 2px 4px #000000bb;">
+                ${buildDiscOptions(state.discUnitId)}
+              </select>
+              <div class="form-text text-muted" style="font-size:.68rem;">
+                Optional: send to a different unit for disciplinary probation.
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+
+      // Probation toggle
+      const probCb = card.querySelector('.prob-toggle');
+      const discWrap = card.querySelector('.disc-unit-wrap');
+      const discSel  = card.querySelector('.disc-unit-select');
+      const servingLabel = card.querySelector('.probation-serving-label');
+      if (servingLabel && discSel) {
+        servingLabel.textContent = `Serving probation in ${discSel.options[discSel.selectedIndex]?.textContent?.trim() || 'selected unit/group'}.`;
+      }
+
+      probCb.addEventListener('change', () => {
+        state.isProb = probCb.checked;
+        discWrap.style.display = probCb.checked ? '' : 'none';
+        if (!probCb.checked) { discSel.value = ''; state.discUnitId = ''; state.discUnitName = ''; }
+        syncHidden();
+      });
+      discSel.addEventListener('change', () => {
+        state.discUnitId   = discSel.value;
+        state.discUnitName = discSel.options[discSel.selectedIndex]?.textContent?.trim() || '';
+        syncHidden();
+      });
+
+      // Edit role toggle
+      const editBtn    = card.querySelector('.edit-role-btn');
+      const roleDisplay= card.querySelector('.role-display');
+      const roleWrap   = card.querySelector('.role-edit-wrap');
+      const roleEditSel= card.querySelector('.role-edit-select');
+      const roleSaveBtn= card.querySelector('.role-save-btn');
+      const roleCancelBtn = card.querySelector('.role-cancel-btn');
+
+      editBtn.addEventListener('click', async () => {
+        roleWrap.style.display = '';
+        editBtn.style.display = 'none';
+        // Load roles for this unit
+        roleEditSel.innerHTML = '<option value="">Loading…</option>';
+        try {
+          const resp = await fetch(`${ROLES_URL}?unit_id=${row.unit}`);
+          const data = await resp.json();
+          const roles = data.roles || [];
+          roleEditSel.innerHTML = '<option value="">No specific role</option>' +
+            roles.map(r => `<option value="${r.id}"${String(r.id)===String(row.role)?' selected':''}>${r.name}</option>`).join('');
+          if (!roles.length) roleEditSel.innerHTML = '<option value="">No roles defined yet</option>';
+        } catch(_) {
+          roleEditSel.innerHTML = '<option value="">Could not load roles</option>';
+        }
+      });
+
+      roleSaveBtn.addEventListener('click', () => {
+        const selectedOption = roleEditSel.options[roleEditSel.selectedIndex];
+        row.role      = roleEditSel.value || '';
+        row.role_name = roleEditSel.value ? (selectedOption?.textContent?.trim() || '') : '';
+        roleDisplay.textContent = row.role_name || 'No specific role selected';
+        roleWrap.style.display = 'none';
+        editBtn.style.display = '';
+        syncHidden();
+      });
+
+      roleCancelBtn.addEventListener('click', () => {
+        roleWrap.style.display = 'none';
+        editBtn.style.display = '';
+      });
+
+      // Remove card
+      card.querySelector('.remove-card-btn').addEventListener('click', () => {
+        probState.delete(uid);
+        assignments.splice(index, 1);
+        render();
+      });
+
+      listNode.appendChild(card);
+    });
+    syncHidden();
+  };
+
+  unitSelect.addEventListener('change', async () => {
+    refreshAddButton();
+    roleSelect.value = '';
+    await loadRoles(unitSelect.value, roleSelect, helpNode);
+  });
+
+  addBtn.addEventListener('click', () => {
+    if (!unitSelect.value) return;
+    const unitName = unitSelect.options[unitSelect.selectedIndex]?.textContent?.trim() || '';
+    const roleName = roleSelect.value ? roleSelect.options[roleSelect.selectedIndex]?.textContent?.trim() || '' : '';
+    assignments = assignments.filter((row) => String(row.unit) !== String(unitSelect.value));
+    assignments.push({
+      unit: unitSelect.value,
+      unit_name: unitName,
+      role: roleSelect.value || '',
+      role_name: roleName,
+    });
+    unitSelect.value = '';
+    roleSelect.innerHTML = '<option value="">Select Role</option>';
+    roleSelect.disabled = true;
+    refreshAddButton();
+    if (helpNode) helpNode.textContent = `Select another ${config.labelSingular.toLowerCase()} to add more.`;
+    render();
+  });
+
+  render();
+  refreshAddButton();
+}
+
+function setupWorkforceAssignmentLocks() {
+  const roleSelect = document.getElementById("id_workforce_roles");
+  const stageSelect = document.getElementById("id_workforce_stage");
+  const probationToggle = document.querySelector("[data-probation-toggle='true']");
+  const probationUnitSelect = document.querySelector("[data-probation-unit-select='true']");
+  const probationUnitWrap = document.getElementById("disciplinaryProbationUnitWrap");
+  const unitSection = document.getElementById("unitAssignmentsSection");
+  const groupSection = document.getElementById("groupAssignmentsSection");
+  const addUnitBtn = document.getElementById("addUnitBtn");
+  const addGroupBtn = document.getElementById("addGroupBtn");
+  const unitSelect = document.getElementById("id_unit_choice");
+  const groupSelect = document.getElementById("id_group_choice");
+  const stageHelp = document.getElementById("workforceStageHelp");
+  const isGlobalProbation = {% if is_global_probation %}true{% else %}false{% endif %};
+  if (!roleSelect || !stageSelect) return;
+
+  const roleMeta = new Map(WORKFORCE_ROLES.map((role) => [String(role.id), role]));
+
+  const setAssignmentState = (enabled, message) => {
+    [unitSection, groupSection].forEach((section) => {
+      if (!section) return;
+      section.style.opacity = enabled ? "1" : ".55";
+      section.style.pointerEvents = enabled ? "" : "none";
+    });
+    [unitSelect, groupSelect].forEach((select) => {
+      if (select) select.disabled = !enabled;
+    });
+    [addUnitBtn, addGroupBtn].forEach((button) => {
+      if (!button) return;
+      button.classList.toggle("d-none", !enabled);
+      button.disabled = !enabled;
+    });
+    const unitHelp = document.getElementById("unitAssignmentHelp");
+    const groupHelp = document.getElementById("groupAssignmentHelp");
+    if (unitHelp) unitHelp.textContent = message;
+    if (groupHelp) groupHelp.textContent = message;
+  };
+
+  const syncProbationState = () => {
+    const checked = probationToggle && probationToggle.checked;
+    if (probationUnitWrap) {
+      probationUnitWrap.style.display = checked ? "" : "none";
+    }
+    if (probationUnitSelect) {
+      probationUnitSelect.disabled = !checked;
+      if (!checked) probationUnitSelect.value = "";
+    }
+  };
+
+  const syncWorkforceFlow = () => {
+    const selectedRole = roleMeta.get(String(roleSelect.value || ""));
+    const hasRole = Boolean(selectedRole);
+    const isGlobalRole = Boolean(selectedRole && [1, 2].includes(Number(selectedRole.tier)));
+    const hasStage = Boolean(stageSelect.value);
+
+    stageSelect.disabled = !hasRole;
+    if (!hasRole) {
+      stageSelect.value = "";
+      setAssignmentState(false, "Choose a workforce role first.");
+      if (stageHelp) stageHelp.textContent = "Select a workforce role first to unlock stage.";
+      return;
+    }
+
+    if (stageHelp) {
+      stageHelp.textContent = isGlobalRole
+        ? "Global workforce roles keep church-wide access and do not require unit or group assignments."
+        : "{{ form.workforce_stage.help_text|escapejs }}";
+    }
+
+    if (isGlobalRole) {
+      setAssignmentState(false, "This workforce role already has global access, so unit and group assignment stays locked.");
+      return;
+    }
+
+    if (isGlobalProbation) {
+      setAssignmentState(false, "This member is on global disciplinary probation — all unit memberships are serving probation simultaneously. Assignment cards are locked until probation is cleared.");
+      if (stageHelp) stageHelp.textContent = "Global disciplinary probation locks all unit and group assignment panes.";
+      return;
+    }
+
+    // Unit-level probation (only some memberships on probation) must NOT lock
+    // the assignment cards — the member is still active in other units.
+    setAssignmentState(hasStage, hasStage
+      ? "Select a unit or group first, then choose its role and add it to the list."
+      : "Choose a workforce stage to unlock unit and group assignments.");
+  };
+
+  roleSelect.addEventListener("change", syncWorkforceFlow);
+  stageSelect.addEventListener("change", syncWorkforceFlow);
+  if (probationToggle) probationToggle.addEventListener("change", syncProbationState);
+
+  syncWorkforceFlow();
+  syncProbationState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Expose unit and group lists for per-card disciplinary unit pickers
+  window.__allUnits  = {{ batch_units|safe }};
+  window.__allGroups = {{ batch_groups|safe }};
+
+  setupAssignmentComposer({
+    hiddenId: 'id_unit_assignments',
+    unitId: 'id_unit_choice',
+    roleId: 'id_unit_role_choice',
+    addBtnId: 'addUnitBtn',
+    listId: 'unitAssignmentsCard',
+    helpId: 'unitAssignmentHelp',
+    labelSingular: 'Unit',
+    labelPlural: 'Units',
+    probUnitProbIds:   'id_unit_prob_ids',
+    probUnitDiscPairs: 'id_unit_disc_pairs',
+    allUnitsKey: '__allUnits',
+  });
+
+  setupAssignmentComposer({
+    hiddenId: 'id_group_assignments',
+    unitId: 'id_group_choice',
+    roleId: 'id_group_role_choice',
+    addBtnId: 'addGroupBtn',
+    listId: 'groupAssignmentsCard',
+    helpId: 'groupAssignmentHelp',
+    labelSingular: 'Group',
+    labelPlural: 'Groups',
+    probUnitProbIds:   'id_group_prob_ids',
+    probUnitDiscPairs: 'id_group_disc_pairs',
+    allUnitsKey: '__allGroups',
+  });
+
+  setupWorkforceAssignmentLocks();
+});
+</script>
+
+{# ── Batch row JS ────────────────────────────────────────────────────────── #}
+<script>
+(function () {
+  const MAX = 10;
+  const container = document.getElementById('batchRows');
+  const counter   = document.getElementById('batchRowCount');
+  if (!container) return;
+
+  function updateCount() {
+    const n = container.querySelectorAll('.batch-row').length;
+    if (counter) counter.textContent = `${n} / ${MAX}`;
+    document.getElementById('addBatchRow').disabled = n >= MAX;
+  }
+
+  document.getElementById('addBatchRow').addEventListener('click', () => {
+    const rows = container.querySelectorAll('.batch-row');
+    if (rows.length >= MAX) {
+      alert(`Maximum ${MAX} rows. Use bulk file upload for larger sets.`);
+      return;
+    }
+    const clone = rows[0].cloneNode(true);
+    clone.querySelectorAll('input').forEach(el => { el.value = ''; el.required = false; });
+    clone.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+    // Only first row's full_name is required — rest optional to allow partial rows
+    container.appendChild(clone);
+    updateCount();
+    clone.querySelector('input[name="full_name[]"]').focus();
+  });
+
+  container.addEventListener('click', e => {
+    if (e.target.classList.contains('remove-batch-row')) {
+      const rows = container.querySelectorAll('.batch-row');
+      if (rows.length <= 1) return; // always keep at least one row
+      e.target.closest('.batch-row').remove();
+      updateCount();
+    }
+  });
+
+  updateCount();
+})();
+</script>
+
+{# ── Batch user row JS (inside-panel section) ── #}
+<script>
+(function() {
+  const MAX = 10;
+  const container = document.getElementById('batchUserRows');
+  const counter   = document.getElementById('userRowCount');
+  if (!container) return;
+
+  function updateCount() {
+    const n = container.querySelectorAll('.batch-user-row').length;
+    if (counter) counter.textContent = n + ' / ' + MAX;
+    const addBtn = document.getElementById('addUserRow');
+    if (addBtn) addBtn.disabled = n >= MAX;
+  }
+
+  document.getElementById('addUserRow')?.addEventListener('click', () => {
+    const rows = container.querySelectorAll('.batch-user-row');
+    if (rows.length >= MAX) {
+      alert('Maximum ' + MAX + ' members per batch. Use CSV import for larger sets.');
+      return;
+    }
+    const first = rows[0];
+    const clone = first.cloneNode(true);
+    const n = rows.length;
+    clone.querySelectorAll('input[type="text"],input[type="email"]').forEach(el => { el.value = ''; el.required = false; });
+    clone.querySelectorAll('input[type="file"]').forEach(el => { el.value = ''; });
+    clone.querySelectorAll('input[type="checkbox"]').forEach(el => {
+      el.checked = false;
+      el.id = el.id.replace(/_\d+$/, '_' + n);
+    });
+    clone.querySelectorAll('label[for]').forEach(el => {
+      el.setAttribute('for', el.getAttribute('for').replace(/_\d+$/, '_' + n));
+    });
+    clone.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+    container.appendChild(clone);
+    updateCount();
+    clone.querySelector('input[name="full_name[]"]')?.focus();
+  });
+
+  container.addEventListener('click', e => {
+    if (e.target.classList.contains('remove-user-row')) {
+      const rows = container.querySelectorAll('.batch-user-row');
+      if (rows.length <= 1) return;
+      e.target.closest('.batch-user-row').remove();
+      updateCount();
+    }
+  });
+
+  updateCount();
+})();
+
+// ── Transfer form (standalone, outside #userForm to avoid nested-form bug) ──
+(function() {
+  const submitBtn = document.getElementById('transferSubmitBtn');
+  if (!submitBtn) return;
+  submitBtn.addEventListener('click', function() {
+    const fromSel = document.getElementById('transferFromSelect');
+    const toSel   = document.getElementById('transferToSelect');
+    const probCb  = document.getElementById('editTransferProbation');
+    const form    = document.getElementById('transferFormStandalone');
+    if (!form || !fromSel || !toSel) return;
+
+    const fromVal = fromSel.value;
+    const toVal   = toSel.value;
+    if (!fromVal) { alert('Please select the unit to transfer FROM.'); return; }
+    if (!toVal)   { alert('Please select the unit to transfer TO.'); return; }
+    if (fromVal === toVal) { alert('From and To units must be different.'); return; }
+    if (!confirm('Transfer this member? This will move them from the selected current unit to the new one.')) return;
+
+    document.getElementById('tf_membership_id').value = fromVal;
+    document.getElementById('tf_to_unit_id').value    = toVal;
+    document.getElementById('tf_is_probation').value  = (probCb && probCb.checked) ? 'on' : '';
+    form.submit();
+  });
+})();
+</script>
 {% endblock %}

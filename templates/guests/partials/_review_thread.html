@@ -28,8 +28,8 @@
 
 <!-- Reply / new review form -->
 {% if permissions|can:"guests.review" %}
-<form method="post" class="review-form d-flex mt-2" data-guest-id="{{ guest.id }}"
-      action="{% url 'guests:submit_review' guest.id 'member' %}">
+<form method="post" class="review-form d-flex mt-2" data-guest-uid="{{ guest.uid }}"
+      action="{% url 'guests:submit_review' guest.uid 'member' %}">
   {% csrf_token %}
   <textarea name="comment" rows="1" class="form-control border-0 flex-grow-1 me-2"
             style="min-height:40px;max-height:200px;overflow:hidden;resize:none;"

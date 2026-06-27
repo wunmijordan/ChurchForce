@@ -1,0 +1,70 @@
+{% extends base_template %}
+{% load static %}
+{% block title %}Reading Plans — {{ church.name }}{% endblock %}
+{% block content %}
+<div class="page-wrapper">
+  <div class="page-header d-print-none">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <h2 class="page-title">📅 Bible Reading Plans</h2>
+          <div class="text-muted">Create and manage reading plans for your congregation.</div>
+        </div>
+        <div class="col-auto ms-auto">
+          <a href="{% url 'bible:admin_plan_create' %}" class="btn btn-warning">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            New Plan
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="container-xl">
+      {% if messages %}{% for m in messages %}<div class="alert alert-{{ m.tags }} alert-dismissible"><button type="button" class="btn-close" data-bs-dismiss="alert"></button>{{ m }}</div>{% endfor %}{% endif %}
+      {% if plans %}
+      <div class="card" style="border-radius:20px;">
+        <div class="table-responsive">
+          <table class="table table-vcenter card-table">
+            <thead>
+              <tr>
+                <th>Title</th><th>Frequency</th><th>Translation</th><th>Start</th><th>End</th><th>Entries</th><th>Published</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for plan in plans %}
+              <tr>
+                <td class="fw-semibold text-white">{{ plan.title }}</td>
+                <td><span class="badge bg-blue-lt">{{ plan.get_frequency_display }}</span></td>
+                <td><span class="badge bg-dark">{{ plan.translation }}</span></td>
+                <td>{{ plan.start_date }}</td>
+                <td>{{ plan.end_date|default:"—" }}</td>
+                <td>{{ plan.entry_count }}</td>
+                <td>
+                  {% if plan.is_published %}<span class="badge bg-success">Live</span>
+                  {% else %}<span class="badge bg-secondary">Draft</span>{% endif %}
+                </td>
+                <td class="text-end">
+                  <a href="{% url 'bible:admin_plan_edit' plan.id %}" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
+                  <form method="post" action="{% url 'bible:admin_plan_delete' plan.id %}" style="display:inline;" onsubmit="return confirm('Delete this plan?')">
+                    {% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% else %}
+      <div class="card text-center p-5" style="border-radius:20px;border:2px dashed #334155;">
+        <div class="display-6 mb-3">📅</div>
+        <h3>No reading plans yet</h3>
+        <p class="text-muted">Create your first plan to get members reading daily.</p>
+        <a href="{% url 'bible:admin_plan_create' %}" class="btn btn-warning mx-auto" style="width:fit-content;">+ Create Reading Plan</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

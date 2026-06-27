@@ -28,63 +28,77 @@ import random
 from datetime import date, timedelta
 
 from django.contrib.auth.hashers import make_password
+from django.conf import settings as _settings
 from django.core.management.base import BaseCommand
 from django.utils.timezone import now
 
 from accounts.models import CustomUser, ChurchMember
 from billing.services import grant_founders_plan
-from guests.models import GuestEntry, GuestStatus, FollowUpReport, VisitChannel, VisitPurpose, ChurchService
+from guests.models import (
+    GuestEntry,
+    GuestStatus,
+    FollowUpReport,
+    VisitChannel,
+    VisitPurpose,
+    ChurchService,
+)
 from lms.models import LMSCourse, LMSModule, LMSEnrollment
 from notifications.models import Notification
 from tenants.models import Church, ChurchSetting
-from units.models import ChurchUnit, UnitMembership, Campus, ChatRoom
-from workforce.models import WorkforceTraineeProfile, ChatMessage
+from units.models import ChurchUnit, UnitMembership, ChatRoom
+from tenants.models import Campus
+from workforce.models import (
+    WorkforceMember,
+    WorkforceStage,
+    WorkforceTraineeProfile,
+    ChatMessage,
+)
 
 
 # ── Realistic demo data ───────────────────────────────────────────────────────
 
 MEMBER_DATA = [
     # (full_name, title, role, unit_name, phone)
-    ("Adebayo Okonkwo",    "Bro.",  "leader",  "Workforce",  "+2348012345678"),
-    ("Ngozi Eze",          "Sis.",  "member",  "Workforce",  "+2348023456789"),
-    ("Emeka Nwosu",        "Bro.",  "leader",  "Magnet",     "+2348034567890"),
-    ("Amina Bello",        "Sis.",  "member",  "Magnet",     "+2348045678901"),
-    ("Tunde Adeyemi",      "Bro.",  "member",  "Magnet",     "+2348056789012"),
-    ("Chidinma Obi",       "Sis.",  "leader",  "Worship",    "+2348067890123"),
-    ("Femi Adesanya",      "Bro.",  "member",  "Worship",    "+2348078901234"),
-    ("Kemi Fashola",       "Sis.",  "member",  "Media",      "+2348089012345"),
-    ("Seun Bakare",        "Bro.",  "leader",  "Media",      "+2348090123456"),
-    ("Blessing Nwachukwu", "Sis.",  "member",  "Ushering",   "+2348001234567"),
-    ("Dayo Olawale",       "Bro.",  "member",  "Ushering",   "+2348011234567"),
-    ("Pastor Sarah Olu",   "Rev.",  "leader",  "Workforce",  "+2348021234567"),
+    ("Adebayo Okonkwo", "Bro.", "leader", "Workforce", "+2348012345678"),
+    ("Ngozi Eze", "Sis.", "member", "Workforce", "+2348023456789"),
+    ("Emeka Nwosu", "Bro.", "leader", "Magnet", "+2348034567890"),
+    ("Amina Bello", "Sis.", "member", "Magnet", "+2348045678901"),
+    ("Tunde Adeyemi", "Bro.", "member", "Magnet", "+2348056789012"),
+    ("Chidinma Obi", "Sis.", "leader", "Worship", "+2348067890123"),
+    ("Femi Adesanya", "Bro.", "member", "Worship", "+2348078901234"),
+    ("Kemi Fashola", "Sis.", "member", "Media", "+2348089012345"),
+    ("Seun Bakare", "Bro.", "leader", "Media", "+2348090123456"),
+    ("Blessing Nwachukwu", "Sis.", "member", "Ushering", "+2348001234567"),
+    ("Dayo Olawale", "Bro.", "member", "Ushering", "+2348011234567"),
+    ("Pastor Sarah Olu", "Rev.", "leader", "Workforce", "+2348021234567"),
 ]
 
 GUEST_NAMES = [
-    ("Wunmi Jordan",         "Ms.",   "new_guest"),
-    ("Chukwuemeka Obiora",   "Mr.",   "new_guest"),
-    ("Fatima Al-Hassan",     "Ms.",   "in_contact"),
-    ("Biodun Afolabi",       "Mr.",   "in_contact"),
-    ("Grace Nkemdirim",      "Ms.",   "committed"),
-    ("Samuel Adeleke",       "Mr.",   "committed"),
-    ("Yetunde Akintola",     "Ms.",   "planted"),
-    ("Ifeanyi Okonkwo",      "Mr.",   "planted"),
-    ("Chiamaka Nzeogwu",     "Ms.",   "work_in_progress"),
-    ("Rotimi Bashorun",      "Mr.",   "work_in_progress"),
-    ("Sade Olutunde",        "Ms.",   "planted_elsewhere"),
-    ("Musa Garba",           "Mr.",   "relocated"),
-    ("Toyin Odunsi",         "Ms.",   "new_guest"),
-    ("Kayode Mensah",        "Mr.",   "new_guest"),
-    ("Adaeze Uwanna",        "Ms.",   "in_contact"),
-    ("Olumide Coker",        "Mr.",   "committed"),
-    ("Nkechi Amaechi",       "Ms.",   "planted"),
-    ("Babatunde Fowler",     "Mr.",   "work_in_progress"),
-    ("Ifeoma Eze",           "Ms.",   "new_guest"),
-    ("Olu Martins",          "Mr.",   "new_guest"),
+    ("Wunmi Jordan", "Ms.", "new_guest"),
+    ("Chukwuemeka Obiora", "Mr.", "new_guest"),
+    ("Fatima Al-Hassan", "Ms.", "in_contact"),
+    ("Biodun Afolabi", "Mr.", "in_contact"),
+    ("Grace Nkemdirim", "Ms.", "committed"),
+    ("Samuel Adeleke", "Mr.", "committed"),
+    ("Yetunde Akintola", "Ms.", "planted"),
+    ("Ifeanyi Okonkwo", "Mr.", "planted"),
+    ("Chiamaka Nzeogwu", "Ms.", "work_in_progress"),
+    ("Rotimi Bashorun", "Mr.", "work_in_progress"),
+    ("Sade Olutunde", "Ms.", "planted_elsewhere"),
+    ("Musa Garba", "Mr.", "relocated"),
+    ("Toyin Odunsi", "Ms.", "new_guest"),
+    ("Kayode Mensah", "Mr.", "new_guest"),
+    ("Adaeze Uwanna", "Ms.", "in_contact"),
+    ("Olumide Coker", "Mr.", "committed"),
+    ("Nkechi Amaechi", "Ms.", "planted"),
+    ("Babatunde Fowler", "Mr.", "work_in_progress"),
+    ("Ifeoma Eze", "Ms.", "new_guest"),
+    ("Olu Martins", "Mr.", "new_guest"),
 ]
 
 SERVICES = ["Sunday Service", "Midweek Recharge", "Special Programme", "Friday Night"]
-CHANNELS  = ["Social Media", "Friend", "Family", "Walk-in", "Online Service"]
-PURPOSES  = ["Spiritual Growth", "Connect with God", "Check it out", "Friend invited me"]
+CHANNELS = ["Social Media", "Friend", "Family", "Walk-in", "Online Service"]
+PURPOSES = ["Spiritual Growth", "Connect with God", "Check it out", "Friend invited me"]
 
 CHAT_MESSAGES = [
     "Good morning everyone 🙏",
@@ -103,14 +117,37 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--subdomain", default="demo")
-        parser.add_argument("--reset", action="store_true",
-                            help="Delete all demo church data before reseeding.")
+        parser.add_argument(
+            "--reset",
+            action="store_true",
+            help="Delete all demo church data before reseeding.",
+        )
+        parser.add_argument(
+            "--password",
+            default="",
+            help="Override the demo password (default: DEMO_PASSWORD setting or Demo@1234).",
+        )
 
     def handle(self, *args, **options):
         subdomain = options["subdomain"]
+        # Password resolution: arg > DEMO_PASSWORD env > hardcoded fallback
+        demo_password = (
+            options.get("password")
+            or getattr(_settings, "DEMO_PASSWORD", "")
+            or "Demo@1234"
+        )
         w = self.stdout.write
         suc = self.style.SUCCESS
         war = self.style.WARNING
+
+        # Seed global SubscriptionPlan records (idempotent — safe on every run)
+        try:
+            from billing.services import ensure_plans_seeded
+
+            ensure_plans_seeded()
+            w(suc("  ✓ SubscriptionPlan records seeded/verified"))
+        except Exception as exc:
+            w(war(f"  ⚠ Plan seeding failed: {exc}"))
 
         w(suc(f"\n🌱  ChurchForce demo seeder — subdomain: {subdomain}\n"))
 
@@ -121,7 +158,7 @@ class Command(BaseCommand):
                 email="demo@churchforce.io",
                 full_name="Demo Admin",
                 title="",
-                password=make_password("Demo@1234"),
+                password=make_password(demo_password),
                 is_online=True,
                 is_superuser=False,
             ),
@@ -140,7 +177,7 @@ class Command(BaseCommand):
                 name="ChurchForce Demo",
                 slug=f"churchforce-demo-{subdomain}",
                 latitude=6.5244,
-                longitude=3.3792,   # Lagos coordinates
+                longitude=3.3792,  # Lagos coordinates
                 timezone="Africa/Lagos",
             ),
         )
@@ -155,10 +192,10 @@ class Command(BaseCommand):
         grant_founders_plan(church, "white_label")
         w(suc("  ✓ Founders White-Label plan granted"))
 
-
         # ── Admin ChurchMember ────────────────────────────────────────────────
         admin_member, m_created = ChurchMember.objects.get_or_create(
-            church=church, user=admin_user,
+            church=church,
+            user=admin_user,
             defaults=dict(is_active=True, is_admin=True),
         )
 
@@ -167,23 +204,49 @@ class Command(BaseCommand):
 
         # ── Campus ───────────────────────────────────────────────────────────
         campus, _ = Campus.objects.get_or_create(
-            church=church, name="Main Campus",
+            church=church,
+            name="Main Campus",
             defaults=dict(is_active=True),
         )
 
+        # ── Workforce Stages ─────────────────────────────────────────────────
+        # Ensure system stages exist for the demo church
+        stage_data = [
+            ("probationer", "Probationer", 1),
+            ("active", "Active", 2),
+            ("leader", "Leader", 3),
+        ]
+        stage_objects = {}
+        for slug, name, order in stage_data:
+            stage, _ = WorkforceStage.objects.get_or_create(
+                church=church,
+                slug=slug,
+                defaults=dict(
+                    name=name,
+                    order=order,
+                    is_active=True,
+                    is_locked=True,
+                    is_order_locked=(order < 3),
+                ),
+            )
+            stage_objects[slug] = stage
+        w(suc(f"  ✓ {len(stage_objects)} workforce stages ready"))
+
         # ── Units + ChatRooms ─────────────────────────────────────────────────
-        unit_names   = ["Workforce", "Magnet", "Worship", "Media", "Ushering"]
-        unit_colors  = ["bg-green", "bg-orange", "bg-purple", "bg-blue", "bg-teal"]
+        unit_names = ["Workforce", "Magnet", "Worship", "Media", "Ushering"]
+        unit_colors = ["bg-green", "bg-orange", "bg-purple", "bg-blue", "bg-teal"]
         unit_objects = {}
 
         for uname, ucolor in zip(unit_names, unit_colors):
             unit, _ = ChurchUnit.objects.get_or_create(
-                church=church, name=uname,
+                church=church,
+                name=uname,
                 defaults=dict(color=ucolor, is_active=True),
             )
             unit_objects[uname] = unit
             room, _ = ChatRoom.objects.get_or_create(
-                church=church, unit=unit,
+                church=church,
+                unit=unit,
                 defaults=dict(name=uname, is_default=True, is_active=True),
             )
             unit.chat_room = room
@@ -192,20 +255,37 @@ class Command(BaseCommand):
 
         # ── GuestStatus lookup or create ──────────────────────────────────────
         status_slugs = {
-            "new_guest":        ("New Guest",        "info"),
-            "in_contact":       ("In Contact",       "cyan"),
-            "committed":        ("Committed",        "warning"),
-            "planted":          ("Planted",          "success"),
+            "new_guest": ("New Guest", "info"),
+            "in_contact": ("In Contact", "cyan"),
+            "committed": ("Committed", "warning"),
+            "planted": ("Planted", "success"),
             "work_in_progress": ("Work in Progress", "orange"),
             "planted_elsewhere": ("Planted Elsewhere", "danger"),
-            "relocated":        ("Relocated",        "primary"),
+            "relocated": ("Relocated", "primary"),
         }
         status_objects = {}
         for order, (slug, (name, color)) in enumerate(status_slugs.items()):
-            obj, _ = GuestStatus.raw_objects.get_or_create(
-                church=church, slug=slug,
-                defaults=dict(name=name, color=color, order=order, is_active=True),
-            )
+            # First try to find by slug, then by name, update if found
+            obj = GuestStatus.raw_objects.filter(church=church, slug=slug).first()
+            if not obj:
+                obj = GuestStatus.raw_objects.filter(church=church, name=name).first()
+            if obj:
+                obj.slug = slug
+                obj.color = color
+                obj.order = order
+                obj.is_active = True
+                obj.save(
+                    update_fields=["slug", "color", "order", "is_active", "updated_at"]
+                )
+            else:
+                obj = GuestStatus.raw_objects.create(
+                    church=church,
+                    slug=slug,
+                    name=name,
+                    color=color,
+                    order=order,
+                    is_active=True,
+                )
             status_objects[slug] = obj
 
         # ── Visit lookup objects ──────────────────────────────────────────────
@@ -232,6 +312,8 @@ class Command(BaseCommand):
 
         # ── Member users ──────────────────────────────────────────────────────
         member_objects = {}
+        workforce_member_objects = {}
+        unit_membership_objects = {}  # fname -> UnitMembership
         for i, (fname, title, role, uname, phone) in enumerate(MEMBER_DATA):
             username = f"demo_{fname.split()[0].lower()}_{i}"
             user, _ = CustomUser.objects.get_or_create(
@@ -241,35 +323,54 @@ class Command(BaseCommand):
                     full_name=fname,
                     title=title,
                     phone_number=phone,
-                    password=make_password("Demo@1234"),
+                    password=make_password(demo_password),
                     is_active=True,
                 ),
             )
             cm, _ = ChurchMember.objects.get_or_create(
-                church=church, user=user,
+                church=church,
+                user=user,
                 defaults=dict(is_active=True),
             )
+            # Create WorkforceMember for each ChurchMember
+            # Use "active" stage for leaders, "probationer" for others
+            wf_stage = (
+                stage_objects["active"]
+                if role == "leader"
+                else stage_objects["probationer"]
+            )
+            wf_member, _ = WorkforceMember.objects.get_or_create(
+                church=church,
+                member=cm,
+                defaults=dict(stage=wf_stage, is_active=True),
+            )
+            workforce_member_objects[fname] = wf_member
             unit = unit_objects.get(uname)
             if unit:
                 um, _ = UnitMembership.objects.get_or_create(
-                    church=church, unit=unit,
-                    workforce_member=cm,
+                    church=church,
+                    unit=unit,
+                    workforce_member=wf_member,
                     defaults=dict(is_active=True, is_unit_head=(role == "leader")),
                 )
+                unit_membership_objects[fname] = um
                 # Trainee profile for Workforce members
                 if uname == "Workforce":
                     WorkforceTraineeProfile.objects.get_or_create(
-                        church=church, member=cm,
+                        church=church,
+                        member=cm,
                         defaults=dict(is_active=True),
                     )
             member_objects[fname] = cm
 
-        magnet_members = [
-            m for fname, m in member_objects.items()
+        # Get UnitMembership instances for Magnet unit members (for guest assignment)
+        magnet_unit_memberships = [
+            um
+            for fname, um in unit_membership_objects.items()
             if any(row[3] == "Magnet" for row in MEMBER_DATA if row[0] == fname)
         ]
-        if not magnet_members:
-            magnet_members = list(member_objects.values())[:3]
+        if not magnet_unit_memberships:
+            magnet_unit_memberships = list(unit_membership_objects.values())[:3]
 
         w(suc(f"  ✓ {len(member_objects)} demo members seeded"))
 
@@ -278,13 +379,14 @@ class Command(BaseCommand):
         for i, (gname, title, status_slug) in enumerate(GUEST_NAMES):
             days_ago = random.randint(3, 90)
             visit_date = date.today() - timedelta(days=days_ago)
-            svc  = random.choice(SERVICES)
-            chan  = random.choice(CHANNELS)
-            pur   = random.choice(PURPOSES)
-            assignee = random.choice(magnet_members)
+            svc = random.choice(SERVICES)
+            chan = random.choice(CHANNELS)
+            pur = random.choice(PURPOSES)
+            assignee = random.choice(magnet_unit_memberships)
 
             guest, _ = GuestEntry.raw_objects.get_or_create(
-                church=church, full_name=gname,
+                church=church,
+                full_name=gname,
                 defaults=dict(
                     title=title,
                     phone_number=f"+234800{i:07d}",
@@ -305,47 +407,68 @@ class Command(BaseCommand):
                     if rpt_date > date.today():
                         continue
                     FollowUpReport.raw_objects.get_or_create(
-                        church=church, guest=guest, report_date=rpt_date,
+                        church=church,
+                        guest=guest,
+                        report_date=rpt_date,
                         defaults=dict(
                             assigned_to=assignee,
-                            note=random.choice([
-                                "Called and spoke briefly. Showed interest.",
-                                "Guest attended Sunday service again.",
-                                "WhatsApp conversation — will join unit next week.",
-                                "Met in person after service. Very receptive.",
-                                "Left a voicemail. Awaiting callback.",
-                            ]),
+                            note=random.choice(
+                                [
+                                    "Called and spoke briefly. Showed interest.",
+                                    "Guest attended Sunday service again.",
+                                    "WhatsApp conversation — will join unit next week.",
+                                    "Met in person after service. Very receptive.",
+                                    "Left a voicemail. Awaiting callback.",
+                                ]
+                            ),
                             contact_attempted=True,
-                            contact_answered=status_slug in ("in_contact", "committed", "planted"),
-                            service_sunday=random.choice([True, False]),
-                            service_midweek=random.choice([True, False]),
+                            contact_answered=status_slug
+                            in ("in_contact", "committed", "planted"),
                         ),
                     )
 
         w(suc(f"  ✓ {len(guest_objects)} demo guests seeded"))
 
         # ── LMS ───────────────────────────────────────────────────────────────
-        course, _ = LMSCourse.raw_objects.get_or_create(
-            church=church, title="New Member Induction",
+        from django.utils.text import slugify as _sl
+
+        _course_title = "New Member Induction"
+        _course_slug = _sl(_course_title)[:100] or "new-member-induction"
+        course, _course_created = LMSCourse.raw_objects.get_or_create(
+            church=church,
+            title=_course_title,
             defaults=dict(
                 description="Welcome to ChurchForce! Complete this course to join your unit.",
                 passing_score=70,
                 is_active=True,
-                is_induction=True,
+                slug=_course_slug,
+                course_type="induction",
+                delivery_mode="physical",
+                strict_sequence=True,
             ),
         )
+        # Back-fill slug for existing courses created without one
+        if not course.slug:
+            course.slug = _course_slug
+            course.save(update_fields=["slug"])
         mod1, _ = LMSModule.raw_objects.get_or_create(
-            course=course, order=1,
+            course=course,
+            order=1,
             defaults=dict(title="Our Vision & Values", content="...", is_active=True),
         )
         mod2, _ = LMSModule.raw_objects.get_or_create(
-            course=course, order=2,
-            defaults=dict(title="Unit Structure & Expectations", content="...", is_active=True),
+            course=course,
+            order=2,
+            defaults=dict(
+                title="Unit Structure & Expectations", content="...", is_active=True
+            ),
         )
 
         for cm in list(member_objects.values())[:6]:
             enrol, _ = LMSEnrollment.raw_objects.get_or_create(
-                church=church, course=course, member=cm,
+                church=church,
+                course=course,
+                member=cm,
                 defaults=dict(score=random.choice([None, 75, 85, 90, 65, 80])),
             )
 
@@ -356,29 +479,43 @@ class Command(BaseCommand):
             church=church, unit=unit_objects["Workforce"]
         ).first()
         if workforce_room:
-            workforce_members = list(member_objects.values())[:4]
+            # Get UnitMembership instances for chat senders
+            workforce_unit = unit_objects["Workforce"]
+            unit_memberships = list(
+                UnitMembership.objects.filter(
+                    church=church, unit=workforce_unit, is_active=True
+                )[:4]
+            )
             for i, msg_text in enumerate(CHAT_MESSAGES):
-                sender = workforce_members[i % len(workforce_members)]
-                ChatMessage.raw_objects.get_or_create(
-                    church=church,
-                    room=workforce_room,
-                    sender=sender,
-                    message=msg_text,
-                    defaults=dict(created_at=now() - timedelta(hours=len(CHAT_MESSAGES) - i)),
+                sender = (
+                    unit_memberships[i % len(unit_memberships)]
+                    if unit_memberships
+                    else None
                 )
+                if sender:
+                    ChatMessage.raw_objects.get_or_create(
+                        church=church,
+                        room=workforce_room,
+                        sender=sender,
+                        message=msg_text,
+                        defaults=dict(
+                            created_at=now() - timedelta(hours=len(CHAT_MESSAGES) - i)
+                        ),
+                    )
             w(suc(f"  ✓ {len(CHAT_MESSAGES)} demo chat messages seeded"))
 
         # ── Notifications ─────────────────────────────────────────────────────
         notif_texts = [
-            ("New guest registered: Wunmi Jordan",    "info"),
-            ("Follow-up report submitted by Emeka",   "info"),
+            ("New guest registered: Wunmi Jordan", "info"),
+            ("Follow-up report submitted by Emeka", "info"),
             ("Guest Yetunde Akintola has been planted! 🎉", "success"),
-            ("LMS: 2 members completed induction",    "success"),
+            ("LMS: 2 members completed induction", "success"),
             ("Attendance reminder: Sunday service in 2 hours", "warning"),
         ]
         for title, ntype in notif_texts:
             Notification.raw_objects.get_or_create(
-                church=church, member=admin_member,
+                church=church,
+                member=admin_member,
                 title=title,
                 defaults=dict(
                     description=title,
@@ -396,7 +533,7 @@ class Command(BaseCommand):
         w(suc("╠══════════════════════════════════════════════════╣"))
         w(suc(f"║  URL:       https://{subdomain}.workforce.church  "))
         w(suc("║  Login:     demo_admin                           ║"))
-        w(suc("║  Password:  Demo@1234                            ║"))
+        w(suc(f"║  Password:  {demo_password:<41}║"))
         w(suc("╠══════════════════════════════════════════════════╣"))
         w(suc("║  Schedule a nightly reset in APScheduler:        ║"))
         w(suc("║  python manage.py seed_demo --reset              ║"))

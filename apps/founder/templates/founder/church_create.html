@@ -1,0 +1,132 @@
+{% extends "founder/base_founder.html" %}
+{% block title %}Create Church{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{% url 'founder:church_list' %}" class="text-muted text-decoration-none small">← Churches</a>
+  <h2 class="fw-bold mb-0">Create New Church</h2>
+</div>
+
+{% if error %}
+<div class="alert alert-danger mb-4">{{ error }}</div>
+{% endif %}
+
+<div class="row g-4">
+  <div class="col-12 col-lg-7">
+    <div class="stat-card">
+      <form method="post">
+        {% csrf_token %}
+        <h6 class="fw-semibold mb-4">Church Details</h6>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="small text-muted mb-1">Church name *</label>
+            <input name="church_name" class="form-control" placeholder="Grace Community Church"
+                   style="background:#0f172a;border-color:#334155;color:#e2e8f0;" required
+                   value="{{ request.POST.church_name|default:'' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="small text-muted mb-1">URL slug * <span class="text-muted" style="font-size:.7rem;">(lowercase, hyphens only)</span></label>
+            <input name="slug" class="form-control" placeholder="grace-community"
+                   pattern="[a-z0-9\-]+" title="Lowercase letters, numbers and hyphens only"
+                   style="background:#0f172a;border-color:#334155;color:#e2e8f0;" required
+                   value="{{ request.POST.slug|default:'' }}">
+            <div class="form-text" style="font-size:.7rem;">workforce.church/<strong id="slugPreview">grace-community</strong>/</div>
+          </div>
+          <div class="col-md-6">
+            <label class="small text-muted mb-1">Subdomain <span class="text-muted" style="font-size:.7rem;">(optional — for SaaS routing)</span></label>
+            <input name="subdomain" class="form-control" placeholder="grace-community"
+                   pattern="[a-z0-9\-]*"
+                   style="background:#0f172a;border-color:#334155;color:#e2e8f0;"
+                   value="{{ request.POST.subdomain|default:'' }}">
+            <div class="form-text" style="font-size:.7rem;"><strong id="subdomainPreview">—</strong>.workforce.church</div>
+          </div>
+        </div>
+
+        <hr style="border-color:#1e293b;margin:20px 0;">
+        <h6 class="fw-semibold mb-3">Admin Account</h6>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="small text-muted mb-1">Full name *</label>
+            <input name="admin_name" class="form-control" placeholder="Pastor John Doe"
+                   style="background:#0f172a;border-color:#334155;color:#e2e8f0;" required
+                   value="{{ request.POST.admin_name|default:'' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="small text-muted mb-1">Email *</label>
+            <input name="admin_email" type="email" class="form-control" placeholder="admin@gracechurch.org"
+                   style="background:#0f172a;border-color:#334155;color:#e2e8f0;" required
+                   value="{{ request.POST.admin_email|default:'' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="small text-muted mb-1">Password *</label>
+            <input name="admin_password" type="text" class="form-control" placeholder="Share with the admin"
+                   style="background:#0f172a;border-color:#334155;color:#e2e8f0;" required
+                   value="{{ request.POST.admin_password|default:'' }}">
+            <div class="form-text" style="font-size:.7rem;">Visible here so you can share it — admin can change it after login.</div>
+          </div>
+        </div>
+
+        <hr style="border-color:#1e293b;margin:20px 0;">
+        <h6 class="fw-semibold mb-3">Subscription Plan</h6>
+        <div class="row g-3">
+          <div class="col-md-7">
+            <label class="small text-muted mb-1">Plan</label>
+            <select name="plan_key" class="form-select" id="planSelect"
+                    style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+              <option value="trial">Trial (30 days)</option>
+              {% for p in all_plans %}
+              {% if p.name != 'trial' %}
+              <option value="{{ p.name }}">{{ p.name }}{% if p.monthly_price_ngn %} — ₦{{ p.monthly_price_ngn|floatformat:0 }}/mo{% elif 'lifetime' in p.name %} — Lifetime{% endif %}</option>
+              {% endif %}
+              {% endfor %}
+              {# Hardcoded lifetime options in case plans haven't been seeded #}
+              {% if not all_plans %}
+              <option value="founders_saas_lifetime">Founders SaaS — Lifetime</option>
+              <option value="founders_white_label_lifetime">Founders White Label — Lifetime</option>
+              {% endif %}
+            </select>
+          </div>
+          <div class="col-md-5" id="daysField">
+            <label class="small text-muted mb-1">Days <span class="text-muted" style="font-size:.7rem;">(non-lifetime)</span></label>
+            <input name="days" type="number" value="30" min="1" max="3650" class="form-control"
+                   style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+          </div>
+        </div>
+
+        <div class="mt-4 d-flex gap-3">
+          <button type="submit" class="btn btn-primary px-4">Create Church</button>
+          <a href="{% url 'founder:church_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-5">
+    <div class="stat-card">
+      <h6 class="fw-semibold mb-3">Notes</h6>
+      <ul class="list-unstyled" style="font-size:.85rem;line-height:1.8;color:#94a3b8;">
+        <li>• Church is provisioned with the full default template (units, roles, stages, lookup tables).</li>
+        <li>• The admin account will have <code>is_admin=True</code> and can immediately log in.</li>
+        <li>• Lifetime plans never expire and bypass the subscription wall.</li>
+        <li>• For White Label / Enterprise, set the custom domain separately after creation.</li>
+        <li>• Share the admin credentials after creation — they appear on the church detail page.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+// Slug preview
+document.querySelector('[name=slug]')?.addEventListener('input', function() {
+  document.getElementById('slugPreview').textContent = this.value || '…';
+});
+// Subdomain preview
+document.querySelector('[name=subdomain]')?.addEventListener('input', function() {
+  document.getElementById('subdomainPreview').textContent = this.value || '—';
+});
+// Hide days field for lifetime plans
+document.getElementById('planSelect')?.addEventListener('change', function() {
+  const df = document.getElementById('daysField');
+  if (df) df.style.display = (this.value.includes('lifetime') || this.value === 'trial') ? 'none' : '';
+});
+</script>
+{% endblock %}

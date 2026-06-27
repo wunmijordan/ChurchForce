@@ -1,0 +1,1090 @@
+{% extends base_template %}
+{% load static %}
+
+{% block title %}{{ track.title }} — Mixer · {{ church.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #080b12;
+  --panel: #0e1118;
+  --rail: #141720;
+  --border: #1e2433;
+  --border2: #252d3e;
+  --text: #d4ddf0;
+  --muted: #5a6580;
+  --accent: #3d8ef7;
+  --green: #22c55e;
+  --amber: #f59f00;
+  --red: #ef4444;
+  --purple: #a78bfa;
+  --mono: 'Space Mono', monospace;
+  --sans: 'Outfit', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--bg); }
+.mixer-shell { background: var(--bg); min-height: 100vh; font-family: var(--sans); color: var(--text); }
+
+/* ── Top nav ─────────────────────────────────────────────── */
+.mx-topnav {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.mx-track-title { font-size: .95rem; font-weight: 700; color: #e6edf3; }
+.mx-track-sub { font-size: .75rem; color: var(--muted); margin-top: 1px; }
+.btn-mx {
+  border: 1px solid var(--border2);
+  background: var(--rail);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+.btn-mx:hover { background: var(--border2); color: #e6edf3; }
+.btn-mx.green { background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.3); color: var(--green); }
+.btn-mx.green:hover { background: rgba(34,197,94,.25); }
+.btn-mx.blue { background: rgba(61,142,247,.15); border-color: rgba(61,142,247,.3); color: var(--accent); }
+.btn-mx.danger { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.3); color: var(--red); }
+.btn-mx.active-solo { background: rgba(245,159,0,.2); border-color: rgba(245,159,0,.4); color: var(--amber); }
+
+/* ── Layout ─────────────────────────────────────────────── */
+.mx-layout {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  height: calc(100vh - 52px);
+  overflow: hidden;
+}
+.mx-top-area {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  overflow: hidden;
+}
+.mx-console-area { overflow: hidden; display: flex; flex-direction: column; }
+.mx-sidebar { border-left: 1px solid var(--border); overflow-y: auto; background: var(--panel); }
+.mx-sidebar::-webkit-scrollbar { width: 3px; }
+.mx-sidebar::-webkit-scrollbar-thumb { background: var(--border2); }
+
+/* ── Transport bar ───────────────────────────────────────── */
+.mx-transport {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.transport-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: var(--rail);
+  color: var(--text);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .9rem;
+  transition: all .15s;
+}
+.transport-btn:hover { border-color: var(--accent); color: var(--accent); }
+.transport-btn.play-active { background: rgba(34,197,94,.2); border-color: var(--green); color: var(--green); }
+.transport-btn.large {
+  width: 42px; height: 42px; font-size: 1.1rem;
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+.transport-btn.large:hover { filter: brightness(1.15); }
+
+.mx-time-display {
+  font-family: var(--mono);
+  font-size: 1.3rem;
+  color: var(--green);
+  letter-spacing: .05em;
+  min-width: 80px;
+  text-align: center;
+}
+.mx-progress {
+  flex: 1;
+  height: 4px;
+  background: var(--border2);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.mx-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--green));
+  border-radius: 2px;
+  transition: width .1s linear;
+}
+.mx-transpose-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.mx-label { font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.mx-mono { font-family: var(--mono); font-size: .85rem; color: #e6edf3; min-width: 28px; text-align: center; }
+.range-compact {
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border2);
+  cursor: pointer;
+  width: 100px;
+}
+.range-compact::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: grab;
+  box-shadow: 0 0 6px rgba(61,142,247,.5);
+}
+
+/* ── Channel strips ─────────────────────────────────────── */
+.mx-strips-container {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: var(--bg);
+  padding: 16px 20px 20px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.mx-strips-container::-webkit-scrollbar { height: 4px; }
+.mx-strips-container::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.ch-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 10px 14px;
+  min-width: 78px;
+  max-width: 78px;
+  user-select: none;
+  cursor: default;
+  transition: border-color .15s;
+  position: relative;
+}
+.ch-strip:hover { border-color: var(--border2); }
+.ch-strip.dragging { opacity: .5; border-color: var(--accent); }
+.ch-strip.drag-over { border-color: var(--accent); box-shadow: 0 0 12px rgba(61,142,247,.2); }
+.ch-strip.muted { opacity: .55; }
+.ch-strip.soloed { border-color: var(--amber); }
+
+.ch-strip-master { min-width: 90px; max-width: 90px; border-color: rgba(61,142,247,.2); background: rgba(61,142,247,.04); }
+.ch-strip-master .ch-name { color: var(--accent); }
+
+/* Strip family color accents */
+.ch-strip[data-family="vox"]    { --strip-color: #a78bfa; }
+.ch-strip[data-family="drums"]  { --strip-color: #f59f00; }
+.ch-strip[data-family="bass"]   { --strip-color: #22c55e; }
+.ch-strip[data-family="keys"]   { --strip-color: #3d8ef7; }
+.ch-strip[data-family="guitar"] { --strip-color: #f97316; }
+.ch-strip[data-family="fx"]     { --strip-color: #ec4899; }
+.ch-strip[data-family="click"]  { --strip-color: #94a3b8; }
+.ch-strip[data-family="other"]  { --strip-color: #64748b; }
+
+.ch-family-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--strip-color, var(--muted));
+  margin-bottom: 2px;
+  box-shadow: 0 0 6px var(--strip-color, transparent);
+}
+.ch-name {
+  font-size: .68rem; font-weight: 700; color: var(--text);
+  text-align: center; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; width: 100%;
+  font-family: var(--sans);
+}
+.ch-family-label {
+  font-size: .57rem; color: var(--muted); font-family: var(--mono);
+  text-align: center; margin-bottom: 6px;
+}
+
+/* VU meter */
+.ch-vu {
+  width: 10px; height: 80px;
+  border-radius: 3px;
+  background: var(--border2);
+  position: relative;
+  overflow: hidden;
+  margin: 4px 0;
+}
+.ch-vu-fill {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(to top, var(--green) 0%, var(--amber) 75%, var(--red) 92%);
+  border-radius: 3px;
+  transition: height .05s;
+}
+
+/* Fader */
+.ch-fader-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+.ch-fader {
+  -webkit-appearance: none;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 8px;
+  height: 110px;
+  background: var(--border2);
+  border-radius: 4px;
+  cursor: grab;
+  outline: none;
+}
+.ch-fader::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px; height: 10px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #3a4258, #252d3e);
+  box-shadow: 0 2px 8px #000a, inset 0 1px 0 rgba(255,255,255,.1);
+  cursor: grab;
+  border: 1px solid var(--border2);
+  position: relative;
+}
+.ch-fader::-webkit-slider-thumb::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 14px; height: 1px;
+  background: rgba(255,255,255,.2);
+}
+.ch-fader.unity { background: linear-gradient(to top, var(--border2) 0%, rgba(61,142,247,.3) 72%, var(--border2) 100%); }
+
+/* Level display */
+.ch-level {
+  font-family: var(--mono);
+  font-size: .6rem;
+  color: var(--muted);
+  text-align: center;
+  min-height: 14px;
+}
+
+/* Pan knob */
+.ch-pan-wrap { position: relative; }
+.ch-pan {
+  -webkit-appearance: none;
+  width: 56px; height: 4px;
+  border-radius: 2px;
+  background: var(--border2);
+  cursor: pointer;
+  accent-color: var(--strip-color, var(--accent));
+}
+
+/* Buttons */
+.ch-btn-row { display: flex; gap: 4px; margin-top: 4px; }
+.ch-btn {
+  font-size: .57rem; font-weight: 700;
+  padding: 3px 6px; border-radius: 4px;
+  border: 1px solid var(--border2);
+  cursor: pointer;
+  background: var(--rail);
+  color: var(--muted);
+  font-family: var(--sans);
+  transition: all .12s;
+  letter-spacing: .04em;
+}
+.ch-btn:hover { color: var(--text); }
+.ch-btn.muted  { background: rgba(239,68,68,.2); border-color: rgba(239,68,68,.4); color: var(--red); }
+.ch-btn.soloed { background: rgba(245,159,0,.2); border-color: rgba(245,159,0,.4); color: var(--amber); }
+
+/* Meter ticks on master */
+.meter-scale {
+  position: absolute;
+  right: -16px; top: 0; bottom: 0;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.meter-tick { font-family: var(--mono); font-size: .45rem; color: var(--muted); }
+
+/* ── Bottom status bar ─────────────────────────────────── */
+.mx-statusbar {
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  padding: 6px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.status-chip {
+  font-size: .68rem; font-weight: 600;
+  color: var(--muted);
+  font-family: var(--mono);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.status-chip span { color: var(--text); }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.status-dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.status-dot.off { background: var(--border2); }
+
+/* ── Sidebar sections ─────────────────────────────────── */
+.mx-side-head {
+  padding: 10px 14px;
+  font-size: .65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  background: rgba(20,23,32,.8);
+}
+.mx-side-body { padding: 12px 14px; }
+.mx-kv { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: .78rem; border-bottom: 1px solid var(--border); }
+.mx-kv:last-child { border-bottom: none; }
+.mx-kv-key { color: var(--muted); }
+.mx-kv-val { font-family: var(--mono); color: #e6edf3; font-size: .75rem; }
+
+.setlist-row {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: .78rem;
+  cursor: pointer;
+  transition: background .1s;
+  display: flex; align-items: center; gap: 8px;
+}
+.setlist-row:hover { background: rgba(255,255,255,.03); }
+.setlist-row.active { background: rgba(61,142,247,.08); border-left: 2px solid var(--accent); }
+
+/* ── AI Analysis ──────────────────────────────────────── */
+.ai-box {
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-shrink: 0;
+  max-height: 100px;
+  overflow-y: auto;
+}
+.ai-label {
+  font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+  color: var(--accent); flex-shrink: 0; margin-top: 2px; font-family: var(--mono);
+}
+#aiText { font-size: .78rem; line-height: 1.5; color: var(--text); }
+
+@keyframes vuPulse { 0%,100% { height: 2%; } 50% { height: 60%; } }
+@media(max-width:900px) {
+  .mx-top-area { grid-template-columns: 1fr; }
+  .mx-sidebar { display: none; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mixer-shell">
+  <!-- ── Top nav ── -->
+  <div class="mx-topnav">
+    <div>
+      <div class="mx-track-title">{{ track.title }}</div>
+      <div class="mx-track-sub">{{ track.artist|default:"Unknown Artist" }}{% if track.original_key %} · {{ track.original_key }}{% endif %}{% if track.tempo %} · {{ track.tempo }} BPM{% endif %}</div>
+    </div>
+
+    <div style="display:flex;gap:6px;margin-left:16px;">
+      <button class="btn-mx" id="startEngineBtn" onclick="initAudio()">⚡ Enable Audio</button>
+      <button class="btn-mx" id="isolateBtn" onclick="toggleIsolate()">Solo Vocals</button>
+      <button class="btn-mx" onclick="resetMix()">↺ Reset</button>
+      <button class="btn-mx blue" onclick="saveMix()">Save Mix</button>
+    </div>
+
+    <div style="margin-left:auto;display:flex;gap:6px;">
+      <a href="{% url 'music:track_detail' track.uid %}" class="btn-mx">Track Details</a>
+      <a href="{% url 'music:index' %}" class="btn-mx">Music Hub</a>
+    </div>
+  </div>
+
+  <!-- ── Main layout ── -->
+  <div class="mx-layout">
+    <div class="mx-top-area">
+
+      <!-- Console area -->
+      <div class="mx-console-area">
+
+        <!-- Transport -->
+        <div class="mx-transport">
+          <button class="transport-btn" onclick="skipBack()" title="Restart">⏮</button>
+          <button class="transport-btn large" id="playPauseBtn" onclick="togglePlay()">▶</button>
+          <button class="transport-btn" onclick="stopAll()" title="Stop">⏹</button>
+
+          <div class="mx-time-display" id="timeDisplay">0:00</div>
+
+          <div class="mx-progress" id="progressBar" onclick="seekTo(event)">
+            <div class="mx-progress-fill" id="progressFill"></div>
+          </div>
+
+          {# ── Practice speed control — all stems sync via AudioContext.playbackRate ── #}
+          <div style="display:flex;align-items:center;gap:6px;margin-left:8px;">
+            <span class="mx-label" style="white-space:nowrap;">Speed</span>
+            <button class="btn-mx active" id="speed100" onclick="setPracticeSpeed(1.0)" title="Full speed">1×</button>
+            <button class="btn-mx" id="speed75" onclick="setPracticeSpeed(0.75)" title="3/4 speed (practice)">¾×</button>
+            <button class="btn-mx" id="speed50" onclick="setPracticeSpeed(0.5)" title="Half speed (slow practice)">½×</button>
+          </div>
+
+          <div class="mx-transpose-wrap">
+            <span class="mx-label">Transpose</span>
+            <input class="range-compact" type="range" id="transposeRange" min="-6" max="6" value="{{ mix_preset.transpose_semitones|default:0 }}"
+                   oninput="updateTranspose(this.value)">
+            <span class="mx-mono" id="transposeLabel">{{ mix_preset.transpose_semitones|default:0|stringformat:"+d" }}</span>
+          </div>
+        </div>
+
+        <!-- Strips -->
+        <div class="mx-strips-container" id="mixerStrips">
+
+          {% for stem in stems %}
+          <div class="ch-strip"
+               draggable="true"
+               data-stem="{{ stem.id }}"
+               data-family="{{ stem.family }}"
+               data-audio-url="{{ stem.playback_url }}"
+               data-gain="{{ stem.default_gain }}"
+               data-pan="{{ stem.default_pan }}"
+               data-muted="{% if stem.default_muted %}1{% else %}0{% endif %}"
+               id="strip-{{ stem.id }}">
+
+            <div class="ch-family-dot"></div>
+            <div class="ch-name" title="{{ stem.name }}">{{ stem.name|truncatechars:9 }}</div>
+            <div class="ch-family-label">{{ stem.get_family_display|upper|slice:":4" }}</div>
+
+            <div style="display:flex;gap:6px;align-items:flex-end;">
+              <!-- VU meter -->
+              <div class="ch-vu">
+                <div class="ch-vu-fill" id="vu-{{ stem.id }}" style="height:0%;"></div>
+              </div>
+
+              <!-- Fader -->
+              <div class="ch-fader-wrap">
+                <input class="ch-fader stem-fader" type="range"
+                       id="fader-{{ stem.id }}"
+                       min="0" max="1" step="0.01"
+                       value="{{ stem.default_gain }}"
+                       data-stem="{{ stem.id }}"
+                       oninput="onFaderChange(this)">
+              </div>
+            </div>
+
+            <div class="ch-level" id="level-{{ stem.id }}">
+              {{ stem.default_gain|floatformat:2 }}
+            </div>
+
+            <div class="ch-pan-wrap">
+              <input class="ch-pan stem-pan" type="range"
+                     min="-1" max="1" step="0.01"
+                     value="{{ stem.default_pan }}"
+                     data-stem="{{ stem.id }}"
+                     oninput="onPanChange(this)">
+            </div>
+
+            <div class="ch-btn-row">
+              <button class="ch-btn stem-mute {% if stem.default_muted %}muted{% endif %}"
+                      data-stem="{{ stem.id }}"
+                      onclick="toggleMute(this)">M</button>
+              <button class="ch-btn stem-solo"
+                      data-stem="{{ stem.id }}"
+                      onclick="toggleSolo(this)">S</button>
+            </div>
+          </div>
+          {% empty %}
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;color:var(--muted);text-align:center;flex:1;">
+            <div style="font-size:2rem;margin-bottom:12px;opacity:.3;">🎛</div>
+            <div style="font-size:.88rem;font-weight:600;margin-bottom:6px;">No stems loaded</div>
+            <div style="font-size:.78rem;line-height:1.5;max-width:200px;">Add stems to this track from the Track Details page to enable per-track mixing.</div>
+            <a href="{% url 'music:track_detail' track.uid %}" class="btn-mx" style="margin-top:16px;">Add Stems →</a>
+          </div>
+          {% endfor %}
+
+          <!-- Master channel -->
+          {% if stems %}
+          <div class="ch-strip ch-strip-master" id="masterStrip">
+            <div class="ch-name" style="color:var(--accent);">MASTER</div>
+            <div class="ch-family-label" style="color:var(--accent);opacity:.6;">OUT</div>
+
+            <div style="display:flex;gap:4px;align-items:flex-end;position:relative;">
+              <div class="ch-vu">
+                <div class="ch-vu-fill" id="vu-master-l" style="height:0%;"></div>
+              </div>
+              <div class="ch-vu">
+                <div class="ch-vu-fill" id="vu-master-r" style="height:0%;"></div>
+              </div>
+              <div class="ch-fader-wrap" style="position:relative;">
+                <input class="ch-fader" type="range" id="masterFader"
+                       min="0" max="1.4" step="0.01" value="1.0"
+                       oninput="onMasterFaderChange(this)">
+                <div class="meter-scale">
+                  <div class="meter-tick">+6</div>
+                  <div class="meter-tick">0</div>
+                  <div class="meter-tick">-6</div>
+                  <div class="meter-tick">-∞</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ch-level" id="level-master">1.00</div>
+            <div style="height:4px;"></div>
+            <div class="ch-btn-row">
+              <button class="ch-btn" id="masterMuteBtn" onclick="toggleMasterMute()" title="Master Mute">M</button>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- AI Analysis strip -->
+        <div class="ai-box">
+          <span class="ai-label">AI →</span>
+          <span id="aiText" style="color:var(--muted);">Click Analyze for rehearsal insights.</span>
+          <button class="btn-mx" onclick="analyzeTrack()" style="margin-left:auto;flex-shrink:0;font-size:.72rem;padding:4px 10px;">Analyze Song</button>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="mx-sidebar">
+        <div class="mx-side-head">Track Info</div>
+        <div class="mx-side-body">
+          <div class="mx-kv"><span class="mx-kv-key">Key</span><span class="mx-kv-val">{{ track.original_key|default:"—" }}</span></div>
+          <div class="mx-kv"><span class="mx-kv-key">BPM</span><span class="mx-kv-val">{{ track.tempo|default:"—" }}</span></div>
+          <div class="mx-kv"><span class="mx-kv-key">Time</span><span class="mx-kv-val">{{ track.time_signature|default:"4/4" }}</span></div>
+          <div class="mx-kv"><span class="mx-kv-key">Duration</span><span class="mx-kv-val">{{ track.duration_display|default:"—" }}</span></div>
+          <div class="mx-kv"><span class="mx-kv-key">Stems</span><span class="mx-kv-val">{{ stems|length }}</span></div>
+        </div>
+
+        {% if upcoming_rehearsal %}
+        <div class="mx-side-head">Rehearsal</div>
+        <div class="mx-side-body">
+          <div style="font-size:.83rem;font-weight:600;color:#e6edf3;">{{ upcoming_rehearsal.event.name }}</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:3px;">{{ upcoming_rehearsal.event.date|date:"D, N j" }}</div>
+          {% if upcoming_rehearsal.setlist %}
+          <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">Setlist: {{ upcoming_rehearsal.setlist.title }}</div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="mx-side-head">Setlist Usage</div>
+        {% for row in recent_setlists %}
+        <div class="setlist-row">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:.78rem;font-weight:600;color:#e6edf3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ row.setlist.title }}</div>
+            <div style="font-size:.68rem;color:var(--muted);">{{ row.setlist.created_at|date:"N j, Y" }}</div>
+          </div>
+          {% if row.performance_key %}<span style="font-size:.65rem;font-family:var(--mono);color:var(--accent);flex-shrink:0;">{{ row.performance_key }}</span>{% endif %}
+        </div>
+        {% empty %}
+        <div style="padding:12px 14px;font-size:.78rem;color:var(--muted);">Not in any setlist yet.</div>
+        {% endfor %}
+
+        <div class="mx-side-head">Presets</div>
+        <div class="mx-side-body" style="display:flex;flex-direction:column;gap:6px;">
+          {% if mix_preset %}
+          <div style="font-size:.75rem;color:var(--muted);">Loaded: <span style="color:#e6edf3;">{{ mix_preset.name }}</span></div>
+          {% endif %}
+          <button class="btn-mx" style="font-size:.72rem;width:100%;justify-content:center;" onclick="saveMix()">💾 Save as Preset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="mx-statusbar">
+      <div class="status-chip">
+        <div class="status-dot off" id="engineDot"></div>
+        Audio Engine: <span id="engineStatus">Off</span>
+      </div>
+      <div class="status-chip">
+        Playing: <span id="playingStatus">Stopped</span>
+      </div>
+      <div class="status-chip">
+        Stems: <span>{{ stems|length }}</span>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+        <div class="status-chip">VU Peak: <span id="vuPeak">—</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+const SAVE_URL = '{% url "music:mixer_save_state" track.uid %}';
+const AI_URL = '{% url "music:mixer_ai_analyze" track.uid %}';
+
+const preset = {
+  transpose: {{ mix_preset.transpose_semitones|default:0 }},
+  channels: JSON.parse('{{ mix_preset_channels_json|escapejs }}'),
+  order: JSON.parse('{{ mix_preset_order_json|escapejs }}'),
+};
+
+// ── State ──────────────────────────────────────────────
+let audioCtx = null;
+let playing = false;
+let masterMuted = false;
+let vuRafId = null;
+let peakVal = 0;
+const graph = {};
+const state = {};
+let soloActive = false;
+let analyzerNode = null;
+
+function $ (id) { return document.getElementById(id); }
+
+// ── Init audio engine ──────────────────────────────────
+async function initAudio() {
+  if (audioCtx && audioCtx.state !== 'closed') {
+    await audioCtx.resume();
+    updateEngineStatus();
+    return;
+  }
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+  analyzerNode = audioCtx.createAnalyser();
+  analyzerNode.fftSize = 256;
+  analyzerNode.connect(audioCtx.destination);
+
+  const masterGain = audioCtx.createGain();
+  masterGain.gain.value = parseFloat($('masterFader').value || 1);
+  masterGain.connect(analyzerNode);
+  graph['__master__'] = { gain: masterGain };
+
+  document.querySelectorAll('.ch-strip[data-stem]').forEach(strip => {
+    const stemId = strip.dataset.stem;
+    const url = strip.dataset.audioUrl;
+    if (!url) return;
+
+    const audio = new Audio(url);
+    audio.crossOrigin = 'anonymous';
+    audio.loop = true;
+    audio.preload = 'auto';
+    audio.playbackRate = currentPracticeSpeed;  // respect current practice speed
+    const src = audioCtx.createMediaElementSource(audio);
+    const gain = audioCtx.createGain();
+    const pan = audioCtx.createStereoPanner();
+    const stemAnalyzer = audioCtx.createAnalyser();
+    stemAnalyzer.fftSize = 32;
+
+    src.connect(gain).connect(pan).connect(masterGain);
+    pan.connect(stemAnalyzer);
+
+    graph[stemId] = { audio, src, gain, pan, analyzer: stemAnalyzer };
+    state[stemId] = {
+      gain: parseFloat(strip.dataset.gain || 0.8),
+      pan:  parseFloat(strip.dataset.pan || 0),
+      muted: strip.dataset.muted === '1',
+    };
+    applyState(stemId);
+  });
+
+  hydrateFromPreset();
+  updateEngineStatus();
+  startVuAnimation();
+  $('startEngineBtn').textContent = '✓ Audio Active';
+  $('startEngineBtn').className = 'btn-mx green';
+}
+
+function updateEngineStatus() {
+  const dot = $('engineDot');
+  const status = $('engineStatus');
+  if (audioCtx && audioCtx.state === 'running') {
+    dot.className = 'status-dot green';
+    status.textContent = 'Running';
+  } else {
+    dot.className = 'status-dot off';
+    status.textContent = 'Off';
+  }
+}
+
+function applyState(stemId) {
+  const node = graph[stemId];
+  const s = state[stemId];
+  if (!node || !s) return;
+  node.gain.gain.value = s.muted ? 0 : s.gain;
+  node.pan.pan.value = s.pan;
+}
+
+// ── Playback ───────────────────────────────────────────
+async function togglePlay() {
+  if (!audioCtx) await initAudio();
+  if (audioCtx.state === 'suspended') await audioCtx.resume();
+  playing = !playing;
+  Object.values(graph).forEach(node => {
+    if (node.audio) {
+      if (playing) node.audio.play().catch(() => {});
+      else node.audio.pause();
+    }
+  });
+  const btn = $('playPauseBtn');
+  btn.textContent = playing ? '⏸' : '▶';
+  btn.className = playing ? 'transport-btn large play-active' : 'transport-btn large';
+  $('playingStatus').textContent = playing ? 'Playing' : 'Paused';
+}
+
+function stopAll() {
+  playing = false;
+  Object.values(graph).forEach(node => {
+    if (node.audio) { node.audio.pause(); node.audio.currentTime = 0; }
+  });
+  $('playPauseBtn').textContent = '▶';
+  $('playPauseBtn').className = 'transport-btn large';
+  $('progressFill').style.width = '0%';
+  $('timeDisplay').textContent = '0:00';
+  $('playingStatus').textContent = 'Stopped';
+}
+
+// ── Practice speed — applies to all stem audio elements synchronously ──────
+let currentPracticeSpeed = 1.0;
+function setPracticeSpeed(rate) {
+  currentPracticeSpeed = rate;
+  // Apply to every stem audio element so all tracks stay in sync
+  Object.values(graph).forEach(node => {
+    if (node.audio) node.audio.playbackRate = rate;
+  });
+  // Update button states
+  [['speed100', 1.0], ['speed75', 0.75], ['speed50', 0.5]].forEach(([id, r]) => {
+    const el = $(id);
+    if (!el) return;
+    el.classList.toggle('active', r === rate);
+    el.style.background = r === rate ? 'rgba(59,130,246,.2)' : '';
+    el.style.borderColor = r === rate ? '#3b82f6' : '';
+    el.style.color = r === rate ? '#58a6ff' : '';
+  });
+}
+
+function skipBack() {
+  Object.values(graph).forEach(node => { if (node.audio) node.audio.currentTime = 0; });
+  $('progressFill').style.width = '0%';
+  $('timeDisplay').textContent = '0:00';
+}
+
+function seekTo(e) {
+  const bar = $('progressBar');
+  const ratio = e.offsetX / bar.offsetWidth;
+  const firstAudio = Object.values(graph).find(n => n.audio && n.audio.duration);
+  if (!firstAudio) return;
+  const t = ratio * firstAudio.audio.duration;
+  Object.values(graph).forEach(n => { if (n.audio) n.audio.currentTime = t; });
+}
+
+// Progress update
+setInterval(() => {
+  const first = Object.values(graph).find(n => n.audio && n.audio.duration);
+  if (!first) return;
+  const ratio = first.audio.currentTime / first.audio.duration;
+  $('progressFill').style.width = `${ratio * 100}%`;
+  const s = Math.floor(first.audio.currentTime);
+  $('timeDisplay').textContent = `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}, 100);
+
+// ── VU animation ──────────────────────────────────────
+function startVuAnimation() {
+  const dataArr = new Uint8Array(analyzerNode ? analyzerNode.frequencyBinCount : 1);
+  function tick() {
+    vuRafId = requestAnimationFrame(tick);
+    if (!playing) return;
+    if (analyzerNode) {
+      analyzerNode.getByteFrequencyData(dataArr);
+      const avg = dataArr.reduce((a,b) => a+b, 0) / dataArr.length;
+      const pct = Math.min(100, (avg / 255) * 100 * 1.5);
+      $('vu-master-l') && ($('vu-master-l').style.height = pct + '%');
+      $('vu-master-r') && ($('vu-master-r').style.height = Math.max(0, pct - 5) + '%');
+      if (pct > peakVal) { peakVal = pct; $('vuPeak').textContent = Math.round(pct) + '%'; }
+    }
+    // Per-stem VU
+    document.querySelectorAll('.ch-strip[data-stem]').forEach(strip => {
+      const id = strip.dataset.stem;
+      const node = graph[id];
+      if (!node || !node.analyzer) return;
+      const arr = new Uint8Array(node.analyzer.frequencyBinCount);
+      node.analyzer.getByteFrequencyData(arr);
+      const a = arr.reduce((x,y) => x+y, 0) / arr.length;
+      const p = Math.min(100, (a / 255) * 120);
+      const vu = document.getElementById('vu-' + id);
+      if (vu) vu.style.height = p + '%';
+    });
+  }
+  tick();
+}
+
+// ── Faders & pan ─────────────────────────────────────
+function onFaderChange(input) {
+  const stemId = input.dataset.stem;
+  const val = parseFloat(input.value);
+  if (state[stemId]) state[stemId].gain = val;
+  applyState(stemId);
+  const lvl = document.getElementById('level-' + stemId);
+  if (lvl) lvl.textContent = val.toFixed(2);
+}
+
+function onPanChange(input) {
+  const stemId = input.dataset.stem;
+  const val = parseFloat(input.value);
+  if (state[stemId]) state[stemId].pan = val;
+  if (graph[stemId]) graph[stemId].pan.pan.value = val;
+}
+
+function onMasterFaderChange(input) {
+  const val = parseFloat(input.value);
+  if (graph['__master__']) graph['__master__'].gain.gain.value = masterMuted ? 0 : val;
+  $('level-master').textContent = val.toFixed(2);
+}
+
+// ── Mute / Solo ───────────────────────────────────────
+function toggleMute(btn) {
+  const stemId = btn.dataset.stem;
+  if (!state[stemId]) state[stemId] = { gain: 0.8, pan: 0, muted: false };
+  state[stemId].muted = !state[stemId].muted;
+  applyState(stemId);
+  btn.classList.toggle('muted', state[stemId].muted);
+  btn.closest('.ch-strip').classList.toggle('muted', state[stemId].muted);
+}
+
+function toggleSolo(btn) {
+  const stemId = btn.dataset.stem;
+  const wasSoloed = btn.classList.contains('soloed');
+
+  document.querySelectorAll('.stem-solo').forEach(b => {
+    b.classList.remove('soloed');
+    b.closest('.ch-strip').classList.remove('soloed');
+  });
+
+  if (!wasSoloed) {
+    btn.classList.add('soloed');
+    btn.closest('.ch-strip').classList.add('soloed');
+    soloActive = true;
+    document.querySelectorAll('.ch-strip[data-stem]').forEach(strip => {
+      const id = strip.dataset.stem;
+      if (!graph[id]) return;
+      if (id === stemId) graph[id].gain.gain.value = state[id]?.gain || 0.8;
+      else graph[id].gain.gain.value = 0;
+    });
+  } else {
+    soloActive = false;
+    document.querySelectorAll('.ch-strip[data-stem]').forEach(strip => {
+      applyState(strip.dataset.stem);
+    });
+  }
+}
+
+function toggleMasterMute() {
+  masterMuted = !masterMuted;
+  const btn = $('masterMuteBtn');
+  btn.classList.toggle('muted', masterMuted);
+  if (graph['__master__']) {
+    graph['__master__'].gain.gain.value = masterMuted ? 0 : parseFloat($('masterFader').value);
+  }
+}
+
+let isolateVocalsActive = false;
+function toggleIsolate() {
+  const btn = $('isolateBtn');
+  if (!isolateVocalsActive) {
+    isolateVocalsActive = true;
+    btn.className = 'btn-mx active-solo';
+    btn.textContent = 'Un-Isolate';
+    document.querySelectorAll('.ch-strip[data-stem]').forEach(strip => {
+      const id = strip.dataset.stem;
+      if (!graph[id]) return;
+      if (strip.dataset.family === 'vox') {
+        graph[id].gain.gain.value = state[id]?.gain || 0.8;
+      } else {
+        graph[id].gain.gain.value = 0;
+      }
+    });
+  } else {
+    isolateVocalsActive = false;
+    btn.className = 'btn-mx';
+    btn.textContent = 'Solo Vocals';
+    document.querySelectorAll('.ch-strip[data-stem]').forEach(strip => {
+      applyState(strip.dataset.stem);
+    });
+  }
+}
+
+// ── Transpose ─────────────────────────────────────────
+function updateTranspose(val) {
+  const n = parseInt(val);
+  $('transposeLabel').textContent = n > 0 ? `+${n}` : `${n}`;
+}
+
+// ── Reset ─────────────────────────────────────────────
+function resetMix() {
+  document.querySelectorAll('.ch-strip[data-stem]').forEach(strip => {
+    const id = strip.dataset.stem;
+    const defGain = parseFloat(strip.dataset.gain || 0.8);
+    const defPan = parseFloat(strip.dataset.pan || 0);
+    const fader = strip.querySelector('.ch-fader');
+    const pan = strip.querySelector('.ch-pan');
+    const mute = strip.querySelector('.stem-mute');
+    const solo = strip.querySelector('.stem-solo');
+    if (fader) fader.value = defGain;
+    if (pan) pan.value = defPan;
+    if (mute) mute.classList.remove('muted');
+    if (solo) solo.classList.remove('soloed');
+    strip.classList.remove('muted','soloed');
+    state[id] = { gain: defGain, pan: defPan, muted: false };
+    applyState(id);
+    const lvl = document.getElementById('level-' + id);
+    if (lvl) lvl.textContent = defGain.toFixed(2);
+  });
+  $('masterFader').value = 1;
+  $('level-master').textContent = '1.00';
+  if (graph['__master__']) graph['__master__'].gain.gain.value = 1;
+  $('transposeRange').value = 0;
+  updateTranspose(0);
+  soloActive = false; isolateVocalsActive = false;
+  $('isolateBtn').className = 'btn-mx';
+  $('isolateBtn').textContent = 'Solo Vocals';
+}
+
+// ── Preset hydration ──────────────────────────────────
+function hydrateFromPreset() {
+  if (preset.order && preset.order.length) applyStripOrder(preset.order);
+  Object.entries(preset.channels || {}).forEach(([stemId, ch]) => {
+    const strip = document.getElementById('strip-' + stemId);
+    if (!strip) return;
+    const fader = strip.querySelector('.ch-fader');
+    const pan = strip.querySelector('.ch-pan');
+    const mute = strip.querySelector('.stem-mute');
+    if (fader && ch.gain != null) fader.value = ch.gain;
+    if (pan && ch.pan != null) pan.value = ch.pan;
+    state[stemId] = { gain: parseFloat(fader?.value || 0.8), pan: parseFloat(pan?.value || 0), muted: !!ch.muted };
+    if (mute) mute.classList.toggle('muted', !!ch.muted);
+    strip.classList.toggle('muted', !!ch.muted);
+    const lvl = document.getElementById('level-' + stemId);
+    if (lvl) lvl.textContent = state[stemId].gain.toFixed(2);
+    applyState(stemId);
+  });
+  updateTranspose(preset.transpose || 0);
+}
+
+function applyStripOrder(ids) {
+  const container = $('mixerStrips');
+  const master = $('masterStrip');
+  ids.forEach(id => {
+    const el = document.getElementById('strip-' + id);
+    if (el && container) { container.insertBefore(el, master || null); }
+  });
+}
+
+// ── Save mix ──────────────────────────────────────────
+async function saveMix() {
+  const channels = {};
+  document.querySelectorAll('.ch-strip[data-stem]').forEach(strip => {
+    const id = strip.dataset.stem;
+    const fader = strip.querySelector('.ch-fader');
+    const pan = strip.querySelector('.ch-pan');
+    const mute = strip.querySelector('.stem-mute');
+    channels[id] = {
+      gain: parseFloat(fader?.value || 0.8),
+      pan: parseFloat(pan?.value || 0),
+      muted: mute?.classList.contains('muted') || false,
+    };
+  });
+  const order = [...document.querySelectorAll('.ch-strip[data-stem]')].map(el => parseInt(el.dataset.stem));
+  const body = {
+    transpose: parseInt($('transposeRange').value),
+    channel_state: channels,
+    strip_order: order,
+  };
+  try {
+    const r = await fetch(SAVE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify(body),
+    });
+    const data = await r.json();
+    $('saveMixBtn') && ($('saveMixBtn').textContent = '✓ Saved');
+    setTimeout(() => { $('saveMixBtn') && ($('saveMixBtn').textContent = 'Save Mix'); }, 2000);
+  } catch(e) { console.error('Save failed', e); }
+}
+
+// ── Drag to reorder ───────────────────────────────────
+let dragEl = null;
+document.querySelectorAll('.ch-strip[draggable]').forEach(strip => {
+  strip.addEventListener('dragstart', e => {
+    dragEl = strip;
+    setTimeout(() => strip.classList.add('dragging'), 0);
+  });
+  strip.addEventListener('dragend', () => {
+    dragEl = null;
+    strip.classList.remove('dragging');
+    document.querySelectorAll('.ch-strip').forEach(s => s.classList.remove('drag-over'));
+  });
+  strip.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (dragEl && dragEl !== strip) strip.classList.add('drag-over');
+  });
+  strip.addEventListener('dragleave', () => strip.classList.remove('drag-over'));
+  strip.addEventListener('drop', e => {
+    e.preventDefault();
+    strip.classList.remove('drag-over');
+    if (dragEl && dragEl !== strip) {
+      const container = $('mixerStrips');
+      const allStrips = [...container.children];
+      const fromIdx = allStrips.indexOf(dragEl);
+      const toIdx = allStrips.indexOf(strip);
+      if (fromIdx < toIdx) container.insertBefore(dragEl, strip.nextSibling);
+      else container.insertBefore(dragEl, strip);
+    }
+  });
+});
+
+// ── AI analysis ───────────────────────────────────────
+async function analyzeTrack() {
+  const el = $('aiText');
+  el.style.color = 'var(--accent)';
+  el.textContent = 'Analyzing…';
+  try {
+    const r = await fetch(AI_URL, {
+      method: 'POST', headers: { 'X-CSRFToken': CSRF }
+    });
+    const data = await r.json();
+    el.style.color = 'var(--text)';
+    el.textContent = data.summary || 'Analysis complete.';
+  } catch (e) {
+    el.style.color = 'var(--muted)';
+    el.textContent = 'Analysis unavailable.';
+  }
+}
+
+// ── Hydrate on load ───────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  buildStateFromDom();
+  hydrateFromPreset();
+});
+
+function buildStateFromDom() {
+  document.querySelectorAll('.ch-strip[data-stem]').forEach(strip => {
+    const id = strip.dataset.stem;
+    state[id] = {
+      gain: parseFloat(strip.dataset.gain || 0.8),
+      pan:  parseFloat(strip.dataset.pan || 0),
+      muted: strip.dataset.muted === '1',
+    };
+  });
+}
+</script>
+{% endblock %}

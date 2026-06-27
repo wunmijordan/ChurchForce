@@ -1,0 +1,370 @@
+﻿{% load static %}
+{% load form_tags %}
+{% load widget_tweaks %}
+ 
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login to {% if church %}{{ church.name }}{% else %}ChurchForce{% endif %}</title>
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+  <meta name="theme-color" content="#2e303e">
+  <link rel="apple-touch-icon" href="{% static 'images/icons/icon-192x192.png' %}">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/icons/icon-192x192.png' %}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="{% static 'vendor/tabler/tabler.min.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/custom.css' %}" rel="stylesheet" />
+  <style>
+    #usernameStatus {
+      transition:
+        background-color .18s ease,
+        color .18s ease;
+    }
+    /* Checking */
+    #usernameStatus.status-checking {
+      background: rgba(32, 107, 196, 0.22);
+      color: #6ea8fe;
+    }
+    /* Valid */
+    #usernameStatus.status-valid {
+      background: rgba(47, 179, 68, 0.22);
+      color: #2fb344;
+    }
+    /* Invalid */
+    #usernameStatus.status-invalid {
+      background: rgba(214, 57, 57, 0.22);
+      color: #d63939;
+    }
+    /* Ensure no Bootstrap validation background-image on the username input */
+    #id_username { background-image: none !important; padding-right: 0 !important; }
+    /* Prefix comfortable padding */
+    #usernameGroup .input-group-text:first-child { padding-inline: 1rem; }
+    .btn:hover {
+      background-color: var(--church-primary-light) !important;
+      color: white !important;               /* Keep text visible */
+      border-color: #292828 !important;
+    }
+  </style>
+</head>
+<body>
+ 
+<div class="page page-center">
+  <div class="container container-tight mt-6 py-5">
+ 
+    <div class="text-center mb-4">
+      {% if church and church.is_white_label and church.logo %}
+        <img src="{{ church.logo.url }}" alt="{{ church.name }}"
+             style="width:80px;height:80px;border-radius:16px;object-fit:cover;">
+        <h3 class="mt-1 fw-bold mb-0">{{ church.name }}</h3>
+        {% if church.slogan %}
+          <p class="text-muted small mt-1 mb-0">{{ church.slogan }}</p>
+        {% endif %}
+      {% else %}
+        <img src="{% static 'images/icons/icon-192x192.png' %}" alt="ChurchForce"
+             style="width:64px;height:64px;border-radius:14px;">
+        <h3 class="mt-1 fw-bold mb-0">ChurchForce</h3>
+      {% endif %}
+    </div>
+ 
+    <div class="card card-lg" style="box-shadow:0 4px 8px #000000d2;border-radius:36px;">
+      <div class="card-body">
+ 
+        {% if form.errors %}
+          <div class="alert alert-danger py-2 small mb-3" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+            Invalid username or password. Please try again.
+          </div>
+        {% endif %}
+        {% if request.GET.signup %}
+          <div class="alert alert-info py-2 small mb-3" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+            Check your email for your login details from ChurchForce signup.
+          </div>
+        {% endif %}
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} py-2 small mb-3">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+ 
+        <form method="post" novalidate>
+          {% csrf_token %}
+ 
+          {# ── Username field with optional prefix / suffix ── #}
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+
+            {% with prefix=church.settings.username_prefix|default:"" suffix_on=church.settings.username_use_church_slug_suffix|default:False %}
+
+            {# Always an input-group-flat so the whole row shares one focus ring #}
+            <div class="input-group input-group-flat" id="usernameGroup" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+              {% if prefix %}
+              <span class="input-group-text font-monospace text-muted" id="usernamePrefix"
+                    style="background:{{ church.primary_color }}22;box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 0 0 24px;border-right:0;padding-inline:1rem;">{{ prefix }}</span>
+              {% endif %}
+              <input
+                type="text"
+                name="username"
+                id="id_username"
+                class="form-control font-monospace"
+                placeholder="myusername"
+                autocomplete="username"
+                required
+                style="box-shadow:inset 0 4px 8px #000000d2;{% if prefix %}border-radius:0 24px 24px 0;{% else %}border-radius:24px;{% endif %}"
+                value="{{ form.username.value|default:'' }}"
+              >
+              {% if suffix_on %}
+              {# Sharp right corners when status appears — toggled by JS via id="usernameSuffix" #}
+              <span id="usernameSuffix" class="input-group-text font-monospace text-muted"
+                    style="background:{{ church.primary_color }}22;box-shadow:inset 0 4px 8px #000000d2;border-radius:0 24px 24px 0;border-left:0;">.{{ church.slug }}</span>
+              {% endif %}
+              {# Status icon — always last in the group, hidden until a check runs #}
+              <span id="usernameStatus" class="input-group-text"
+                    style="box-shadow:inset 0 4px 8px #000000d2;border-left:0;border-radius:0 24px 24px 0;display:none;padding-inline:0.6rem;">
+              </span>
+            </div>
+
+            {# Screen-reader feedback (no visible hint text) #}
+            <div id="usernameHint" class="visually-hidden" aria-live="polite"></div>
+
+            {% endwith %}
+          </div>
+ 
+          {# ── Password ── #}
+          <div class="mb-3">
+            <label class="form-label d-flex justify-content-between">
+              <span>Password</span>
+              <a href="{% url 'accounts:password_reset' %}"
+                 class="form-label-description text-secondary" tabindex="-1">
+                Forgot? Reset Password
+              </a>
+            </label>
+            <div class="input-group input-group-flat"
+                 style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+              {% render_field form.password class="form-control" placeholder="myworkforceaccess" id="passwordInput" autocomplete="current-password" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 0 0 24px;" %}
+              <span class="input-group-text ps-3"
+                    style="background:{{ church.primary_color }}22;box-shadow:inset 0 4px 8px #000000d2;border-radius:0 24px 24px 0;">
+                <a href="#" class="link-secondary toggle-password" aria-label="Toggle password visibility">
+                  <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"/>
+                    <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"/>
+                  </svg>
+                </a>
+              </span>
+            </div>
+          </div>
+ 
+          <div class="mb-3">
+            <label class="form-check">
+              <input type="checkbox" name="remember_me" class="form-check-input"
+                     style="box-shadow:inset 0 4px 8px #000000d2;">
+              <span class="form-check-label">Remember me on this device</span>
+            </label>
+          </div>
+ 
+          <button type="submit" class="btn btn-success btn-lg w-100 fw-bold"
+                  style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+            Login
+          </button>
+        </form>
+ 
+      </div>
+ 
+      {% if not church %}
+        <div class="card-footer text-center text-secondary small py-3">
+          New to ChurchForce?
+          <a href="{% url 'tenants:signup' %}" class="text-light">Create your Church account here</a>
+        </div>
+      {% endif %}
+    </div>
+ 
+    <div class="text-center text-secondary small mt-4">
+      &copy; {% now "Y" %}
+      <a href="https://churchforce.io" class="text-secondary" target="_blank" rel="noopener">ChurchForce Inc</a>
+      &middot; Built for the Church Workforce
+    </div>
+  </div>
+</div>
+ 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ── Password toggle ──────────────────────────────────────────────────────────
+const toggle = document.querySelector('.toggle-password');
+const input  = document.getElementById('passwordInput');
+const icon   = document.getElementById('eyeIcon');
+const eyeOn  = '<path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"/><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"/>';
+const eyeOff = '<path d="M3 3l18 18"/><path d="M10.584 10.587a2 2 0 0 0 2.83 2.83"/><path d="M9.366 5.653a9.05 9.05 0 0 1 11.087 6.347"/><path d="M6.79 6.793c-1.825 1.108 -3.06 2.766 -3.79 4.707"/>';
+if (toggle && input) {
+  toggle.addEventListener('click', e => {
+    e.preventDefault();
+    input.type = input.type === 'password' ? 'text' : 'password';
+    icon.innerHTML = input.type === 'password' ? eyeOn : eyeOff;
+  });
+}
+ 
+// ── Username live validity check ─────────────────────────────────────────────
+(function () {
+  const input  = document.getElementById('id_username');
+  const status = document.getElementById('usernameStatus');
+  const hint   = document.getElementById('usernameHint');
+  if (!input || !status) return;
+
+  const CHECK_URL = "{% url 'accounts:username_check' %}";
+
+  // SVG icons (Tabler style, inline so no extra request)
+  const ICON_VALID   = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2fb344" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l9 -9"/></svg>';
+  const ICON_INVALID = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d63939" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>';
+  const ICON_SPIN    = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin .8s linear infinite"><path d="M12 3a9 9 0 1 0 9 9"/></svg>';
+
+  // Inject keyframe once
+  if (!document.getElementById('_spin_kf')) {
+    const s = document.createElement('style');
+    s.id = '_spin_kf';
+    s.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(s);
+  }
+
+  const suffix = document.getElementById('usernameSuffix');
+  const prefix = document.getElementById('usernamePrefix');
+  const hasPrefix = !!prefix;
+  const hasSuffix = !!suffix;
+  const group  = document.getElementById('usernameGroup');
+
+  function syncUsernameRadius(hasStatus = false) {
+
+    // ─────────────────────────────────────────────
+    // CASE 1: No prefix + no suffix
+    // Fully rounded until status appears
+    // ─────────────────────────────────────────────
+    if (!hasPrefix && !hasSuffix) {
+      input.style.borderRadius = hasStatus
+        ? '24px 0 0 24px'
+        : '24px';
+
+      return;
+    }
+
+    // ─────────────────────────────────────────────
+    // CASE 2: Prefix only
+    // Left always sharp
+    // Right rounded unless status appears
+    // ─────────────────────────────────────────────
+    if (hasPrefix && !hasSuffix) {
+      input.style.borderRadius = hasStatus
+        ? '0'
+        : '0 24px 24px 0';
+
+      return;
+    }
+
+    // ─────────────────────────────────────────────
+    // CASE 3: Suffix only
+    // Right always sharp because suffix exists
+    // Left rounded
+    // ─────────────────────────────────────────────
+    if (!hasPrefix && hasSuffix) {
+      input.style.borderRadius = '24px 0 0 24px';
+
+      suffix.style.borderRadius = hasStatus
+        ? '0'
+        : '0 24px 24px 0';
+
+      return;
+    }
+
+    // ─────────────────────────────────────────────
+    // CASE 4: Prefix + suffix
+    // Input always fully sharp
+    // Suffix only owns outer-right radius
+    // ─────────────────────────────────────────────
+    input.style.borderRadius = '0';
+
+    suffix.style.borderRadius = hasStatus
+      ? '0'
+      : '0 24px 24px 0';
+  }
+
+  function setStatus(state) {
+    group.classList.remove('group-valid', 'group-invalid');
+
+    status.classList.remove(
+      'status-checking',
+      'status-valid',
+      'status-invalid'
+    );
+
+    if (!state) {
+      status.style.display = 'none';
+      status.innerHTML = '';
+
+      if (hint) hint.textContent = '';
+
+      syncUsernameRadius(false);
+      return;
+    }
+
+    status.style.display = '';
+    syncUsernameRadius(true);
+
+    if (state === 'checking') {
+      status.innerHTML = ICON_SPIN;
+      status.classList.add('status-checking');
+
+      if (hint) hint.textContent = 'Checking…';
+
+    } else if (state === 'valid') {
+      status.innerHTML = ICON_VALID;
+      status.classList.add('status-valid');
+
+      group.classList.add('group-valid');
+
+      if (hint) hint.textContent = 'Username found';
+
+    } else {
+      status.innerHTML = ICON_INVALID;
+      status.classList.add('status-invalid');
+
+      group.classList.add('group-invalid');
+
+      if (hint) hint.textContent = 'Username not found';
+    }
+  }
+
+  let timer = null;
+  input.addEventListener('input', function () {
+    const val = this.value.trim();
+    clearTimeout(timer);
+    if (val.length < 2) { setStatus(null); return; }
+    setStatus('checking');
+    timer = setTimeout(function () {
+      fetch(CHECK_URL + '?u=' + encodeURIComponent(val), {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.exists === null) { setStatus(null); return; }
+        setStatus(d.exists ? 'valid' : 'invalid');
+      })
+      .catch(() => setStatus(null));
+    }, 380);
+  });
+
+  // Initialize correct radius state before any validation runs
+  syncUsernameRadius(false);
+
+  // If the field is pre-filled on page load (e.g. after a failed login), check it
+  if (input.value.trim().length >= 2) {
+    setStatus('checking');
+    fetch(CHECK_URL + '?u=' + encodeURIComponent(input.value.trim()), {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(d => { if (d.exists !== null) setStatus(d.exists ? 'valid' : 'invalid'); })
+    .catch(() => setStatus(null));
+  }
+})();
+</script>
+<script src="{% static 'js/custom.js' %}"></script>
+</body>
+</html>

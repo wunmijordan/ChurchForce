@@ -39,6 +39,7 @@ scheduler = BackgroundScheduler(timezone=timezone.get_current_timezone())
 # Start — idempotent, threadsafe
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def start():
     """
     Start the scheduler in a background thread and register all jobs.
@@ -62,27 +63,40 @@ def start():
 
             # ── Register workforce jobs ───────────────────────────────
             from workforce.scheduler_jobs import register_workforce_jobs
+
             register_workforce_jobs(scheduler)
 
             # ── Register billing jobs ─────────────────────────────────
             from billing.renewal_reminders import register_billing_jobs
+
             register_billing_jobs(scheduler)
 
             # ── Register guest pipeline jobs ──────────────────────────
             from guests.scheduler_jobs import register_guest_jobs
+
             register_guest_jobs(scheduler)
+
+            try:
+                from music.scheduler_jobs import register_music_jobs
+
+                register_music_jobs(scheduler)
+            except Exception as _exc:
+                print(f"⚠️  [Scheduler] Music jobs skipped: {_exc}")
 
             # ── Register birthday notification jobs ───────────────────
             from core.birthday_jobs import register_birthday_jobs
+
             register_birthday_jobs(scheduler)
 
             # ── Seed initial data after short delay ───────────────────
             # 2s delay ensures Django ORM is fully ready before first query
             import threading as _t
+
             _t.Timer(2.0, _run_startup_jobs).start()
 
             # ── Demo nightly reset (only if DEMO_SUBDOMAIN is set) ──────
             from django.conf import settings as django_settings
+
             demo_sub = getattr(django_settings, "DEMO_SUBDOMAIN", "")
             if demo_sub:
                 scheduler.add_job(
@@ -93,7 +107,9 @@ def start():
                     id="demo_nightly_reset",
                     replace_existing=True,
                 )
-                print(f"🎭 [Scheduler] Demo nightly reset registered for subdomain '{demo_sub}'")
+                print(
+                    f"🎭 [Scheduler] Demo nightly reset registered for subdomain '{demo_sub}'"
+                )
 
             print("🔁 [Scheduler] All jobs registered.")
 
@@ -113,6 +129,7 @@ def _run_startup_jobs():
             schedule_event_notifications,
             schedule_push_notifications,
         )
+
         schedule_event_notifications()
         schedule_push_notifications()
     except Exception as exc:
@@ -123,9 +140,11 @@ def _reset_demo():
     """Nightly demo reset — wipes and reseeds the demo church at 3 AM."""
     from django.conf import settings as django_settings
     from django.core.management import call_command
+
     subdomain = getattr(django_settings, "DEMO_SUBDOMAIN", "demo")
+    password = getattr(django_settings, "DEMO_PASSWORD", "Demo@1234")
     try:
-        call_command("seed_demo", subdomain=subdomain, reset=True)
+        call_command("seed_demo", subdomain=subdomain, reset=True, password=password)
         print(f"🎭 [Scheduler] Demo church '{subdomain}' reset successfully")
     except Exception as exc:
         print(f"❌ [Scheduler] Demo reset failed: {exc}")

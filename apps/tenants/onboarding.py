@@ -1,14 +1,11 @@
-"""
+﻿"""
 tenants/onboarding.py
 
-Provisions a brand-new church tenant on the trial plan.
+Provisions a brand-new church tenant on the path-slug routing tier (free).
 
 Design decisions:
-    - Trial-first: every new signup starts on a 14-day trial.
-      Plan selection (SaaS / White Label) happens on the billing/upgrade
-      page after signup, or when the trial expires.
-    - Trial tenants use root-slug routing: app.com/<slug>/...
-      Subdomain routing activates when the tenant upgrades to SaaS.
+    - Path-first: every new signup uses workforce.church/<slug>/...
+    - All routing tiers are free; churches switch tiers from Account → Routing.
     - raw_objects is used here because this runs before any request
       context exists. Once the user logs in and a real request is
       processed, ChurchContextMiddleware sets the context var and all
@@ -24,14 +21,11 @@ Usage:
         admin_full_name="John Doe",
         admin_email="john@gracechapel.org",
         admin_password="securepassword123",
-        trial_days=14,
     )
 """
 
 from django.db import transaction
-from django.utils import timezone
-from django.utils.text import slugify
-from datetime import timedelta
+from decimal import Decimal
 
 
 @transaction.atomic
@@ -43,13 +37,14 @@ def provision_church(
     admin_email: str,
     admin_password: str,
     primary_color: str = "#206bc4",
-    trial_days: int = 14,
+    latitude: float | None = None,
+    longitude: float | None = None,
 ):
     """
-    Provision a new church tenant on the trial plan.
+    Provision a new church tenant on the path-slug routing tier (free).
 
-    Trial tenants have no subdomain — they access the app via
-    app.com/<slug>/... until they upgrade to SaaS or White Label.
+    New churches access the app via workforce.church/<slug>/... until they
+    switch to subdomain or custom-domain routing from Account settings.
 
     Returns:
         (Church, CustomUser) — created church and its first admin user.
@@ -58,25 +53,25 @@ def provision_church(
         ValueError on slug/email uniqueness violations (human-readable).
     """
 
-    from django.conf import settings
-    from tenants.dev_utils import dev_adjust_email, dev_adjust_slug
     from tenants.models import Church
     from accounts.models import CustomUser, ChurchMember
     from billing.models import SubscriptionPlan, ChurchSubscription
     from bootstrap.models import ChurchTemplate
-    from bootstrap.services import apply_template_to_church, ensure_default_template
+    from bootstrap.services import (
+        apply_template_to_church,
+        ensure_default_template,
+        _ensure_admin_bootstrap,
+    )
 
     # ----------------------------------------------------------------
     # 1. Validate uniqueness up front for clean user-facing errors
     # ----------------------------------------------------------------
 
+    from django.utils.text import slugify
+
     slug = slugify(slug)
     if not slug:
         raise ValueError("Please enter a valid URL handle.")
-    
-    # DEV helpers
-    slug = dev_adjust_slug(slug)
-    admin_email = dev_adjust_email(admin_email)
 
     if Church.raw_objects.filter(slug=slug).exists():
         raise ValueError(
@@ -90,15 +85,20 @@ def provision_church(
         )
 
     # ----------------------------------------------------------------
-    # 2. Create the Church (no subdomain yet — that's a paid feature)
+    # 2. Create the Church (path-slug routing — no subdomain yet)
     # ----------------------------------------------------------------
+
+    lat_value = Decimal(str(latitude)) if latitude is not None else Decimal("0.0")
+    lon_value = Decimal(str(longitude)) if longitude is not None else Decimal("0.0")
 
     church = Church.raw_objects.create(
         name=church_name,
         slug=slug,
-        subdomain=None,          # assigned on upgrade to SaaS
-        custom_domain=None,      # assigned on upgrade to White Label
+        subdomain=None,
+        custom_domain=None,
         primary_color=primary_color,
+        latitude=lat_value,
+        longitude=lon_value,
         is_active=True,
     )
 
@@ -125,37 +125,42 @@ def provision_church(
     # 4. Create ChurchMember (links user -> church)
     # ----------------------------------------------------------------
 
-    member = ChurchMember.raw_objects.create(
+    member, created = ChurchMember.objects.get_or_create(
         church=church,
         user=user,
-        is_active=True,
-        is_admin=True,
+        defaults={"is_active": True, "is_admin": True},
     )
+    if not created:
+        if not member.is_active or not member.is_admin:
+            member.is_active = True
+            member.is_admin = True
+            member.save(update_fields=["is_active", "is_admin"])
+
     # ----------------------------------------------------------------
-    # 5. Start trial subscription
+    # 5. Free path-slug routing subscription (never expires)
     # ----------------------------------------------------------------
 
     trial_plan, _ = SubscriptionPlan.objects.get_or_create(
         name="trial",
         defaults={
-            "multi_campus": False,
+            "multi_campus": True,
             "white_label": False,
-            "description": "14-day free trial with full feature access.",
+            "campus_limit": -1,
+            "monthly_price_ngn": 0,
+            "description": "Path-slug routing — workforce.church/your-church/...",
         },
     )
 
     ChurchSubscription.objects.create(
         church=church,
         plan=trial_plan,
-        is_trial=True,
+        is_trial=False,
         is_active=True,
-        trial_expires_at=timezone.now() + timedelta(days=trial_days),
+        expires_at=None,
     )
 
     # ----------------------------------------------------------------
     # 6. Bootstrap lookup data from the default template.
-    #    The post_save signal on Church fires this too, but we guard
-    #    against double-seeding in case the signal already ran.
     # ----------------------------------------------------------------
 
     template = (
@@ -165,20 +170,42 @@ def provision_church(
     )
     if template:
         from units.models import ChurchUnit
+
         already_seeded = ChurchUnit.raw_objects.filter(church=church).exists()
         if not already_seeded:
-            apply_template_to_church(template, church, admin_member=member, admin_user=user)
+            apply_template_to_church(
+                template, church, admin_member=member, admin_user=user
+            )
+        else:
+            _ensure_admin_bootstrap(
+                church,
+                admin_member=member,
+                admin_user=user,
+            )
+
+    # ----------------------------------------------------------------
+    # 7. Seed starter media/music baseline.
+    # ----------------------------------------------------------------
+    try:
+        from music.services.catalog import seed_tracks_for_plan
+        from media.services import seed_bible_content_for_plan
+
+        seed_tracks_for_plan(church, "trial")
+        seed_bible_content_for_plan(church, "trial")
+    except Exception:
+        pass
 
     return church, user
 
 
 def activate_subdomain(church, subdomain: str):
     """
-    Called during SaaS upgrade.
+    Called during subdomain routing switch.
     Assigns a subdomain and switches routing from slug to subdomain.
     Raises ValueError if subdomain is taken.
     """
     from tenants.models import Church
+    from django.utils.text import slugify
 
     subdomain = slugify(subdomain)
     if Church.raw_objects.filter(subdomain=subdomain).exclude(pk=church.pk).exists():
@@ -193,7 +220,7 @@ def activate_subdomain(church, subdomain: str):
 
 def activate_custom_domain(church, custom_domain: str):
     """
-    Called during White Label upgrade.
+    Called during custom-domain routing switch.
     Assigns a custom domain. Raises ValueError if already registered.
     """
     from tenants.models import Church
@@ -207,5 +234,3 @@ def activate_custom_domain(church, custom_domain: str):
     church.custom_domain = domain
     church.save(update_fields=["custom_domain", "updated_at"])
     return church
-
-

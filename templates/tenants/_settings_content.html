@@ -1,0 +1,3551 @@
+{% load campus_tags %}
+{% load static widget_tweaks access_tags %}
+{# ════════════════════════════════════════════════════════════════════════ #}
+{# TAB: General                                                             #}
+{# ════════════════════════════════════════════════════════════════════════ #}
+{% if active_tab == 'general' or not active_tab %}
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}<input type="hidden" name="tab" value="general">
+  {% with form=forms.general %}
+
+  <div class="card bg-gray-900 mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+    <div class="card-header"><h3 class="mb-0 fw-bold">Church Profile</h3></div>
+    <div class="card-body p-4">
+      <div class="row g-3">
+        <div class="col-md-8">
+          <label class="form-label">Church Name</label>
+          {% render_field form.name style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;" %}
+          {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Brand colour</label>
+          {% render_field form.primary_color style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;" %}
+          {% if form.primary_color.errors %}<div class="text-danger small">{{ form.primary_color.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12">
+          <label class="form-label">{{ form.slogan.label }}</label>
+          {% render_field form.slogan style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;" %}
+          <div class="form-text">{{ form.slogan.help_text }}</div>
+          {% if form.slogan.errors %}<div class="text-danger small">{{ form.slogan.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12">
+          <label class="form-label">Logo</label>
+          {% render_field form.logo style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;" %}
+          {% if form.logo.errors %}<div class="text-danger small">{{ form.logo.errors }}</div>{% endif %}
+          {% if form.logo.value %}<div class="text-muted small mt-1">Uploading a new logo will replace the existing one.</div>{% endif %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Timezone</label>
+          {% render_field form.timezone style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;" %}
+          <div class="form-text">{{ form.timezone.help_text }}</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Clock-in radius (km)</label>
+          {% render_field form.attendance_radius_km style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;" %}
+          {% if form.attendance_radius_km.errors %}<div class="text-danger small">{{ form.attendance_radius_km.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Latitude</label>
+          {% render_field form.latitude style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;" %}
+          {% if form.latitude.errors %}<div class="text-danger small">{{ form.latitude.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Longitude</label>
+          {% render_field form.longitude style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;" %}
+          {% if form.longitude.errors %}<div class="text-danger small">{{ form.longitude.errors }}</div>{% endif %}
+          <div class="form-text">{{ form.longitude.help_text }}</div>
+        </div>
+      </div>
+
+      <hr class="my-4">
+      <h6 class="fw-semibold mb-3">{% if is_white_label or plan.is_founders %} White-label & Display {% else %} Display {% endif %}</h6>
+      <div class="row g-3">
+        {% if is_white_label or is_founders %}
+        <div class="col-md-6">
+          <div class="form-check form-check-single form-switch">{{ form.hide_platform_credit }}
+            <label class="form-check-label ms-2">{{ form.hide_platform_credit.label }}</label>
+            <div class="form-text">{{ form.hide_platform_credit.help_text }}</div>
+          </div>
+        </div>
+        {% endif %}
+        <div class="col-md-6">
+          <div class="form-check form-check-single form-switch">{{ form.enable_welcome_screen }}
+            <label class="form-check-label ms-2">{{ form.enable_welcome_screen.label }}</label>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4">
+      <h6 class="fw-semibold mb-1">Church Identity</h6>
+      <p class="text-muted small mb-3">Used by AI skills across the system to personalise messages, insights, and research.</p>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">{{ form.mission_statement.label }}</label>
+          {% render_field form.mission_statement style="box-shadow:inset 0 4px 8px #000000ee;border-radius:16px;" rows="3" %}
+          {% if form.mission_statement.errors %}<div class="text-danger small">{{ form.mission_statement.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">{{ form.vision_statement.label }}</label>
+          {% render_field form.vision_statement style="box-shadow:inset 0 4px 8px #000000ee;border-radius:16px;" rows="3" %}
+          <div class="form-text">{{ form.vision_statement.help_text }}</div>
+          {% if form.vision_statement.errors %}<div class="text-danger small">{{ form.vision_statement.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12">
+          <label class="form-label">{{ form.denominational_affiliation.label }}</label>
+          {% render_field form.denominational_affiliation style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;" %}
+          {% if form.denominational_affiliation.errors %}<div class="text-danger small">{{ form.denominational_affiliation.errors }}</div>{% endif %}
+        </div>
+      </div>
+
+      <hr class="my-4">
+      <h5 class="fw-semibold mb-1 mt-3">Member Login Identity</h5>
+      <p class="text-muted small mb-3">
+        Optionally format how usernames appear at login and in credentials.
+        These are cosmetic decorators only — the underlying username is unchanged.
+      </p>
+            
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">{{ form.username_prefix.label }}</label>
+          <div class="input-group bg-cyan-lt" style="border-radius:24px;">
+            {% render_field form.username_prefix style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px 0 0 24px;" %}
+            <span class="input-group-text text-muted"
+                  style="border-radius:0 24px 24px 0;font-size:.8rem;min-width:80px;"
+                  id="prefixPreview">Preview: @wunmijordan</span>
+          </div>
+          <div class="form-text">{{ form.username_prefix.help_text }}</div>
+          {% if form.username_prefix.errors %}<div class="text-danger small">{{ form.username_prefix.errors }}</div>{% endif %}
+        </div>
+        
+        <div class="col-md-6 d-flex flex-column justify-content-start">
+          <label class="form-label">{{ form.username_use_church_slug_suffix.label }}</label>
+          <div class="card bg-cyan-lt p-3 mt-1" style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;">
+            <div class="d-flex align-items-start gap-2">
+              {% render_field form.username_use_church_slug_suffix %}
+              <div>
+                <label class="form-check-label small fw-semibold"
+                      for="{{ form.username_use_church_slug_suffix.id_for_label }}">
+                  Append <code>.{{ church.slug }}</code> to Usernames
+                </label>
+                <div class="text-muted" style="font-size:.72rem;margin-top:2px;">
+                  {{ form.username_use_church_slug_suffix.help_text }}
+                </div>
+              </div>
+            </div>
+            {# Live preview of what a username will look like #}
+            <div class="mt-2 font-monospace small text-info" id="usernameFormatPreview">
+              e.g. <span id="previewFull">wunmijordan</span>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+      
+      <script>
+      (function() {
+        const prefixInput   = document.querySelector('[name="username_prefix"]');
+        const suffixToggle  = document.querySelector('[name="username_use_church_slug_suffix"]');
+        const previewFull   = document.getElementById('previewFull');
+        const prefixPreview = document.getElementById('prefixPreview');
+        const SLUG = "{{ church.slug|escapejs }}";
+      
+        function updatePreview() {
+          const prefix = prefixInput ? prefixInput.value : '';
+          const suffix = suffixToggle && suffixToggle.checked ? '.' + SLUG : '';
+          const full   = prefix + 'wunmijordan' + suffix;
+          if (previewFull)   previewFull.textContent   = full;
+          if (prefixPreview) prefixPreview.textContent  = 'e.g. ' + full;
+        }
+      
+        if (prefixInput)  prefixInput.addEventListener('input', updatePreview);
+        if (suffixToggle) suffixToggle.addEventListener('change', updatePreview);
+        updatePreview();
+      })();
+      </script>
+      {# ── /Username Formatting #}
+
+      <hr class="my-4">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div>
+          <h6 class="fw-semibold mb-0">Core Values</h6>
+          <p class="text-muted small mb-0">Each value appears on the church profile and feeds AI context. Max 10.</p>
+        </div>
+        {% if not is_campus_church %}
+        <button type="button" class="btn btn-sm btn-outline-primary" id="addCoreValueBtn"
+                style="border-radius:24px;" onclick="cfAddCoreValue()">
+          + Add Value
+        </button>
+        {% endif %}
+      </div>
+
+      {# Hidden field carries the JSON array on form submit #}
+      <input type="hidden" name="core_values_json" id="coreValuesJson">
+
+      <div id="coreValuesList" class="d-flex flex-column gap-2 mb-2">
+        {# rows injected by JS on page load from settings_obj.core_values #}
+      </div>
+      <div id="coreValuesEmpty" class="text-muted small fst-italic" style="display:none;">
+        No core values added yet.
+      </div>
+
+      <script>
+      (function(){
+        const CAMPUS_READ_ONLY = {{ is_campus_church|yesno:"true,false" }};
+        // ── Seed from server ──────────────────────────────────────────
+        var _initial = {% if is_campus_church %}{{ form.hq_settings.core_values|default:"[]"|safe }}{% else %}{{ settings_obj.core_values|default:"[]"|safe }}{% endif %};
+        var _values  = Array.isArray(_initial) ? _initial.map(function(v){
+          return { title: v.title || '', description: v.description || '' };
+        }) : [];
+
+        function _render(){
+          var list  = document.getElementById('coreValuesList');
+          var empty = document.getElementById('coreValuesEmpty');
+          var json  = document.getElementById('coreValuesJson');
+          list.innerHTML = '';
+          if(!_values.length){
+            empty.style.display = '';
+          } else {
+            empty.style.display = 'none';
+            _values.forEach(function(v, i){
+              var row = document.createElement('div');
+              row.className = 'd-flex gap-2 align-items-start';
+              var removeBtn = CAMPUS_READ_ONLY ? '' : (
+                '<button type="button" class="btn btn-sm btn-ghost-danger mt-1 flex-shrink-0" title="Remove" data-idx="' + i + '"' +
+                ' style="border-radius:50%;width:32px;height:32px;padding:0;line-height:1;" onclick="cfRemoveCoreValue(' + i + ')">✕</button>'
+              );
+              row.innerHTML =
+                '<div class="flex-grow-1 row g-2">' +
+                  '<div class="col-md-4">' +
+                    '<input type="text" class="form-control cv-title" placeholder="Value title" value="' + _esc(v.title) + '"' +
+                    (CAMPUS_READ_ONLY ? ' disabled' : '') +
+                    ' style="box-shadow:inset 0 4px 8px #000000ee;border-radius:16px;" data-idx="' + i + '">' +
+                  '</div>' +
+                  '<div class="col-md-8">' +
+                    '<input type="text" class="form-control cv-desc" placeholder="Short description (optional)" value="' + _esc(v.description) + '"' +
+                    (CAMPUS_READ_ONLY ? ' disabled' : '') +
+                    ' style="box-shadow:inset 0 4px 8px #000000ee;border-radius:16px;" data-idx="' + i + '">' +
+                  '</div>' +
+                '</div>' +
+                removeBtn;
+              list.appendChild(row);
+            });
+          }
+          // keep hidden field in sync
+          json.value = JSON.stringify(_values);
+          // attach live listeners
+          if (!CAMPUS_READ_ONLY) {
+            list.querySelectorAll('.cv-title').forEach(function(el){
+              el.addEventListener('input', function(){ _values[+this.dataset.idx].title = this.value; json.value = JSON.stringify(_values); });
+            });
+            list.querySelectorAll('.cv-desc').forEach(function(el){
+              el.addEventListener('input', function(){ _values[+this.dataset.idx].description = this.value; json.value = JSON.stringify(_values); });
+            });
+          }
+        }
+
+        function _esc(s){ return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+        window.cfAddCoreValue = function(){
+          if (CAMPUS_READ_ONLY) return;
+          if(_values.length >= 10) return;
+          _values.push({ title:'', description:'' });
+          _render();
+          // focus new title input
+          var inputs = document.querySelectorAll('#coreValuesList .cv-title');
+          if(inputs.length) inputs[inputs.length-1].focus();
+        };
+
+        window.cfRemoveCoreValue = function(i){
+          if (CAMPUS_READ_ONLY) return;
+          _values.splice(i,1);
+          _render();
+        };
+
+        // ── Intercept form submit: ensure hidden field is written ─────
+        // Run _render immediately (works on first load and soft-nav re-execution).
+        _render();
+        (function() {
+          var form = document.getElementById('coreValuesJson')?.closest('form');
+          if(form && !form._coreValuesBound) {
+            form._coreValuesBound = true;
+            form.addEventListener('submit', function(){
+              document.getElementById('coreValuesJson').value = JSON.stringify(_values);
+            });
+          }
+        })();
+      })();
+      </script>
+    </div>
+    <div class="card-footer bg-gray-900 text-end" style="border-radius:0 0 24px 24px;">
+      <button type="submit" class="btn btn-primary" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">Save General Settings</button>
+    </div>
+  </div>
+  {% endwith %}
+</form>
+
+{# Unit creation — always on General tab #}
+<div class="card bg-yellow-lt mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+  <div class="card-header text-white"><h3 class="mb-0 fw-bold">Add Church Unit</h3></div>
+  <div class="card-body text-white p-4">
+    <form method="post">
+      {% csrf_token %}<input type="hidden" name="tab" value="unit_create">
+      {% with form=unit_form %}
+      <div class="row g-3">
+        <div class="col-md-5">
+          <label class="form-label">Unit name</label>
+          {% render_field form.name style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;" %}
+          {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Type</label>
+          {% render_field form.unit_type style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;" %}
+          {% if form.unit_type.errors %}<div class="text-danger small">{{ form.unit_type.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Reports to</label>
+          {% render_field form.report_to style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;" %}
+          {% if form.report_to.errors %}<div class="text-danger small">{{ form.report_to.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Color</label>
+          {% render_field form.color style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;" %}
+          {% if form.color.errors %}<div class="text-danger small">{{ form.color.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">Description</label>
+          {% render_field form.description style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;" %}
+          {% if form.description.errors %}<div class="text-danger small">{{ form.description.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold d-block mb-2">Module access for this unit</label>
+          <div class="row g-2">
+            {% for f in "guest_management,music_module,media_module"|split:"," %}
+            <div class="col-md-4 col-6">
+              <div class="form-check">{{ form|lookup:f }}
+                {% with fld=form|lookup:f %}{{ fld }}<label class="form-check-label">{{ fld.label }}</label>{% endwith %}
+              </div>
+            </div>
+            {% endfor %}
+            {# Children, Youth, Teenagers — superuser-only; kept in codebase for future release #}
+            {% if request.user.is_superuser %}
+            {% for f in "children_module,youth_module,teenagers_module"|split:"," %}
+            <div class="col-md-4 col-6">
+              <div class="form-check">{{ form|lookup:f }}
+                {% with fld=form|lookup:f %}
+                  {{ fld }}<label class="form-check-label">
+                    {{ fld.label }} <span class="badge bg-warning-lt ms-1" style="font-size:.65rem;">Superuser</span>
+                  </label>
+                {% endwith %}
+              </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+          </div>
+
+        </div>
+        <div class="col-md-4">
+          <div class="form-check form-check-single form-switch">{{ form.is_default }}
+            <label class="form-check-label ms-2">{{ form.is_default.label }}</label>
+          </div>
+        </div>
+      </div>
+      <div class="mt-3">
+        <button type="submit" name="create_unit" class="btn btn-success" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">Create Unit</button>
+      </div>
+      {% endwith %}
+    </form>
+  </div>
+</div>
+
+{# ── Existing units list — inline color picker + inline edit ────────────── #}
+{% if active_tab == 'general' or not active_tab %}
+<div class="card bg-cyan-lt mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+  <div class="card-header text-white d-flex justify-content-between align-items-center">
+    <h3 class="mb-0 fw-bold">Church Units &amp; Groups</h3>
+    <span class="badge bg-secondary-lt" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;" id="unitCountBadge">{{ all_units_list.count }} total</span>
+  </div>
+  <div class="card-body text-white pb-4 scrollbar-container" style="border-radius:0 0 24px 24px;max-height:420px;">
+    <table class="table mb-0" id="unitsListTable">
+      <thead>
+        <tr class="table-cyan-lt text-white">
+          <th style="width:32px;" title="Click swatch to change colour"></th>
+          <th>Name</th>
+          <th>Type</th>
+          <th class="d-none d-lg-table-cell">Parent Unit</th>
+          <th class="d-none d-md-table-cell">Members</th>
+          <th class="d-none d-md-table-cell">Modules</th>
+          <th style="width:60px;"></th>
+        </tr>
+      </thead>
+      <tbody id="unitsListTbody" style="border-radius:24px;max-height:420px;">
+        {% for unit in all_units_list %}
+        {# ── Data row ── #}
+        <tr id="unit-row-{{ unit.id }}" class="unit-data-row" style="border-top: 3px solid {{ unit.color_hex }};">
+          <td class="py-2 ps-2">
+            {# Native color picker: circle swatch, opens OS color chooser on click #}
+            <label title="Change colour" style="cursor:pointer;display:block;">
+              <span class="unit-swatch d-block form-control form-control-color"
+                    style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px; background:{{ unit.color_hex }};"
+                    id="swatch-{{ unit.id }}"></span>
+              <input type="color"
+                      class="unit-color-picker visually-hidden"
+                      data-id="{{ unit.id }}"
+                      data-slug="{{ unit.slug }}"
+                      value="{{ unit.color_hex }}">
+            </label>
+          </td>
+          <td>
+            <span class="unit-name-label fw-semibold" id="name-{{ unit.id }}">{{ unit.name }}</span>
+            {% if unit.is_default %}<span class="badge bg-blue-lt ms-1 small unit-default-badge-{{ unit.id }}">Default</span>{% endif %}
+          </td>
+          <td class="text-muted small" id="type-{{ unit.id }}">{{ unit.get_unit_type_display }}</td>
+          <td class="text-muted small d-none d-lg-table-cell" id="parent-{{ unit.id }}">{{ unit.report_to.name|default:"—" }}</td>
+          <td class="text-muted small d-none d-md-table-cell" id="members-{{ unit.id }}">{{ unit.member_count }}</td>
+          <td class="text-muted small d-none d-md-table-cell" id="modules-{{ unit.id }}">
+            {% if unit.guest_management %}<span class="badge bg-orange-lt" style="font-size:.6rem;">Guests</span>{% endif %}
+            {% if unit.music_module %}<span class="badge bg-green-lt" style="font-size:.6rem;">Music</span>{% endif %}
+            {% if unit.media_module %}<span class="badge bg-blue-lt" style="font-size:.6rem;">Media</span>{% endif %}
+            {% if unit.children_module %}<span class="badge bg-yellow-lt" style="font-size:.6rem;">Children</span>{% endif %}
+            {% if unit.youth_module %}<span class="badge bg-purple-lt" style="font-size:.6rem;">Youth</span>{% endif %}
+            {% if unit.teenagers_module %}<span class="badge bg-red-lt" style="font-size:.6rem;">Teens</span>{% endif %}
+          </td>
+          <td class="text-end pe-2">
+            <button type="button"
+                    class="btn btn-sm unit-edit-toggle"
+                    style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                    data-id="{{ unit.id }}"
+                    title="Edit this unit">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-pencil-cog">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" /><path d="M13.5 6.5l4 4" />
+                <path d="M17.001 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19.001 15.5v1.5" /><path d="M19.001 21v1.5" /><path d="M22.032 17.25l-1.299 .75" /><path d="M17.27 20l-1.3 .75" /><path d="M15.97 17.25l1.3 .75" /><path d="M20.733 20l1.3 .75" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+        {# ── Inline edit row (hidden by default) ── #}
+        <tr id="unit-edit-row-{{ unit.id }}" class="unit-edit-row d-none" style="background: #1d1c1b;">
+          <td colspan="7" class="p-3">
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-md-4">
+                <label class="form-label small mb-1">Name</label>
+                <input type="text"
+                        class="form-control form-control-sm bg-grey text-white unit-edit-name"
+                        style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;"
+                        data-id="{{ unit.id }}"
+                        value="{{ unit.name }}">
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small mb-1">Type</label>
+                <select class="form-select form-select-sm bg-grey text-white unit-edit-type" 
+                        style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;"
+                        data-id="{{ unit.id }}">
+                  <option value="unit" {% if unit.unit_type == "unit" %}selected{% endif %}>Unit</option>
+                  <option value="group" {% if unit.unit_type == "group" %}selected{% endif %}>Group</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label small mb-1">Parent Unit</label>
+                <select class="form-select form-select-sm bg-grey text-white unit-edit-parent"
+                        style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;"
+                        data-id="{{ unit.id }}">
+                  <option value="">None</option>
+                  {% for parent in all_units_list %}
+                    {% if parent.id != unit.id %}
+                      <option value="{{ parent.id }}" {% if unit.report_to_id == parent.id %}selected{% endif %}>
+                        {{ parent.name }}
+                      </option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-6 col-md-1">
+                <label class="form-label small mb-1 d-block">Default</label>
+                <div class="form-check form-switch mt-1">
+                  <input class="form-check-input unit-edit-default" type="checkbox" data-id="{{ unit.id }}"
+                          {% if unit.is_default %}checked{% endif %}>
+                  <label class="form-check-label small text-muted">New Members</label>
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label small mb-1">Description</label>
+                <input type="text"
+                        class="form-control form-control-sm bg-grey text-white unit-edit-desc"
+                        style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;"
+                        data-id="{{ unit.id }}"
+                        value="{{ unit.description|default:'' }}"
+                        placeholder="Optional description">
+              </div>
+              {# Module toggles #}
+              <div class="col-12">
+                <label class="form-label small mb-1">Modules enabled for this unit</label>
+                <div class="d-flex flex-wrap gap-2">
+                  {% for fname, flabel, badge_color in unit_module_fields %}
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input unit-edit-module"
+                            type="checkbox"
+                            data-id="{{ unit.id }}"
+                            data-field="{{ fname }}"
+                            id="mod_{{ unit.id }}_{{ fname }}"
+                            {% if unit|lookup:fname %}checked{% endif %}>
+                    <label class="form-check-label small" for="mod_{{ unit.id }}_{{ fname }}">{{ flabel }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              {# Action buttons #}
+              <div class="col-12 d-flex gap-2 pb-2 mt-1">
+                <button type="button" class="btn btn-primary btn-sm unit-edit-save" 
+                        style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                        data-id="{{ unit.id }}">
+                  Save
+                </button>
+                <button type="button" class="btn btn-grey btn-sm unit-edit-cancel" 
+                        style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                        data-id="{{ unit.id }}">
+                  Cancel
+                </button>
+                <a href="{% url 'units:detail' unit.slug %}" class="btn btn-grey btn-sm ms-auto" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">Open Unit →</a>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr id="noUnitsRow"><td colspan="6" class="text-muted text-center fst-italic py-3">No units yet — create one above.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!--{# Feature flags — on General tab. Posts tab=general so GeneralSettingsForm
+    saves the module fields directly via its SETTING_FIELDS list. #}-->
+{% if not is_campus_church %}
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="tab" value="feature_flags">
+  <input type="hidden" name="redirect_tab" value="general">
+  {% with form=forms.feature_flags %}
+  <div class="card bg-gray-900 mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+    <div class="card-header"><h5 class="mb-0 fw-bold">Module Visibility</h5></div>
+    <div class="card-body p-4">
+      <p class="text-muted small mb-3">Toggle which modules are available church-wide. Disabling a module hides it from all units.</p>
+      <div class="row g-2">
+        {# Guest, Music, Media — visible to all admins #}
+        {% for fname in "enable_guest_module,enable_music_module,enable_media_module"|split:"," %}
+        <div class="col-md-4 col-6">
+          <div class="form-check">
+            {% with fld=form|lookup:fname %}
+              {{ fld }}<label class="form-check-label ms-2" for="{{ fld.id_for_label }}">{{ fld.label }}</label>
+            {% endwith %}
+          </div>
+        </div>
+        {% endfor %}
+        {# Children, Youth, Teenagers — superuser-only; kept in codebase for future release #}
+        {% if request.user.is_superuser %}
+        {% for fname in "enable_children_module,enable_youth_module,enable_teenagers_module"|split:"," %}
+        <div class="col-md-4 col-6">
+          <div class="form-check">
+            {% with fld=form|lookup:fname %}
+              {{ fld }}<label class="form-check-label ms-2" for="{{ fld.id_for_label }}">
+                {{ fld.label }} <span class="badge bg-warning-lt ms-1" style="font-size:.65rem;">Superuser</span>
+              </label>
+            {% endwith %}
+          </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+    <div class="card-footer bg-gray-900 text-end" style="border-radius:0 0 24px 24px;">
+      <button type="submit" class="btn btn-grey btn-sm" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">Save Module Flags</button>
+    </div>
+  </div>
+  {% endwith %}
+</form>
+{% endif %}
+{% endif %}
+
+{# ════════════════════════════════════════════════════════════════════════ #}
+{# TAB: Guest Pipeline                                                      #}
+{# ════════════════════════════════════════════════════════════════════════ #}
+{% if active_tab == 'pipeline' %}
+<form method="post">
+  {% csrf_token %}<input type="hidden" name="tab" value="pipeline">
+  {% with form=forms.pipeline %}
+  <div class="card bg-grey mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+    <div class="card-header"><h3 class="mb-0 fw-bold">Pipeline Thresholds</h3></div>
+    <div class="card-body p-4">
+      <p class="text-muted small mb-3">
+        The pipeline advances automatically:
+        <strong>New Guest &rarr; In-Contact &rarr; Committed &rarr; Planted</strong>.
+        Only <strong>Not Planted</strong> can be set manually.
+      </p>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">{{ form.committed_attendance_threshold.label }}</label>
+          {% render_field form.committed_attendance_threshold style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+          <div class="form-text">{{ form.committed_attendance_threshold.help_text }}</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">{{ form.committed_attendance_window_weeks.label }}</label>
+          {% render_field form.committed_attendance_window_weeks style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">{{ form.guest_id_prefix.label }}</label>
+          {% render_field form.guest_id_prefix style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+        </div>
+      </div>
+      <hr class="my-4">
+      <h6 class="fw-semibold mb-3">Automated Thank-you SMS</h6>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="form-check mb-2">{{ form.send_first_visit_thankyou }}
+            <label class="form-check-label fw-semibold">{{ form.send_first_visit_thankyou.label }}</label>
+          </div>
+          {% render_field form.thankyou_first_visit_message style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+          <div class="form-text">Use <code>{name}</code> for guest name.</div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-check mb-2">{{ form.send_second_visit_thankyou }}
+            <label class="form-check-label fw-semibold">{{ form.send_second_visit_thankyou.label }}</label>
+          </div>
+          {% render_field form.thankyou_second_visit_message style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+        </div>
+        <div class="col-md-6">
+          <div class="form-check">{{ form.enable_sms_birthday }}
+            <label class="form-check-label">{{ form.enable_sms_birthday.label }}</label>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-check">{{ form.enable_sms_bulk }}
+            <label class="form-check-label">{{ form.enable_sms_bulk.label }}</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer text-end">
+      <button type="submit" class="btn btn-primary" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">Save Pipeline Settings</button>
+    </div>
+  </div>
+  {% endwith %}
+</form>
+
+{# Pipeline tab: show default track summary + link to Trainings tab for full management #}
+<div class="card bg-grey mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div>
+      <h3 class="mb-0 fw-bold">Active Training Tracks</h3>
+      <small class="text-muted">Configure full track details, steps and promotion rules in the Training tab.</small>
+    </div>
+    <a href="?section=settings&tab=trainings" class="btn btn-sm btn-outline-secondary settings-soft-tab-link"
+       style="border-radius:18px;">Manage in Training Tab →</a>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-grey table-hover mb-0">
+      <thead><tr><th>Track</th><th>Threshold</th><th>Window</th><th>LMS Course</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for track in membership_tracks %}
+        <tr>
+          <td>
+            <span class="fw-semibold">{{ track.name }}</span>
+            {% if track.is_default %}<span class="badge bg-green-lt ms-1" style="font-size:.65rem;">Pipeline Default</span>{% endif %}
+          </td>
+          <td>{{ track.attendance_threshold }} services</td>
+          <td>{{ track.attendance_window_weeks }} wks</td>
+          <td>
+            {% if track.linked_lms_courses %}
+              {% for course in track.linked_lms_courses %}
+                <span class="badge bg-blue-lt me-1">{{ course.title }}</span>
+              {% endfor %}
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td><span class="badge bg-{% if track.is_default %}green{% else %}secondary{% endif %}-lt">{% if track.is_default %}Default{% else %}Active{% endif %}</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-muted text-center py-3">No tracks yet — create one in the Training tab.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}{# /pipeline — membership tracks #}
+
+{# Induction & Promotion Rules — coupled to pipeline (LMS is one criterion) #}
+{% if active_tab == 'pipeline' %}
+<div class="card bg-grey mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+  <div class="card-body p-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div>
+      <h5 class="fw-bold mb-1">Induction Snapshot</h5>
+      <p class="text-muted small mb-0">
+        These rules are now editable in the Trainings tab. The Guest Pipeline stays
+        read-only here and only shows the current induction linkage.
+        {% for course in induction_courses %}
+          · Induction course: <strong>{{ course.title }}</strong>
+        {% empty %}
+          · No induction course set
+        {% endfor %}
+      </p>
+    </div>
+    <a href="?section=settings&tab=trainings" class="btn btn-outline-secondary flex-shrink-0 settings-soft-tab-link"
+       style="border-radius:18px;">
+      Edit in Training Tab →
+    </a>
+  </div>
+</div>
+{% endif %}
+
+{# ════════════════════════════════════════════════════════════════════════ #}
+{# TAB: Trainings (LMS settings, course list)                             #}
+{# ════════════════════════════════════════════════════════════════════════ #}
+{% if active_tab == 'trainings' %}
+{# ═══════════════════════════════════════════════════════════════════ #}
+{# SECTION 1 — Course Management                                       #}
+{# ═══════════════════════════════════════════════════════════════════ #}
+ 
+<div class="card bg-grey mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="mb-0 fw-bold">Courses</h3>
+      <small class="text-muted">
+        Manage all training courses. The induction course feeds the guest pipeline.
+        Other courses can be used for unit training, workforce-wide programs, or
+        disciplinary tracks.
+      </small>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-success"
+            style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+            id="addCourseBtn">
+      + New Course
+    </button>
+  </div>
+ 
+  {# ── Quick-create form (collapsed by default) ── #}
+  <div id="addCourseForm" class="card-body border-bottom border-secondary d-none">
+    <form method="post" action="?tab=trainings" id="createCourseForm">
+      {% csrf_token %}
+      <input type="hidden" name="tab" value="trainings">
+      <input type="hidden" name="action" value="create_course">
+      <div class="row g-3">
+        <div class="col-md-5">
+          <label class="form-label">Title <span class="text-danger">*</span></label>
+          <input class="form-control" name="course_title"
+                 style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;"
+                 placeholder="e.g. New Members Class" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Type</label>
+          <select class="form-select" name="course_type"
+                  style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+            <option value="induction">Member Induction</option>
+            <option value="unit_training">Unit Training</option>
+            <option value="workforce">Workforce-wide Training</option>
+            <option value="disciplinary">Disciplinary Program</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Delivery</label>
+          <select class="form-select" name="delivery_mode"
+                  style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+            <option value="physical">Physical</option>
+            <option value="virtual">Virtual</option>
+            <option value="hybrid">Hybrid</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Unit</label>
+          <select class="form-select" name="unit_id"
+                  style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+            <option value="">Church-wide</option>
+            {% for unit in all_units_list %}
+              <option value="{{ unit.id }}">{{ unit.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Pass score (%)</label>
+          <input class="form-control" name="passing_score" type="number"
+                 value="70" min="0" max="100"
+                 style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Max retakes</label>
+          <input class="form-control" name="max_retakes" type="number"
+                 value="2" min="0"
+                 style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+        </div>
+        <div class="col-md-2 d-flex align-items-end pb-1">
+          <div class="form-check">
+            <input type="checkbox" name="allow_retake" class="form-check-input"
+                   id="courseAllowRetake" checked>
+            <label class="form-check-label small" for="courseAllowRetake">Allow retakes</label>
+          </div>
+        </div>
+        <div class="col-md-2 d-flex align-items-end pb-1">
+          <div class="form-check">
+            <input type="checkbox" name="strict_sequence" class="form-check-input"
+                   id="courseStrictSeq" checked>
+            <label class="form-check-label small" for="courseStrictSeq">Strict sequence</label>
+          </div>
+        </div>
+        <div class="col-12 d-flex gap-2 pb-2">
+          <button type="submit" class="btn btn-success btn-sm"
+                  style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+            Create Course
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" id="cancelCourseBtn"
+                  style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+ 
+  {# ── Course list ── #}
+  <div class="card-body p-0">
+    <table class="table table-grey table-hover mb-0" id="coursesTable">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Type</th>
+          <th>Delivery</th>
+          <th>Pass %</th>
+          <th>Retakes</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for course in all_courses %}
+        <tr>
+          <td>
+            {{ course.title }}
+            {% if course.course_type == 'induction' %}
+              <span class="badge bg-green-lt ms-1" style="font-size:.65rem;"
+                    title="Used in the Guest Pipeline induction flow">
+                🌱 Induction
+              </span>
+            {% endif %}
+          </td>
+          <td><span class="text-muted small">{{ course.get_course_type_display }}</span></td>
+          <td><span class="text-muted small">{{ course.get_delivery_mode_display }}</span></td>
+          <td>{{ course.passing_score }}%</td>
+          <td>
+            {% if course.allow_retake %}{{ course.max_retakes }}{% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'lms:course_edit' course.slug %}"
+               class="btn btn-sm btn-outline-secondary"
+               style="border-radius:10px;font-size:.72rem;">
+              Edit
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-muted text-center py-4">
+            No courses yet. Create your first course above.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+ 
+ 
+{# ═══════════════════════════════════════════════════════════════════ #}
+{# SECTION 2 — Training Tracks (moved from Pipeline tab, enhanced)     #}
+{# ═══════════════════════════════════════════════════════════════════ #}
+ 
+<div class="card bg-grey mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="mb-0 fw-bold">Training Tracks</h3>
+      <small class="text-muted">
+        Each track defines the steps a trainee must complete.
+        Steps unlock progressively. Drag to re-order within a track.
+        The default induction track is used by the Guest Pipeline.
+        Attendance is optional at the step level because training events can
+        already be marked directly at the event.
+      </small>
+    </div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      <button type="button" class="btn btn-sm btn-outline-secondary"
+              style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+              id="addInlineCourseBtn">
+        + Add Course Inline
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-success"
+              style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+              id="addTrackBtn">
+        + New Track
+      </button>
+    </div>
+  </div>
+ 
+  {# ── Quick-create track form ── #}
+  <div id="addTrackForm" class="card-body border-bottom border-secondary d-none">
+    <form method="post" action="?tab=trainings">
+      {% csrf_token %}
+      <input type="hidden" name="tab" value="trainings">
+      <input type="hidden" name="action" value="create_track">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Track Name <span class="text-danger">*</span></label>
+          <input class="form-control" name="track_name"
+                 style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;"
+                 placeholder="e.g. General Induction" required>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label">Description</label>
+          <input class="form-control" name="track_description"
+                 style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;"
+                 placeholder="Optional description for this training track">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Linked LMS Courses (optional)</label>
+          <select class="form-select" name="track_lms_course_ids" multiple
+                  style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;min-height:110px;">
+            {% for course in all_courses %}
+              <option value="{{ course.id }}">{{ course.title }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text small">Hold Ctrl/Cmd to attach more than one course, or leave blank if this track has no course requirement.</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Attendance threshold</label>
+          <input class="form-control" name="attendance_threshold" type="number"
+                 value="4" min="1"
+                 style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Window (weeks)</label>
+          <input class="form-control" name="attendance_window_weeks" type="number"
+                 value="6" min="1"
+                 style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+        </div>
+        <div class="col-md-2 d-flex align-items-end pb-1">
+          <div class="form-check">
+            <input type="checkbox" name="track_is_default"
+                   class="form-check-input" id="trackDefault">
+            <label class="form-check-label small" for="trackDefault">Default</label>
+          </div>
+        </div>
+        <div class="col-12 d-flex gap-2 pb-2">
+          <button type="submit" class="btn btn-success btn-sm"
+                  style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+            Save Track
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" id="cancelTrackBtn"
+                  style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div id="addInlineCourseForm" class="card-body border-bottom border-secondary d-none">
+    <form id="inlineCourseCreateForm">
+      {% csrf_token %}
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">Course title</label>
+          <input class="form-control" name="title" placeholder="e.g. New Members Class">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Type</label>
+          <select class="form-select" name="course_type">
+            <option value="induction">Member Induction</option>
+            <option value="unit_training">Unit Training</option>
+            <option value="workforce">Workforce-wide Training</option>
+            <option value="disciplinary">Disciplinary Program</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Delivery</label>
+          <select class="form-select" name="delivery_mode">
+            <option value="physical">Physical</option>
+            <option value="virtual">Virtual</option>
+            <option value="hybrid">Hybrid</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Unit</label>
+          <select class="form-select" name="unit_id">
+            <option value="">Church-wide</option>
+            {% for unit in all_units_list %}
+              <option value="{{ unit.id }}">{{ unit.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Pass score</label>
+          <input class="form-control" name="passing_score" type="number" value="70" min="0" max="100">
+        </div>
+        <div class="col-md-1 d-grid">
+          <button type="submit" class="btn btn-sm btn-success">Create</button>
+        </div>
+      </div>
+    </form>
+  </div>
+ 
+  {# ── Track list ── #}
+  <div class="card-body p-0">
+    {% if membership_tracks %}
+      {% for track in membership_tracks %}
+      <div class="border-bottom border-secondary p-3" data-track-id="{{ track.id }}">
+        <div class="d-flex align-items-start justify-content-between gap-3 mb-2">
+          <div>
+            <div class="fw-semibold">{{ track.name }}</div>
+            <div class="text-muted small">
+              {% if track.description %}{{ track.description }}{% else %}No description yet.{% endif %}
+            </div>
+            <div class="mt-1 d-flex flex-wrap gap-1 align-items-center">
+              {% if track.is_default %}
+                <span class="badge bg-green-lt" style="font-size:.65rem;">Default (Guest Pipeline)</span>
+              {% endif %}
+              <span class="badge bg-secondary-lt" style="font-size:.65rem;">
+                {{ track.attendance_threshold }} services / {{ track.attendance_window_weeks }}wk
+              </span>
+              {% if track.linked_lms_courses %}
+                {% for course in track.linked_lms_courses %}
+                  <span class="badge bg-blue-lt" style="font-size:.65rem;">📚 {{ course.title }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="text-muted small">No linked courses</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="d-flex gap-2 flex-shrink-0 align-items-center">
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary toggle-track-steps"
+                    data-track="{{ track.id }}"
+                    style="border-radius:10px;font-size:.7rem;">
+              Steps ▾
+            </button>
+            <button type="button"
+                    class="btn btn-sm btn-outline-primary toggle-track-edit"
+                    data-track="{{ track.id }}"
+                    style="border-radius:10px;font-size:.7rem;">
+              Edit
+            </button>
+          </div>
+        </div>
+
+        <div id="trackEdit_{{ track.id }}" class="d-none">
+          <form method="post" action="{% url 'tenants:membership_track_update' track.id %}" class="mb-3">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+              <div class="col-lg-3">
+                <label class="form-label small mb-1">Track name</label>
+                <input class="form-control form-control-sm" name="name" value="{{ track.name }}">
+              </div>
+              <div class="col-lg-3">
+                <label class="form-label small mb-1">Linked LMS courses</label>
+                <select class="form-select form-select-sm" name="lms_course_ids" multiple style="min-height:92px;">
+                  {% for course in all_courses %}
+                    <option value="{{ course.id }}" {% if course.id in track.linked_lms_course_ids %}selected{% endif %}>{{ course.title }}</option>
+                  {% endfor %}
+                </select>
+                <div class="form-text small">Hold Ctrl/Cmd to assign multiple courses to one track.</div>
+              </div>
+              <div class="col-lg-2">
+                <label class="form-label small mb-1">Attendance threshold</label>
+                <input class="form-control form-control-sm" name="attendance_threshold" type="number" min="1" value="{{ track.attendance_threshold }}">
+              </div>
+              <div class="col-lg-2">
+                <label class="form-label small mb-1">Window (weeks)</label>
+                <input class="form-control form-control-sm" name="attendance_window_weeks" type="number" min="1" value="{{ track.attendance_window_weeks }}">
+              </div>
+              <div class="col-lg-2 d-flex gap-2 align-items-center">
+                <div class="form-check mt-3">
+                  <input type="checkbox" name="is_default" class="form-check-input" id="trackDefault_{{ track.id }}" {% if track.is_default %}checked{% endif %}>
+                  <label class="form-check-label small" for="trackDefault_{{ track.id }}">Default</label>
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary mt-3">Save Track</button>
+              </div>
+              <div class="col-12">
+                <label class="form-label small mb-1">Description</label>
+                <textarea class="form-control form-control-sm" name="description" rows="2" placeholder="Optional track description">{{ track.description }}</textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {# Track steps — collapsible, sortable #}
+        <div id="trackSteps_{{ track.id }}" class="d-none">
+          <div class="ps-3 mt-2">
+            {% if track.steps.all %}
+            <ul class="list-group list-group-flush sortable-steps"
+                data-track="{{ track.id }}" style="gap:4px;">
+              {% for step in track.steps.all|dictsort:"order" %}
+              <li class="list-group-item bg-dark text-white border-secondary d-flex align-items-center gap-2"
+                  data-step-id="{{ step.id }}"
+                  style="border-radius:10px;padding:8px 12px;">
+                <span class="text-muted" style="cursor:grab;">⠿</span>
+                <span class="badge bg-secondary-lt me-1"
+                      style="font-size:.65rem;">{{ step.order }}</span>
+                <span class="flex-grow-1 small">{{ step.name }}</span>
+                {% if step.requirement %}
+                  <span class="badge bg-{% if step.requirement.requirement_type == 'attendance' %}orange{% elif step.requirement.requirement_type == 'lms' %}blue{% else %}secondary{% endif %}-lt"
+                        style="font-size:.6rem;">
+                    {{ step.requirement.get_requirement_type_display }}
+                  </span>
+                  {% if step.requirement.requirement_type == 'lms' %}
+                    <span class="small text-muted ms-2">
+                      {% if step.requirement.lms_courses.all %}
+                        {% for course in step.requirement.lms_courses.all %}
+                          <span class="badge bg-blue-lt me-1">{{ course.title }}</span>
+                        {% empty %}
+                          {% if step.requirement.lms_course %}<span class="badge bg-blue-lt">{{ step.requirement.lms_course.title }}</span>{% endif %}
+                        {% endfor %}
+                      {% elif step.requirement.lms_course %}
+                        <span class="badge bg-blue-lt">{{ step.requirement.lms_course.title }}</span>
+                      {% endif %}
+                    </span>
+                  {% endif %}
+                {% endif %}
+                {% if step.is_required %}
+                  <span class="badge bg-danger-lt text-danger"
+                        style="font-size:.6rem;">Required</span>
+                {% endif %}
+                <button type="button"
+                        class="btn btn-sm btn-link text-danger ms-auto p-0 step-delete-btn"
+                        data-id="{{ step.id }}"
+                        title="Remove step"
+                        style="line-height:1;">✕</button>
+              </li>
+              {% endfor %}
+            </ul>
+            <div class="text-muted small mt-2 ps-2">
+              Drag steps to re-order. Changes save automatically.
+            </div>
+            {% else %}
+            <p class="text-muted small ps-2">No steps configured for this track yet.</p>
+            {% endif %}
+ 
+            {# Add step form inline #}
+            <form method="post" action="?tab=trainings" class="mt-3">
+              {% csrf_token %}
+              <input type="hidden" name="tab" value="trainings">
+              <input type="hidden" name="action" value="add_step">
+              <input type="hidden" name="track_id" value="{{ track.id }}">
+              <div class="row g-2">
+                <div class="col-md-4">
+                  <input class="form-control form-control-sm" name="step_name"
+                         placeholder="Step name (e.g. First visit attendance)"
+                         style="border-radius:10px;">
+                </div>
+                <div class="col-md-3">
+                  <select class="form-select form-select-sm" name="requirement_type"
+                          style="border-radius:10px;">
+                    <option value="">— Requirement type —</option>
+                    <option value="attendance">Attendance gate</option>
+                    <option value="lms">LMS Module</option>
+                    <option value="form">Form Submission</option>
+                    <option value="manual">Manual (admin marks)</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <select class="form-select form-select-sm" name="step_lms_course_ids" multiple
+                          style="border-radius:10px;min-height:38px;">
+                    <option value="">— LMS course(s) —</option>
+                    {% for course in all_courses %}
+                      <option value="{{ course.id }}">{{ course.title }}</option>
+                    {% endfor %}
+                  </select>
+                  <div class="form-text small">Optional. Hold Ctrl/Cmd to select more than one course.</div>
+                </div>
+                <div class="col-md-2 d-flex align-items-center">
+                  <div class="form-check">
+                    <input type="checkbox" name="step_required" class="form-check-input"
+                           id="stepReq_{{ track.id }}" checked>
+                    <label class="form-check-label small"
+                           for="stepReq_{{ track.id }}">Required</label>
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <button type="submit" class="btn btn-sm btn-outline-success"
+                          style="border-radius:10px;">+ Add Step</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="p-4 text-center text-muted">
+      <p>No training tracks yet.</p>
+      <p class="small">
+        The system uses a built-in default induction track. Create custom tracks
+        for specialised pathways (e.g. leadership, youth, music department).
+      </p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+ 
+ 
+{# ═══════════════════════════════════════════════════════════════════ #}
+{# SECTION 3 — Track Rules                                             #}
+{# ═══════════════════════════════════════════════════════════════════ #}
+ 
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="tab" value="trainings">
+  {% with form=forms.trainings %}
+  <div class="card bg-grey mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold">Track Rules</h5>
+      <small class="text-muted">
+        These settings are used by the guest pipeline and every training track.
+        Focus track:
+        <strong class="text-white">{{ default_membership_track.name|default:"Default track" }}</strong>.
+        Track-level editing lives below in each track container.
+      </small>
+    </div>
+    <div class="card-body p-4">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">{{ form.induction_course_type.label }}</label>
+          {% render_field form.induction_course_type style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">{{ form.default_passing_score.label }}</label>
+          {% render_field form.default_passing_score style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">{{ form.promotion_mode.label }}</label>
+          {% render_field form.promotion_mode style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+        </div>
+        <div class="col-md-6" id="approval-role-wrap">
+          <label class="form-label">{{ form.promotion_approval_role.label }}</label>
+          {% render_field form.promotion_approval_role style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+        </div>
+        <div class="col-md-3">
+          <div class="form-check">
+            {{ form.allow_retakes_default }}
+            <label class="form-check-label">{{ form.allow_retakes_default.label }}</label>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">{{ form.max_retakes_default.label }}</label>
+          {% render_field form.max_retakes_default style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+        </div>
+        <div class="col-md-3">
+          <div class="form-check">
+            {{ form.notify_unit_head_on_completion }}
+            <label class="form-check-label">Notify unit head</label>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="form-check">
+            {{ form.notify_admin_on_completion }}
+            <label class="form-check-label">Notify admin</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer text-end" style="border-radius:0 0 24px 24px;">
+      <button type="submit" class="btn btn-primary"
+              style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+        Save Track Rules
+      </button>
+    </div>
+  </div>
+  {% endwith %}
+</form>
+ 
+{% endif %}{# /trainings #}
+
+{# ════════════════════════════════════════════════════════════════════════ #}
+{# TAB: Workforce                                                           #}
+{# ════════════════════════════════════════════════════════════════════════ #}
+{% if active_tab == 'workforce' %}
+<form method="post">
+  {% csrf_token %}<input type="hidden" name="tab" value="workforce">
+  {% with form=forms.workforce %}
+  <div class="card bg-grey mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+    <div class="card-header"><h5 class="mb-0 fw-bold">Workforce Settings</h5></div>
+    <div class="card-body p-4">
+      <div class="row g-3">
+        {% for field in form.visible_fields %}
+        <div class="col-md-6">
+          <label class="form-label">{{ field.label }}</label>
+          {% render_field field style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+          {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card-footer" style="border-radius:0 0 24px 24px">
+      <button class="btn btn-success" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;" type="submit">Save Workforce Settings</button>
+    </div>
+  </div>
+  {% endwith %}
+</form>
+
+{# ── Workforce Stages ──────────────────────────────────────────────────────── #}
+<div class="card bg-grey mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="mb-0 fw-bold">Workforce Stages</h3>
+      <small class="text-muted">
+        The first four stages are system-defined. Drag custom stages to reorder.
+        System stages (🔒) cannot be renamed or deleted.
+      </small>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-dark table-hover mb-0">
+      <thead>
+        <tr>
+          <th style="width:30px;"></th>
+          <th>Stage</th>
+          <th>Purpose</th>
+          <th>Default</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="stagesList" data-type="stage">
+        {% for stage in workforce_stages %}
+        <tr data-id="{{ stage.id }}"
+            {% if not stage.is_locked %}draggable="true"{% endif %}
+            class="wf-item-row">
+          <td class="text-muted drag-handle"
+              style="cursor:{% if stage.is_locked %}default{% else %}grab{% endif %};">
+            
+            {% if not stage.is_locked %}
+            <span style="box-shadow:0 4px 8px #000000d2;border-radius:24px;width:24px;height:24px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-drag-drop">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M19 11v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2" />
+                <path d="M13 13l9 3l-4 2l-2 4l-3 -9" /><path d="M3 3l0 .01" /><path d="M7 3l0 .01" /><path d="M11 3l0 .01" />
+                <path d="M15 3l0 .01" /><path d="M3 7l0 .01" /><path d="M3 11l0 .01" /><path d="M3 15l0 .01" />
+              </svg>
+            </span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="item-name">{{ stage.name }}</span>
+            {% if stage.is_locked %}
+              <span class="badge bg-secondary text-danger ms-1"
+                    title="System stage — cannot be renamed or deleted">Locked</span>
+            {% else %}
+              <input class="form-control form-control-sm item-edit-input d-none"
+                      style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;"
+                     value="{{ stage.name }}" style="width:140px;display:inline-block;">
+            {% endif %}
+          </td>
+          <td style="max-width:200px">
+            <span class="stage-desc-display text-muted small">{{ stage.description|default:"—" }}</span>
+            <input class="form-control form-control-sm stage-desc-input d-none"
+                    style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;max-width:250px;"
+                   value="{{ stage.description|default:'' }}"
+                   data-id="{{ stage.id }}"
+                   placeholder="Describe this stage…"
+                   style="max-width:260px;">
+            <button class="btn btn-sm btn-link text-muted p-0 ms-1 stage-desc-edit-btn"
+                    data-id="{{ stage.id }}" title="Edit description">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4l-10.5 10.5v4"/>
+                <path d="M13.5 6.5l4 4"/>
+              </svg>
+            </button>
+          </td>
+          <td>
+            {% if stage.is_default %}
+              <span class="badge bg-green-lt">Yes</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            {% if not stage.is_locked %}
+              <button class="btn btn-sm wf-rename-btn"
+                      style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                      data-id="{{ stage.id }}" data-type="stage">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4l-10.5 10.5v4"/>
+                  <path d="M13.5 6.5l4 4"/>
+                </svg>
+              </button>
+              <button class="btn btn-sm text-danger wf-delete-btn"
+                      style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                      data-id="{{ stage.id }}" data-type="stage">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                      viewBox="0 0 24 24" fill="currentColor">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M20 6a1 1 0 0 1 .117 1.993l-.117.007h-.081l-.919 11a3 3 0 0 1-2.824 2.995l-.176.005h-8c-1.598 0-2.904-1.249-2.992-2.75l-.005-.167-.923-11.083h-.08a1 1 0 0 1-.117-1.993l.117-.007zm-10 4a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1m4 0a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1"/>
+                  <path d="M14 2a2 2 0 0 1 2 2a1 1 0 0 1-1.993.117l-.007-.117h-4l-.007.117a1 1 0 0 1-1.993-.117a2 2 0 0 1 1.85-1.995l.15-.005z"/>
+                </svg>
+              </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex gap-2 align-items-center" style="border-radius:0 0 24px 24px;">
+    <input type="text" class="form-control form-control-sm" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" id="newStageName"
+           placeholder="Custom stage name" style="max-width:220px;">
+    <button class="btn btn-sm btn-outline-success" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;" id="addStageBtn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-plus">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M12 4a1 1 0 0 1 1 1v6h6a1 1 0 0 1 0 2h-6v6a1 1 0 0 1 -2 0v-6h-6a1 1 0 0 1 0 -2h6v-6a1 1 0 0 1 1 -1" />
+      </svg>  
+      Add Stage
+    </button>
+    <small class="text-muted">Custom stages are added after the system stages.</small>
+  </div>
+</div>
+
+{# ── Workforce Roles ───────────────────────────────────────────────────────── #}
+<div class="card bg-grey mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="mb-0 fw-bold">Workforce Roles</h3>
+      <small class="text-muted">
+        Roles define what members can do. The <strong>Tier</strong> auto-assigns
+        the right permissions — rename freely to match your church's terminology.
+      </small>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-dark table-hover mb-0">
+      <thead>
+        <tr>
+          <th style="width:30px;"></th>
+          <th>Role Name</th>
+          <th>Access Tier</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rolesList" data-type="role">
+        {% for role in workforce_roles %}
+        <tr data-id="{{ role.id }}"
+            {% if not role.is_locked %}draggable="true"{% endif %}
+            class="wf-item-row">
+          <td class="drag-handle text-muted"
+              style="cursor:{% if role.is_locked %}default{% else %}grab{% endif %};">
+            {% if not role.is_locked %}
+            <span style="box-shadow:0 4px 8px #000000d2;border-radius:24px;width:24px;height:24px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-drag-drop">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M19 11v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2" />
+                <path d="M13 13l9 3l-4 2l-2 4l-3 -9" /><path d="M3 3l0 .01" /><path d="M7 3l0 .01" /><path d="M11 3l0 .01" />
+                <path d="M15 3l0 .01" /><path d="M3 7l0 .01" /><path d="M3 11l0 .01" /><path d="M3 15l0 .01" />
+              </svg>
+            </span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="item-name">{{ role.name }}</span>
+            {% if role.is_locked %}
+              <span class="badge bg-secondary text-danger ms-1">Locked</span>
+            {% else %}
+              <input class="form-control form-control-sm item-edit-input d-none"
+                      style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;"
+                     value="{{ role.name }}" style="width:160px;display:inline-block;">
+            {% endif %}
+          </td>
+          <td>
+            {% if role.is_locked %}
+              <span class="badge bg-secondary-lt">{{ role.get_tier_display }}</span>
+            {% else %}
+              <select class="form-select form-select-sm role-tier-select"
+                      style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;"
+                      data-id="{{ role.id }}" style="max-width:200px;">
+                {% for tier_val, tier_name in tier_choices %}
+                  <option value="{{ tier_val }}"
+                    {% if role.tier == tier_val %}selected{% endif %}>
+                    {{ tier_name }}
+                  </option>
+                {% endfor %}
+              </select>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            {% if not role.is_locked %}
+              <button class="btn btn-sm wf-rename-btn"
+                      style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                      data-id="{{ role.id }}" data-type="role">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4l-10.5 10.5v4"/>
+                  <path d="M13.5 6.5l4 4"/>
+                </svg>
+              </button>
+              <button class="btn btn-sm text-danger wf-delete-btn"
+                      style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                      data-id="{{ role.id }}" data-type="role">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                      viewBox="0 0 24 24" fill="currentColor">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M20 6a1 1 0 0 1 .117 1.993l-.117.007h-.081l-.919 11a3 3 0 0 1-2.824 2.995l-.176.005h-8c-1.598 0-2.904-1.249-2.992-2.75l-.005-.167-.923-11.083h-.08a1 1 0 0 1-.117-1.993l.117-.007zm-10 4a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1m4 0a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1"/>
+                  <path d="M14 2a2 2 0 0 1 2 2a1 1 0 0 1-1.993.117l-.007-.117h-4l-.007.117a1 1 0 0 1-1.993-.117a2 2 0 0 1 1.85-1.995l.15-.005z"/>
+                </svg>
+              </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex gap-2 align-items-center flex-wrap" style="border-radius:0 0 24px 24px;">
+    <input type="text" class="form-control form-control-sm" style="max-width:220px;box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" id="newRoleName"
+           placeholder="Role name (e.g. Pastor, Deacon, Elder)">
+    <select class="form-select form-select-sm" id="newRoleTier" style="max-width:200px;box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+      {% for tier_val, tier_name in tier_choices %}
+        <option value="{{ tier_val }}"{% if tier_val == 6 %} selected{% endif %}>
+          {{ tier_name }}
+        </option>
+      {% endfor %}
+    </select>
+    <button class="btn btn-sm btn-outline-success" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;" id="addRoleBtn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-plus">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M12 4a1 1 0 0 1 1 1v6h6a1 1 0 0 1 0 2h-6v6a1 1 0 0 1 -2 0v-6h-6a1 1 0 0 1 0 -2h6v-6a1 1 0 0 1 1 -1" />
+      </svg> 
+      Add Role
+    </button>
+    <small class="text-muted w-100 mt-1">
+      Tier determines what the role can do — permissions auto-assigned from the tier.
+    </small>
+  </div>
+</div>
+
+{# ── Unit / Group Roles ────────────────────────────────────────────────────── #}
+<div class="card bg-grey mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="mb-0 fw-bold">Unit &amp; Group Roles</h3>
+      <small class="text-muted">
+        Define roles for specific units. These appear in the member creation form
+        under each unit's role selector. Tier determines permissions within the unit.
+      </small>
+    </div>
+  </div>
+  <div class="card-body p-3">
+    <div class="scrollbar-container" style="max-height:420px;">
+      <div id="unitRolesList" class="d-flex flex-column gap-3">
+        {% regroup unit_roles by unit as unit_role_groups %}
+        {% for group in unit_role_groups %}
+        <div class="p-3 unit-role-group-card"
+             data-unit-id="{{ group.grouper.id }}"
+             data-unit-name="{{ group.grouper.name }}"
+             data-unit-type="{{ group.grouper.unit_type }}"
+             data-unit-color="{{ group.grouper.color_hex }}"
+             style="box-shadow: 0 4px 8px #000000d2;border-radius:24px;background:{{ group.grouper.color_hex }}12;">
+          <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+            <div>
+              <div class="fw-semibold text-white">{{ group.grouper.name }}</div>
+              <div class="text-muted small">
+                <span class="badge bg-secondary-lt me-1 text-uppercase">{{ group.grouper.unit_type }}</span>
+                {{ group.list|length }} role{{ group.list|length|pluralize }}
+              </div>
+            </div>
+            <span class="rounded-circle flex-shrink-0" style="width:12px;height:12px;background:{{ group.grouper.color_hex }};"></span>
+          </div>
+
+          <div class="d-flex flex-column gap-2 unit-role-group-list">
+            {% for role in group.list %}
+            <div class="d-flex align-items-center justify-content-between gap-2 px-3 py-2"
+                 data-id="{{ role.id }}"
+                 data-unit-role-item="true"
+                 style="border-radius:24px;box-shadow:0 4px 8x #000000d2;">
+              <div class="d-flex flex-grow-1">
+                <input
+                    type="text"
+                    class="form-control form-control-sm bg-grey text-white unit-role-name"
+                    style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;"
+                    value="{{ role.name }}"
+                    data-id="{{ role.id }}">
+
+                <select
+                    class="form-select form-select-sm mt-1 unit-role-tier"
+                    style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;"
+                    data-id="{{ role.id }}">
+                    {% for tier_val, tier_name in unit_tier_choices %}
+                        <option value="{{ tier_val }}"
+                            {% if role.tier == tier_val %}selected{% endif %}>
+                            {{ tier_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+              </div>
+              <button class="btn btn-sm text-danger unit-role-delete-btn" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;" data-id="{{ role.id }}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                      viewBox="0 0 24 24" fill="currentColor">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M20 6a1 1 0 0 1 .117 1.993l-.117.007h-.081l-.919 11a3 3 0 0 1-2.824 2.995l-.176.005h-8c-1.598 0-2.904-1.249-2.992-2.75l-.005-.167-.923-11.083h-.08a1 1 0 0 1-.117-1.993l.117-.007zm-10 4a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1m4 0a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1"/>
+                  <path d="M14 2a2 2 0 0 1 2 2a1 1 0 0 1-1.993.117l-.007-.117h-4l-.007.117a1 1 0 0 1-1.993-.117a2 2 0 0 1 1.85-1.995l.15-.005z"/>
+                </svg>
+              </button>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% empty %}
+        <div class="text-muted text-center py-3" id="unitRolesEmptyState">No Unit roles defined yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="card-footer" style="border-radius:0 0 24px 24px;">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small text-muted">Unit or Group</label>
+        <select class="form-select form-select-sm" id="newUnitRoleUnit"
+                  style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+          <option value=""> Select Unit / Group </option>
+          {% for unit in all_units_list %}
+          <option value="{{ unit.id }}" data-name="{{ unit.name }}" data-type="{{ unit.unit_type }}" data-color="{{ unit.color_hex }}">{{ unit.name }} ({{ unit.unit_type }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small text-muted">Role Name</label>
+        <input type="text" class="form-control form-control-sm" 
+                style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;"
+                id="newUnitRoleName" placeholder="e.g. Section Head">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small text-muted">Tier</label>
+        <select class="form-select form-select-sm" id="newUnitRoleTier"
+                style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+          {% for tier_val, tier_name in unit_tier_choices %}
+          <option value="{{ tier_val }}"{% if tier_val == 6 %} selected{% endif %}>{{ tier_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-sm btn-outline-success w-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;" id="addUnitRoleBtn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-plus">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M12 4a1 1 0 0 1 1 1v6h6a1 1 0 0 1 0 2h-6v6a1 1 0 0 1 -2 0v-6h-6a1 1 0 0 1 0 -2h6v-6a1 1 0 0 1 1 -1" />
+          </svg> 
+          Add Role
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# ════════════════════════════════════════════════════════════════════════ #}
+{# TAB: Display & ID                                                        #}
+{# ════════════════════════════════════════════════════════════════════════ #}
+{% if active_tab == 'display' %}
+<form method="post" id="churchSettingsDisplayForm">
+  {% csrf_token %}<input type="hidden" name="tab" value="display">
+  {% with form=forms.display %}
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header"><h5 class="mb-0 fw-bold">ID & Date Format</h5></div>
+    <div class="card-body p-4">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Date Display Format</label>
+          <select id="dateFormatSelect" name="dateFormatSelect" class="form-select bg-dark text-white border-secondary mb-1" {% if form.date_format.field.disabled %}disabled{% endif %}>
+            <option value="%d %b %Y"  {% if form.date_format.value == "%d %b %Y" %}selected{% endif %}>Thursday, 14 Jun 2025  (Day Month Year)</option>
+            <option value="%b %d, %Y" {% if form.date_format.value == "%b %d, %Y" %}selected{% endif %}>Thursday, Jun 14, 2025 (Month Day, Year)</option>
+            <option value="%d/%m/%Y"  {% if form.date_format.value == "%d/%m/%Y" %}selected{% endif %}>Thursday, 14/06/2025   (DD/MM/YYYY)</option>
+            <option value="%m/%d/%Y"  {% if form.date_format.value == "%m/%d/%Y" %}selected{% endif %}>Thursday, 06/14/2025   (MM/DD/YYYY)</option>
+            <option value="%Y-%m-%d"  {% if form.date_format.value == "%Y-%m-%d" %}selected{% endif %}>Thursday, 2025-06-14   (ISO / YYYY-MM-DD)</option>
+            <option value="%d %B %Y"  {% if form.date_format.value == "%d %B %Y" %}selected{% endif %}>Thursday, 14 June 2025 (Full month name)</option>
+            <option value="%B %d, %Y"  {% if form.date_format.value == "%B %d, %Y" %}selected{% endif %}>Thursday, June 14, 2025 (Full month name)</option>
+          </select>
+          <small class="text-muted">Day name is always shown wherever dates are displayed across the app.</small>
+          {# Hidden input carries the actual value to the form #}
+          <div style="display:none;">{{ form.date_format }}</div>
+          <div class="form-text">Choose how dates appear throughout the app.</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Time Display Format</label>
+          <select id="timeFormatSelect" name="timeFormatSelect" class="form-select bg-dark text-white border-secondary mb-1" {% if form.time_format.field.disabled %}disabled{% endif %}>
+            <option value="%H:%M:%S" {% if form.time_format.value == "%H:%M:%S" %}selected{% endif %}>14:30:00 (24-hour + seconds)</option>
+            <option value="%I:%M:%S %p" {% if form.time_format.value == "%I:%M:%S %p" %}selected{% endif %}>02:30:00 PM (12-hour + seconds)</option>
+            <option value="%H:%M" {% if form.time_format.value == "%H:%M" %}selected{% endif %}>14:30 (24-hour)</option>
+            <option value="%I:%M %p" {% if form.time_format.value == "%I:%M %p" %}selected{% endif %}>02:30 PM (12-hour)</option>
+          </select>
+          <div style="display:none;">{{ form.time_format }}</div>
+          <div class="form-text">Choose how times appear throughout the app.</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer text-end">
+      <button type="submit" class="btn btn-primary">Save Display Settings</button>
+    </div>
+  </div>
+  {% endwith %}
+</form>
+{% endif %}{# /display tab #}
+
+{# ════════════════════════════════════════════════════════════════════════ #}
+{# TAB: Campus                                                              #}
+{# ════════════════════════════════════════════════════════════════════════ #}
+{% if active_tab == 'campus' %}
+<div class="card bg-gray-900 mb-4" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="mb-0 fw-bold">Campus Growth Stages</h3>
+    <div class="form-check form-switch mb-0">
+      <input class="form-check-input" type="checkbox" id="campusStagesEnabled"
+              {% if campus_stages_enabled %}checked{% endif %}>
+      <label class="form-check-label" for="campusStagesEnabled">Enabled</label>
+    </div>
+  </div>
+  <div class="card-body p-4 {% if not campus_stages_enabled %}d-none{% endif %}" id="campusStagesBody">
+    <p class="text-muted small mb-3">
+      Define your church's campus growth pathway. Drag to reorder. <em>Fellowship Center</em> is the base stage.
+    </p>
+    <table class="table table-hover mb-0">
+      <thead><tr><th style="width:30px;"></th><th>Stage name</th><th>Description</th><th></th></tr></thead>
+      <tbody id="campusStagesList">
+        {% for stage in campus_stages_list %}
+        <tr draggable="true" class="campus-stage-row" data-order="{{ stage.order }}">
+          <td class="drag-handle text-muted" style="cursor:grab;">
+            <span style="box-shadow:0 4px 8px #000000d2;border-radius:24px;width:24px;height:24px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-drag-drop">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M19 11v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2" />
+                <path d="M13 13l9 3l-4 2l-2 4l-3 -9" /><path d="M3 3l0 .01" /><path d="M7 3l0 .01" /><path d="M11 3l0 .01" />
+                <path d="M15 3l0 .01" /><path d="M3 7l0 .01" /><path d="M3 11l0 .01" /><path d="M3 15l0 .01" />
+              </svg>
+            </span>
+          </td>
+          <td>
+            <input class="form-control form-control-sm campus-stage-name" value="{{ stage.name }}"
+                      style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;">
+          </td>
+          <td>
+            <input class="form-control form-control-sm campus-stage-desc" value="{{ stage.description|default:'' }}" placeholder="Describe this growth stage"
+                      style="box-shadow:inset 0 4px 8px #000000ee;border-radius:24px;">
+          </td>
+          <td>
+            <button type="button" class="btn btn-sm text-danger remove-campus-stage"
+                    style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                    data-id="{{ stage.id }}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                    viewBox="0 0 24 24" fill="currentColor">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M20 6a1 1 0 0 1 .117 1.993l-.117.007h-.081l-.919 11a3 3 0 0 1-2.824 2.995l-.176.005h-8c-1.598 0-2.904-1.249-2.992-2.75l-.005-.167-.923-11.083h-.08a1 1 0 0 1-.117-1.993l.117-.007zm-10 4a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1m4 0a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1"/>
+                <path d="M14 2a2 2 0 0 1 2 2a1 1 0 0 1-1.993.117l-.007-.117h-4l-.007.117a1 1 0 0 1-1.993-.117a2 2 0 0 1 1.85-1.995l.15-.005z"/>
+              </svg>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="d-flex gap-2 align-items-center my-3">
+      <input type="text" class="form-control form-control-sm" id="newCampusStageName" placeholder="Stage name"
+              style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;max-width:180px;">
+      <input type="text" class="form-control form-control-sm" id="newCampusStageDesc" placeholder="Description (optional)" 
+              style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;max-width:260px;">
+      <button type="button" class="btn btn-sm btn-outline-success" id="addCampusStageBtn"
+              style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-plus">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M12 4a1 1 0 0 1 1 1v6h6a1 1 0 0 1 0 2h-6v6a1 1 0 0 1 -2 0v-6h-6a1 1 0 0 1 0 -2h6v-6a1 1 0 0 1 1 -1" />
+        </svg>  
+        Add Stage
+      </button>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" id="saveCampusStagesBtn"
+            style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+      Save Campus Stages
+    </button>
+  </div>
+</div>
+
+<div class="card mb-4" style="background:{{ church.primary_color }}0F;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="mb-0 fw-bold">Campuses</h5>
+      <small class="badge{% if campus_limit_value == -1 %}bg-green-lt{% else %}bg-warning-lt{% endif %}">
+        {{ campus_count }} Active
+        {% if campus_limit_value == -1 %}
+          · Unlimited on Current Plan
+        {% else %}
+          · Limit {{ campus_limit_value }}{% if campus_extra_slots %} + {{ campus_extra_slots }} add-on{% if campus_extra_slots != 1 %}s{% endif %}{% endif %}
+          {% if campus_limit_remaining is not none %}
+            · {{ campus_limit_remaining }} Remaining
+          {% endif %}
+        {% endif %}
+      </small>
+    </div>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-success {% if campus_limit_reached %}disabled opacity-50{% endif %}"
+      id="addCampusBtn" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+      {% if campus_limit_reached %}disabled aria-disabled="true" title="Campus limit reached. Upgrade or buy more slots to add another Campus."{% endif %}>
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-plus">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M12 4a1 1 0 0 1 1 1v6h6a1 1 0 0 1 0 2h-6v6a1 1 0 0 1 -2 0v-6h-6a1 1 0 0 1 0 -2h6v-6a1 1 0 0 1 1 -1" />
+      </svg>  
+      Add Campus
+    </button>
+  </div>
+  {% if campus_limit_reached and campus_limit_value != -1 %}
+  <div class="alert alert-warning m-3 mb-0">
+    You have reached your Campus limit.
+    {% if campus_extra_slots %}
+      Your plan includes {{ campus_limit_value }} Campus{% if campus_limit_value != 1 %}es{% endif %} plus {{ campus_extra_slots }} add-on slot{% if campus_extra_slots != 1 %}s{% endif %}.
+    {% else %}
+      Your current plan includes {{ campus_limit_value }} Campus{% if campus_limit_value != 1 %}es{% endif %}.
+    {% endif %}
+    Buy more Campus slots or upgrade your plan to add more Campuses.
+  </div>
+  {% endif %}
+  <div class="card-body border-bottom border-secondary d-none p-3" id="addCampusForm">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Campus Name</label>
+        <input class="form-control bg-dark text-white" id="campusName" placeholder="e.g. Victoria Island Campus"
+               style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Location ID <span class="text-muted small fw-normal">(slug)</span></label>
+        <input class="form-control bg-dark text-white" id="campusLocationName"
+               placeholder="e.g. abuja" pattern="[a-z0-9-]+" title="Lowercase letters, numbers, hyphens only"
+               style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+        <small class="text-muted d-block mt-1" id="campusSlugPreview" style="font-size:.75rem;letter-spacing:.01em;"></small>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Growth Stage</label>
+        <select class="form-select bg-dark text-white" id="campusGrowthStage"
+                style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+          <option value="">— Select stage —</option>
+          {% for stage in campus_stages_list %}
+          <option value="{{ stage.name }}">{{ stage.name }}{% if stage.description %} — {{ stage.description|truncatechars:40 }}{% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Campus Admin</label>
+        <select class="form-select bg-dark text-white" id="campusLeaderSelect"
+                style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+          <option value="">— Assign later —</option>
+          {% for m in all_members_list %}
+          <option value="{{ m.id }}">{{ m.user.title|default:"" }} {{ m.user.full_name }}</option>
+          {% endfor %}
+        </select>
+        <small class="text-muted d-block mt-1" style="font-size:.75rem;">Gets full admin access in the campus.</small>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Address <span class="text-muted small fw-normal">(optional)</span></label>
+        <input class="form-control bg-dark text-white" id="campusAddress"
+                style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" placeholder="e.g. 123 Main St, Lagos">
+      </div>
+      <div class="col-12 d-flex gap-2 align-items-center">
+        <button class="btn btn-success btn-sm" id="saveCampusBtn"
+                style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+          Save Campus
+        </button>
+        <button class="btn text-danger btn-sm" id="cancelCampusBtn"
+                style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                viewBox="0 0 24 24" fill="currentColor">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M20 6a1 1 0 0 1 .117 1.993l-.117.007h-.081l-.919 11a3 3 0 0 1-2.824 2.995l-.176.005h-8c-1.598 0-2.904-1.249-2.992-2.75l-.005-.167-.923-11.083h-.08a1 1 0 0 1-.117-1.993l.117-.007zm-10 4a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1m4 0a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1"/>
+            <path d="M14 2a2 2 0 0 1 2 2a1 1 0 0 1-1.993.117l-.007-.117h-4l-.007.117a1 1 0 0 1-1.993-.117a2 2 0 0 1 1.85-1.995l.15-.005z"/>
+          </svg>
+        </button>
+        <span class="text-muted small ms-2">This provisions a full church workspace for the campus.</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0" id="campusesTable">
+      <thead><tr><th>Name</th><th>Growth Stage</th><th></th></tr></thead>
+      <tbody id="campusesTbody">
+        {# HQ row — read-only, always shown as the root parent #}
+        {% with hq=church %}
+        <tr class="table-active opacity-75">
+          <td class="fw-semibold">
+            {{ hq.name }}
+            <span class="badge bg-purple-lt ms-1" style="font-size:.65rem;">HQ</span>
+          </td>
+          <td><span class="badge bg-purple-lt small">Headquarters</span></td>
+          <td class="text-end text-muted small fst-italic pe-3">Parent Church</td>
+        </tr>
+        {% endwith %}
+        {% for campus in all_campuses %}
+        <tr>
+          <td class="fw-semibold">{{ campus.name }}</td>
+          <td><span class="badge bg-secondary-lt small">{{ campus.growth_stage|default:"—" }}</span></td>
+          {% if not is_campus_church %}
+          <td class="text-end">
+            <button type="button" class="btn btn-sm btn-outline-secondary campus-manage-btn" data-campus-slug="{{ campus.slug }}"
+                    style="box-shadow:0 4px 8px #000000ee;border-radius:24px;">
+              Manage
+            </button>
+          </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr id="noCampusRow"><td colspan="3" class="text-muted text-center py-3">No campuses yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+window.__campusData = window.__campusData || {};
+{% for campus in all_campuses %}
+window.__campusData["{{ campus.slug }}"] = {
+  id: "{{ campus.id }}",
+  name: "{{ campus.name|escapejs }}",
+  slug: "{{ campus.slug|escapejs }}",
+  location_name: "{{ campus.location_name|default:""  |escapejs }}",
+  report_to_slug: "{{ campus.report_to.slug|default:"" |escapejs }}",
+  campus_church_slug: "{{ campus.campus_church.slug|default:"" |escapejs }}",
+  campus_church_url: "{% if campus.campus_church %}{{ campus.campus_church|campus_church_url }}{% endif %}",
+  location_name: "{{ campus.location_name|default:''|escapejs }}",
+  description: "{{ campus.description|default:''|escapejs }}",
+  address: "{{ campus.address|default:''|escapejs }}",
+  latitude: "{{ campus.latitude|default_if_none:'' }}",
+  longitude: "{{ campus.longitude|default_if_none:'' }}",
+  growth_stage: "{{ campus.growth_stage|default_if_none:''|escapejs }}",
+  report_to_id: "{{ campus.report_to_id|default_if_none:'' }}",
+  campus_leader_id: "{{ campus.campus_leader_id|default_if_none:'' }}",
+  contributes_to_parent_metrics: {{ campus.contributes_to_parent_metrics|yesno:"true,false" }},
+  workspace_config_json: "{{ campus.workspace_config_json|default:'{}'|escapejs }}",
+  campus_church_slug: "{{ campus.campus_church.slug|default:''|escapejs }}",
+  campus_church_url: "{% if campus.campus_church %}{{ campus.campus_church|campus_church_url }}{% endif %}",
+  members: [
+    {% for membership in campus.members.all %}
+    {
+      campus_membership_id: "{{ membership.id }}",
+      member_id: "{{ membership.member_id }}",
+      member_name: "{{ membership.member|escapejs }}",
+      is_primary: {{ membership.is_primary|yesno:"true,false" }},
+      notes: "{{ membership.notes|default:''|escapejs }}",
+    },
+    {% endfor %}
+  ],
+};
+{% endfor %}
+</script>
+
+<div class="modal modal-blur fade" id="campusManagerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header d-flex justify-content-between align-items-center py-3">
+        <div>
+          <h3 class="modal-title mb-0">Campus Manager
+            <span class="text-white">—</span>
+            <span class="fs-4" id="campusManagerSubtitle">Edit campus details and assignments inline.</span>
+          </h3>
+          <div class="small mt-1">HQ defaults can be inherited, while local campus settings and roster are managed here.</div>
+        </div>
+        <div class="d-flex ms-auto align-items-center gap-2 flex-wrap">
+          <a href="#" class="btn btn-sm btn-outline-purple" id="campusChurchLink" target="_blank">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 15l6 -6"/><path d="M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464"/><path d="M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463"/></svg>
+            Open Campus
+          </a>
+          <a href="#" class="btn btn-sm btn-outline-secondary" id="campusWorkspaceLink">HQ View</a>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <ul class="nav nav-tabs mb-3" role="tablist">
+          <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#campusModalDetails" type="button">Details</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#campusModalMembers" type="button">Members</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#campusModalOverrides" type="button">HQ Overrides</button></li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="campusModalDetails">
+            <form id="campusManagerForm">
+              {% csrf_token %}
+              <input type="hidden" name="campus_id" id="campusManagerId">
+              <div class="row g-3">
+                <div class="col-md-4"><label class="form-label">Name</label><input class="form-control bg-dark text-white border-secondary" name="name" id="campusManagerName"></div>
+                <div class="col-md-4"><label class="form-label">Slug</label><input class="form-control bg-dark text-white border-secondary" name="slug" id="campusManagerSlug"></div>
+                <div class="col-md-4">
+                  <label class="form-label">Growth stage</label>
+                  <select class="form-select bg-dark text-white border-secondary" name="growth_stage" id="campusManagerStage">
+                    <option value="">— None —</option>
+                    {% for stage in campus_stages_list %}
+                    <option value="{{ stage.name }}">{{ stage.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-12"><label class="form-label">Description</label><textarea class="form-control bg-dark text-white border-secondary" name="description" id="campusManagerDescription" rows="2"></textarea></div>
+                <div class="col-12"><label class="form-label">Address</label><textarea class="form-control bg-dark text-white border-secondary" name="address" id="campusManagerAddress" rows="2"></textarea></div>
+                <div class="col-md-3"><label class="form-label">Latitude</label><input class="form-control bg-dark text-white border-secondary" name="latitude" id="campusManagerLatitude"></div>
+                <div class="col-md-3"><label class="form-label">Longitude</label><input class="form-control bg-dark text-white border-secondary" name="longitude" id="campusManagerLongitude"></div>
+                <div class="col-md-3">
+                  <label class="form-label">Parent campus</label>
+                  <select class="form-select bg-dark text-white border-secondary" name="report_to_id" id="campusManagerParent">
+                    <option value="">— None —</option>
+                    {% for campus in all_campuses %}
+                    <option value="{{ campus.slug }}">{{ campus.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Campus leader</label>
+                  <select class="form-select bg-dark text-white border-secondary" name="campus_leader_id" id="campusManagerLeader">
+                    <option value="">— None —</option>
+                    {% for member in all_members_list %}
+                    <option value="{{ member.id }}">{{ member }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-center">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="contributes_to_parent_metrics" id="campusManagerContributes">
+                    <label class="form-check-label" for="campusManagerContributes">Contributes to parent metrics</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4 p-3 border border-secondary rounded-4" style="background:rgba(255,255,255,0.03);">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                  <div>
+                    <div class="fw-semibold">Branch Modules</div>
+                    <div class="text-muted small">Toggle local scope while still allowing HQ inheritance.</div>
+                  </div>
+                  <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" name="workspace_inherit_hq" id="campusManagerInheritHq" checked>
+                    <label class="form-check-label" for="campusManagerInheritHq">Inherit HQ</label>
+                  </div>
+                </div>
+                <div class="row g-2">
+                  <div class="col-6 col-md-4"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="module_units" id="campusModuleUnits" checked><label class="form-check-label" for="campusModuleUnits">Units / Groups</label></div></div>
+                  <div class="col-6 col-md-4"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="module_workforce" id="campusModuleWorkforce" checked><label class="form-check-label" for="campusModuleWorkforce">Workforce</label></div></div>
+                  <div class="col-6 col-md-4"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="module_guests" id="campusModuleGuests" checked><label class="form-check-label" for="campusModuleGuests">Guests</label></div></div>
+                  <div class="col-6 col-md-4"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="module_attendance" id="campusModuleAttendance" checked><label class="form-check-label" for="campusModuleAttendance">Attendance</label></div></div>
+                  <div class="col-6 col-md-4"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="module_training" id="campusModuleTraining" checked><label class="form-check-label" for="campusModuleTraining">Training</label></div></div>
+                  <div class="col-6 col-md-4"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="module_lms" id="campusModuleLms" checked><label class="form-check-label" for="campusModuleLms">LMS</label></div></div>
+                  <div class="col-6 col-md-4"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="module_notifications" id="campusModuleNotifications" checked><label class="form-check-label" for="campusModuleNotifications">Notifications</label></div></div>
+                </div>
+                <div class="mt-3">
+                  <label class="form-label small mb-1">Workspace Notes</label>
+                  <textarea class="form-control bg-dark text-white border-secondary" name="workspace_notes" id="campusManagerWorkspaceNotes" rows="2" placeholder="Branch-specific configuration notes"></textarea>
+                </div>
+              </div>
+
+              <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-success">Save Changes</button>
+                <button type="button" class="btn btn-outline-danger" id="campusManagerDeleteBtn">Delete Campus</button>
+              </div>
+            </form>
+          </div>
+          <div class="tab-pane fade" id="campusModalMembers">
+            <form id="campusMemberActionForm" class="row g-3 align-items-end mb-3">
+              {% csrf_token %}
+              <input type="hidden" name="campus_id" id="campusAssignCampusId">
+              <div class="col-md-6">
+                <label class="form-label">Member</label>
+                <select class="form-select bg-dark text-white border-secondary" name="member_id" id="campusAssignMember">
+                  <option value="">— Select member —</option>
+                  {% for member in all_members_list %}
+                  <option value="{{ member.id }}">{{ member }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-3">
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" name="is_primary" id="campusAssignPrimary">
+                  <label class="form-check-label" for="campusAssignPrimary">Primary campus</label>
+                </div>
+              </div>
+              <div class="col-md-3 d-grid gap-2">
+                <button type="button" class="btn btn-primary" id="campusAssignBtn">Assign</button>
+                <button type="button" class="btn btn-warning" id="campusTransferBtn">Transfer</button>
+                <button type="button" class="btn btn-outline-danger" id="campusRemoveBtn">Remove</button>
+              </div>
+            </form>
+            <div class="table-responsive">
+              <table class="table table-dark table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Member</th>
+                    <th>Type</th>
+                    <th>Notes</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="campusRosterBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-pane fade" id="campusModalOverrides">
+            <div class="p-3 border border-secondary rounded-3 mb-3" style="background:rgba(255,50,50,0.05);">
+              <h6 class="fw-bold text-danger mb-1">HQ Override Controls</h6>
+              <p class="text-muted small mb-3">
+                Restrictions set here are pushed <strong>directly into the campus-church</strong> and
+                enforced at the platform level. Campus admins cannot undo these from their side.
+              </p>
+              <form id="campusOverrideForm">
+                {% csrf_token %}
+                <input type="hidden" name="campus_id" id="campusOverrideCampusId">
+                <div class="mb-3">
+                  <label class="form-label small fw-semibold">Force-disable Modules</label>
+                  <p class="text-muted" style="font-size:.8rem;">Checked modules are disabled in the campus-church regardless of local settings.</p>
+                  <div class="row g-2">
+                    <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input campus-override-module" type="checkbox" name="disable_modules" value="units" id="ovModUnits"><label class="form-check-label" for="ovModUnits">Units / Groups</label></div></div>
+                    <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input campus-override-module" type="checkbox" name="disable_modules" value="workforce" id="ovModWorkforce"><label class="form-check-label" for="ovModWorkforce">Workforce</label></div></div>
+                    <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input campus-override-module" type="checkbox" name="disable_modules" value="guests" id="ovModGuests"><label class="form-check-label" for="ovModGuests">Guests</label></div></div>
+                    <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input campus-override-module" type="checkbox" name="disable_modules" value="attendance" id="ovModAttendance"><label class="form-check-label" for="ovModAttendance">Attendance</label></div></div>
+                    <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input campus-override-module" type="checkbox" name="disable_modules" value="lms" id="ovModLms"><label class="form-check-label" for="ovModLms">LMS</label></div></div>
+                    <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input campus-override-module" type="checkbox" name="disable_modules" value="music" id="ovModMusic"><label class="form-check-label" for="ovModMusic">Music</label></div></div>
+                    <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input campus-override-module" type="checkbox" name="disable_modules" value="media" id="ovModMedia"><label class="form-check-label" for="ovModMedia">Media</label></div></div>
+                  </div>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-4 d-flex align-items-center"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" name="read_only" id="overrideReadOnly"><label class="form-check-label" for="overrideReadOnly">Settings read-only</label></div></div>
+                  <div class="col-md-4 d-flex align-items-center"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" name="restrict_member_create" id="overrideRestrictCreate"><label class="form-check-label" for="overrideRestrictCreate">Block member creation</label></div></div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label small fw-semibold">HQ Banner Message <span class="text-muted fw-normal">(shown to campus admins)</span></label>
+                  <textarea class="form-control bg-dark text-white border-secondary" name="custom_message" id="overrideCustomMessage" rows="2" placeholder="e.g. Feature restricted pending audit. Contact HQ."></textarea>
+                </div>
+                <div class="d-flex gap-2">
+                  <button type="submit" class="btn btn-danger btn-sm">Push Overrides</button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" id="clearOverridesBtn">Clear All</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# ════════════════════════════════════════════════════════════════════════ #}
+{# TAB: Lookup Tables                                                       #}
+{# ════════════════════════════════════════════════════════════════════════ #}
+{% if active_tab == 'lookups' %}
+<p class="text-muted mb-4">Manage the dropdown options on the guest form. Drag rows to reorder.</p>
+
+{% for lookup_type, label, items in lookup_tables %}
+<div class="card mb-4" style="background:{{ church.primary_color }}0F;box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+  <div class="card-header">
+    <h5 class="mb-0 fw-bold">{{ label }}</h5>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead><tr><th style="width:30px;"></th><th>Name</th><th>Status</th><th></th></tr></thead>
+      <tbody class="lookup-sortable" data-type="{{ lookup_type }}" id="lookup-{{ lookup_type }}">
+        {% for item in items %}
+        <tr draggable="true" class="lookup-row" data-id="{{ item.id }}">
+          <td class="drag-handle text-muted" style="cursor:grab;">
+            <span style="box-shadow:0 4px 8px #000000d2;border-radius:24px;width:24px;height:24px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-drag-drop">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M19 11v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2" />
+                <path d="M13 13l9 3l-4 2l-2 4l-3 -9" /><path d="M3 3l0 .01" /><path d="M7 3l0 .01" /><path d="M11 3l0 .01" />
+                <path d="M15 3l0 .01" /><path d="M3 7l0 .01" /><path d="M3 11l0 .01" /><path d="M3 15l0 .01" />
+              </svg>
+            </span>
+          </td>
+          <td>
+            <span class="lookup-name">{{ item.name }}</span>
+            <input class="form-control form-control-sm lookup-edit d-none" value="{{ item.name }}" 
+                    style="max-width:200px;box-shadow: inset 0 4px 8px #000000d2;border-radius:24px;">
+          </td>
+          <td>
+            <span class="badge {% if item.is_active %}bg-green-lt{% else %}bg-secondary-lt{% endif %}">
+              {% if item.is_active %}Active{% else %}Inactive{% endif %}
+            </span>
+          </td>
+          <td class="text-end">
+            <button class="btn btn-sm lookup-rename-btn" data-id="{{ item.id }}" data-type="{{ lookup_type }}"
+                    style="box-shadow: inset 0 4px 8px #000000d2;border-radius:24px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4l-10.5 10.5v4"/>
+                <path d="M13.5 6.5l4 4"/>
+              </svg>
+            </button>
+            <button class="btn btn-sm lookup-toggle-btn" data-id="{{ item.id }}" data-type="{{ lookup_type }}"
+                    style="box-shadow: inset 0 4px 8px #000000d2;border-radius:24px;">
+              {% if item.is_active %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fc0303d2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye-off">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M10.585 10.587a2 2 0 0 0 2.829 2.828" />
+                  <path d="M16.681 16.673a8.717 8.717 0 0 1 -4.681 1.327c-3.6 0 -6.6 -2 -9 -6c1.272 -2.12 2.712 -3.678 4.32 -4.674m2.86 -1.146a9.055 9.055 0 0 1 1.82 -.18c3.6 0 6.6 2 9 6c-.666 1.11 -1.379 2.067 -2.138 2.87" /><path d="M3 3l18 18" />
+                </svg>
+              {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#01fa16d2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye-check">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                  <path d="M11.102 17.957c-3.204 -.307 -5.904 -2.294 -8.102 -5.957c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6a19.5 19.5 0 0 1 -.663 1.032" /><path d="M15 19l2 2l4 -4" />
+                </svg>
+              {% endif %}
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex gap-2 align-items-center" style="border-radius:0 0 24px 24px;">
+    <input type="text" class="form-control form-control-sm lookup-new-input" data-type="{{ lookup_type }}" 
+            placeholder="Add new {{ label }}" style="max-width:240px;box-shadow: inset 0 4px 8px #000000d2;border-radius:24px;">
+    <button class="btn btn-sm btn-outline-success lookup-add-btn" data-type="{{ lookup_type }}"
+            style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-plus">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M12 4a1 1 0 0 1 1 1v6h6a1 1 0 0 1 0 2h-6v6a1 1 0 0 1 -2 0v-6h-6a1 1 0 0 1 0 -2h6v-6a1 1 0 0 1 1 -1" />
+      </svg> 
+      Add
+    </button>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+
+<script>
+(function() {
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+const TENANT_SLUG = '{{ church.slug|default_if_none:""|escapejs }}';
+function scopedPath(url) {
+  if (!url || !url.startsWith('/')) return url;
+  const slug = TENANT_SLUG || window.location.pathname.split('/').filter(Boolean)[0] || '';
+  if (!slug) return url;
+  if (url === `/${slug}` || url.startsWith(`/${slug}/`)) return url;
+  return `/${slug}${url}`;
+}
+function post(url, data) {
+  return fetch(scopedPath(url), {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: new URLSearchParams(data),
+  }).then(r => r.json());
+}
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+ 
+// ── Date/Time format: sync visible selects → Django hidden inputs ────────────
+// Inline onchange cannot see functions inside this IIFE; also DOMContentLoaded
+// may have already fired when this script runs after a soft tab swap — so we
+// bind listeners + run an immediate sync, and copy again on submit.
+function syncDisplayFormatFieldsFromSelects() {
+  const form = document.getElementById("churchSettingsDisplayForm");
+  const dateInp = form?.querySelector('input[name="date_format"]') || document.querySelector('#id_date_format');
+  const timeInp = form?.querySelector('input[name="time_format"]') || document.querySelector('#id_time_format');
+  const dateSel = document.getElementById("dateFormatSelect");
+  const timeSel = document.getElementById("timeFormatSelect");
+  if (dateSel && dateInp) dateInp.value = dateSel.value;
+  if (timeSel && timeInp) timeInp.value = timeSel.value;
+}
+function initDisplayFormatSync() {
+  const form = document.getElementById("churchSettingsDisplayForm");
+  const dateSel = document.getElementById("dateFormatSelect");
+  const timeSel = document.getElementById("timeFormatSelect");
+  if (!form && !dateSel && !timeSel) return;
+  if (dateSel && dateSel.dataset.cfDisplaySync !== "1") {
+    dateSel.dataset.cfDisplaySync = "1";
+    dateSel.addEventListener("change", syncDisplayFormatFieldsFromSelects);
+  }
+  if (timeSel && timeSel.dataset.cfDisplaySync !== "1") {
+    timeSel.dataset.cfDisplaySync = "1";
+    timeSel.addEventListener("change", syncDisplayFormatFieldsFromSelects);
+  }
+  if (form && form.dataset.cfDisplaySubmitSync !== "1") {
+    form.dataset.cfDisplaySubmitSync = "1";
+    form.addEventListener("submit", syncDisplayFormatFieldsFromSelects);
+  }
+  syncDisplayFormatFieldsFromSelects();
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initDisplayFormatSync);
+} else {
+  initDisplayFormatSync();
+}
+ 
+// ── Unit color picker ─────────────────────────────────────────────────────────
+// Each color picker is inside a <label> wrapping a swatch span + hidden input
+document.querySelectorAll('.unit-color-picker').forEach(inp => {
+  inp.addEventListener('input', () => {
+    // Live preview: update swatch and row border
+    const id    = inp.dataset.id;
+    const swatch = document.getElementById(`swatch-${id}`);
+    const row    = document.getElementById(`unit-row-${id}`);
+    if (swatch) swatch.style.background  = inp.value;
+    if (row)    row.style.borderLeft     = `3px solid ${inp.value}`;
+  });
+  inp.addEventListener('change', () => {
+    const slug = inp.dataset.slug;
+    post(`/units/${slug}/color/`, {color: inp.value})
+      .then(d => { if (!d.ok) alert(d.error || 'Color update failed'); })
+      .catch(() => {});
+  });
+});
+ 
+// ── Unit inline edit — delegated so buttons survive soft-nav DOM swaps ────────
+document.addEventListener('click', function _unitEditDelegate(e) {
+  // ── toggle open/close edit row
+  const editToggle = e.target.closest('.unit-edit-toggle');
+  if (editToggle) {
+    const id      = editToggle.dataset.id;
+    const editRow = document.getElementById(`unit-edit-row-${id}`);
+    if (!editRow) return;
+    document.querySelectorAll('.unit-edit-row').forEach(r => {
+      if (r.id !== `unit-edit-row-${id}`) r.classList.add('d-none');
+    });
+    editRow.classList.toggle('d-none');
+    if (!editRow.classList.contains('d-none')) editRow.querySelector('.unit-edit-name')?.focus();
+    return;
+  }
+  // ── cancel
+  const editCancel = e.target.closest('.unit-edit-cancel');
+  if (editCancel) {
+    document.getElementById(`unit-edit-row-${editCancel.dataset.id}`)?.classList.add('d-none');
+    return;
+  }
+  // ── save
+  const editSave = e.target.closest('.unit-edit-save');
+  if (editSave) {
+    const id  = editSave.dataset.id;
+    const row = document.getElementById(`unit-edit-row-${id}`);
+    if (!row) return;
+    const name   = row.querySelector('.unit-edit-name').value.trim();
+    const type   = row.querySelector('.unit-edit-type').value;
+    const parent = row.querySelector('.unit-edit-parent').value;
+    const desc   = row.querySelector('.unit-edit-desc').value.trim();
+    const isDef  = row.querySelector('.unit-edit-default').checked ? 'on' : 'off';
+    if (!name) { alert('Name is required'); return; }
+    const moduleData = {};
+    row.querySelectorAll('.unit-edit-module').forEach(cb => { moduleData[cb.dataset.field] = cb.checked ? 'on' : 'off'; });
+    editSave.disabled = true; editSave.textContent = 'Saving…';
+    post(`/settings/unit/${id}/edit/`, { name, unit_type: type, report_to: parent, description: desc, is_default: isDef, ...moduleData })
+      .then(d => {
+        editSave.disabled = false; editSave.textContent = 'Save';
+        if (!d.ok) { alert(d.error); return; }
+        document.getElementById(`name-${id}`).textContent = d.name;
+        document.getElementById(`type-${id}`).textContent = d.unit_type;
+        const parentCell = document.getElementById(`parent-${id}`);
+        if (parentCell) parentCell.textContent = d.report_to_name || '—';
+        document.getElementById(`members-${id}`).textContent = d.member_count;
+        const modCell = document.getElementById(`modules-${id}`);
+        if (modCell) {
+          const badgeColors = { 'Guests':'bg-orange-lt','Music':'bg-green-lt','Media':'bg-blue-lt','Children':'bg-yellow-lt','Youth':'bg-purple-lt','Teens':'bg-red-lt' };
+          modCell.innerHTML = d.modules.map(m => `<span class="badge ${badgeColors[m]||'bg-secondary-lt'}" style="font-size:.6rem;">${m}</span>`).join(' ');
+        }
+        const defBadge = document.querySelector(`.unit-default-badge-${id}`);
+        if (d.is_default && !defBadge) {
+          document.getElementById(`name-${id}`).insertAdjacentHTML('afterend', `<span class="badge bg-blue-lt ms-1 small unit-default-badge-${id}">Default</span>`);
+        } else if (!d.is_default && defBadge) { defBadge.remove(); }
+        const swatch  = document.getElementById(`swatch-${id}`);
+        const dataRow = document.getElementById(`unit-row-${id}`);
+        if (swatch)   swatch.style.background  = d.color_hex;
+        if (dataRow)  dataRow.style.borderLeft  = `3px solid ${d.color_hex}`;
+        // Sync module checkboxes to the saved state so re-opening shows correct values
+        const moduleFieldMap = {
+          'Guests': 'guest_management', 'Music': 'music_module', 'Media': 'media_module',
+          'Children': 'children_module', 'Youth': 'youth_module', 'Teens': 'teenagers_module'
+        };
+        row.querySelectorAll('.unit-edit-module').forEach(cb => { cb.checked = false; });
+        (d.modules || []).forEach(label => {
+          const fname = moduleFieldMap[label];
+          if (fname) {
+            const cb = row.querySelector(`.unit-edit-module[data-field="${fname}"]`);
+            if (cb) cb.checked = true;
+          }
+        });
+        document.getElementById(`unit-edit-row-${id}`)?.classList.add('d-none');
+      });
+    return;
+  }
+  // ── campus manage button
+  const campusBtn = e.target.closest('.campus-manage-btn');
+  if (campusBtn) { openCampusManager(campusBtn.dataset.campusSlug); return; }
+});
+ 
+// ── LMS promotion mode: show/hide approval role ──────────────────────────────
+function toggleApprovalFields() {
+  ['approval-role-wrap', 'approval-role-wrap2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const sel = document.getElementById('id_promotion_mode');
+    if (sel) el.style.display = sel.value === 'manual' ? '' : 'none';
+  });
+}
+document.querySelectorAll('#id_promotion_mode').forEach(el => {
+  el.addEventListener('change', toggleApprovalFields);
+});
+toggleApprovalFields();
+ 
+// ── Workforce: drag-to-reorder helper ────────────────────────────────────────
+function setupDrag(tbodyId, itemType) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  let dragged = null;
+  tbody.addEventListener('dragstart', e => { dragged = e.target.closest('tr'); if(dragged) dragged.style.opacity = '0.4'; });
+  tbody.addEventListener('dragend',   e => { if(dragged) dragged.style.opacity = ''; dragged = null; });
+  tbody.addEventListener('dragover',  e => {
+    e.preventDefault();
+    const over = e.target.closest('tr');
+    if (over && over !== dragged && !over.querySelector('[data-locked]')) tbody.insertBefore(dragged, over.nextSibling);
+  });
+  tbody.addEventListener('drop', e => {
+    e.preventDefault();
+    const ids = [...tbody.querySelectorAll('tr[data-id]')].map(r => r.dataset.id);
+    post(`/settings/workforce/${itemType}/reorder/`, {'ids[]': ids})
+      .then(d => { if (!d.ok) alert(d.error); });
+  });
+}
+setupDrag('stagesList', 'stage');
+setupDrag('rolesList',  'role');
+ 
+// ── Workforce: add stage ──────────────────────────────────────────────────────
+document.getElementById('addStageBtn')?.addEventListener('click', () => {
+  const name = document.getElementById('newStageName').value.trim();
+  if (!name) return;
+  post('/settings/workforce/stage/add/', {name}).then(d => {
+    if (!d.ok) { alert(d.error); return; }
+    const tbody = document.getElementById('stagesList');
+    const tr = document.createElement('tr');
+    tr.dataset.id = d.id; tr.draggable = true; tr.className = 'wf-item-row';
+    tr.innerHTML = `<td class="drag-handle text-muted" style="cursor:grab;">
+                      <span style="box-shadow:0 4px 8px #000000d2;border-radius:24px;width:24px;height:24px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-drag-drop">
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M19 11v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2" />
+                          <path d="M13 13l9 3l-4 2l-2 4l-3 -9" /><path d="M3 3l0 .01" /><path d="M7 3l0 .01" /><path d="M11 3l0 .01" />
+                          <path d="M15 3l0 .01" /><path d="M3 7l0 .01" /><path d="M3 11l0 .01" /><path d="M3 15l0 .01" />
+                        </svg>
+                      </span>
+                    </td>
+      <td><span class="item-name">${d.name}</span>
+          <input class="form-control form-control-sm item-edit-input d-none" value="${d.name}" 
+                  style="width:140px;display:inline-block;box-shadow: inset 0 4px 8px #000000d2;border-radius:24px;">
+      </td>
+      <td>
+        <span class="stage-desc-display text-muted small">—</span>
+        <input class="form-control form-control-sm stage-desc-input d-none" data-id="${d.id}" placeholder="Describe this stage…" 
+                style="max-width:220px;box-shadow: inset 0 4px 8px #000000d2;border-radius:24px;">
+        <button class="btn btn-sm btn-link text-muted p-0 ms-1 stage-desc-edit-btn" data-id="${d.id}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4l-10.5 10.5v4"/>
+            <path d="M13.5 6.5l4 4"/>
+          </svg>
+        </button>
+      </td>
+      <td></td>
+      <td class="text-end">
+        <button class="btn btn-sm wf-rename-btn" data-id="${d.id}" data-type="stage"
+                style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4l-10.5 10.5v4"/>
+            <path d="M13.5 6.5l4 4"/>
+          </svg>
+        </button>
+        <button class="btn btn-sm text-danger wf-delete-btn" data-id="${d.id}" data-type="stage"
+                style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                viewBox="0 0 24 24" fill="currentColor">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M20 6a1 1 0 0 1 .117 1.993l-.117.007h-.081l-.919 11a3 3 0 0 1-2.824 2.995l-.176.005h-8c-1.598 0-2.904-1.249-2.992-2.75l-.005-.167-.923-11.083h-.08a1 1 0 0 1-.117-1.993l.117-.007zm-10 4a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1m4 0a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1"/>
+            <path d="M14 2a2 2 0 0 1 2 2a1 1 0 0 1-1.993.117l-.007-.117h-4l-.007.117a1 1 0 0 1-1.993-.117a2 2 0 0 1 1.85-1.995l.15-.005z"/>
+          </svg>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+    document.getElementById('newStageName').value = '';
+    bindWfRow(tr);
+    bindStageDesc(tr);
+  });
+});
+ 
+// ── Workforce: add role ───────────────────────────────────────────────────────
+// TIER_CHOICES injected from Django context
+const TIER_CHOICES = [{% for tv, tn in tier_choices %}[{{ tv }}, "{{ tn }}"],{% endfor %}];
+ 
+document.getElementById('addRoleBtn')?.addEventListener('click', () => {
+  const name = document.getElementById('newRoleName').value.trim();
+  const tier = document.getElementById('newRoleTier').value;
+  if (!name) return;
+  post('/settings/workforce/role/add/', {name, tier}).then(d => {
+    if (!d.ok) { alert(d.error); return; }
+    const tbody = document.getElementById('rolesList');
+    const tr = document.createElement('tr');
+    tr.dataset.id = d.id; tr.draggable = true; tr.className = 'wf-item-row';
+    const tierOptions = TIER_CHOICES.map(([val, label]) =>
+      `<option value="${val}" ${val == d.tier ? 'selected' : ''}>${label}</option>`
+    ).join('');
+    tr.innerHTML = `<td class="drag-handle text-muted" style="cursor:grab;">
+                      <span style="box-shadow:0 4px 8px #000000d2;border-radius:24px;width:24px;height:24px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-drag-drop">
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M19 11v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2" />
+                          <path d="M13 13l9 3l-4 2l-2 4l-3 -9" /><path d="M3 3l0 .01" /><path d="M7 3l0 .01" /><path d="M11 3l0 .01" />
+                          <path d="M15 3l0 .01" /><path d="M3 7l0 .01" /><path d="M3 11l0 .01" /><path d="M3 15l0 .01" />
+                        </svg>
+                      </span>
+                    </td>
+      <td><span class="item-name">${d.name}</span>
+          <input class="form-control form-control-sm item-edit-input d-none" value="${d.name}" 
+                  style="width:160px;display:inline-block;box-shadow: inset 0 4px 8px #000000d2;border-radius:24px;">
+      </td>
+      <td>
+        <select class="form-select form-select-sm role-tier-select" data-id="${d.id}" 
+                style="max-width:200px;box-shadow: inset 0 4px 8px #000000d2;border-radius:24px;">
+          ${tierOptions}
+        </select>
+      </td>
+      <td class="text-end">
+        <button class="btn btn-sm wf-rename-btn" data-id="${d.id}" data-type="role"
+                style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4l-10.5 10.5v4"/>
+            <path d="M13.5 6.5l4 4"/>
+          </svg>
+        </button>
+        <button class="btn btn-sm text-danger wf-delete-btn" data-id="${d.id}" data-type="role"
+                style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                viewBox="0 0 24 24" fill="currentColor">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M20 6a1 1 0 0 1 .117 1.993l-.117.007h-.081l-.919 11a3 3 0 0 1-2.824 2.995l-.176.005h-8c-1.598 0-2.904-1.249-2.992-2.75l-.005-.167-.923-11.083h-.08a1 1 0 0 1-.117-1.993l.117-.007zm-10 4a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1m4 0a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1"/>
+            <path d="M14 2a2 2 0 0 1 2 2a1 1 0 0 1-1.993.117l-.007-.117h-4l-.007.117a1 1 0 0 1-1.993-.117a2 2 0 0 1 1.85-1.995l.15-.005z"/>
+          </svg>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+    document.getElementById('newRoleName').value = '';
+    document.getElementById('newRoleTier').value = '{{ tier_choices|last|first }}';
+    bindWfRow(tr);
+  });
+});
+ 
+// ── Workforce row bindings (rename, delete, leadership toggle) ───────────────
+function bindWfRow(tr) {
+  tr.querySelector('.wf-rename-btn')?.addEventListener('click', function() {
+    const nameSpan = tr.querySelector('.item-name');
+    const input    = tr.querySelector('.item-edit-input');
+    if (!nameSpan || !input) return;
+    nameSpan.classList.add('d-none');
+    input.classList.remove('d-none');
+    input.focus();
+    // Named handler so it can be removed and re-registered for every rename click
+    const btn = this;
+    function onBlur() {
+      input.removeEventListener('blur', onBlur);
+      const newName = input.value.trim();
+      const type = btn.dataset.type, id = btn.dataset.id;
+      nameSpan.classList.remove('d-none');
+      input.classList.add('d-none');
+      if (!newName || newName === nameSpan.textContent.trim()) return;
+      post(`/settings/workforce/${type}/${id}/rename/`, {name: newName}).then(d => {
+        if (!d.ok) { alert(d.error); return; }
+        nameSpan.textContent = d.name;
+      });
+    }
+    input.addEventListener('blur', onBlur);
+  });
+ 
+  tr.querySelector('.wf-delete-btn')?.addEventListener('click', function() {
+    const type = this.dataset.type, id = this.dataset.id;
+    const name = tr.querySelector('.item-name')?.textContent.trim();
+    if (!confirm(`Remove ${type} "${name}"?`)) return;
+    post(`/settings/workforce/${type}/${id}/delete/`, {}).then(d => {
+      if (!d.ok) { alert(d.error); return; }
+      tr.remove();
+    });
+  });
+ 
+  tr.querySelector('.role-tier-select')?.addEventListener('change', function() {
+    const tier = this.value;
+    post(`/settings/workforce/role/${this.dataset.id}/set-tier/`, {tier}).then(d => {
+      if (!d.ok) { alert(d.error); return; }
+      // Select already reflects new value — nothing else to update
+    });
+  });
+}
+ 
+// ── Unit / Group roles ───────────────────────────────────────────────────────
+document.getElementById('addUnitRoleBtn')?.addEventListener('click', () => {
+  const unit  = document.getElementById('newUnitRoleUnit').value;
+  const name  = document.getElementById('newUnitRoleName').value.trim();
+  const tier  = document.getElementById('newUnitRoleTier').value;
+  if (!unit || !name) { alert('Select a unit and enter a role name.'); return; }
+  post('/settings/unit-role/add/', {unit_id: unit, name, tier}).then(d => {
+    if (!d.ok) { alert(d.error); return; }
+    const container = document.getElementById('unitRolesList');
+    const empty = document.getElementById('unitRolesEmptyState');
+    if (empty) empty.remove();
+ 
+    let groupCard = container.querySelector(`.unit-role-group-card[data-unit-id="${unit}"]`);
+    if (!groupCard) {
+      const selectedOption = document.querySelector(`#newUnitRoleUnit option[value="${unit}"]`);
+      const unitName = selectedOption?.dataset.name || d.unit_name;
+      const unitType = selectedOption?.dataset.type || d.unit_type;
+      const unitColor = selectedOption?.dataset.color || '#6c757d';
+      groupCard = document.createElement('div');
+      groupCard.className = 'p-3 border border-secondary unit-role-group-card';
+      groupCard.dataset.unitId = unit;
+      groupCard.dataset.unitName = unitName;
+      groupCard.dataset.unitType = unitType;
+      groupCard.dataset.unitColor = unitColor;
+      groupCard.style.borderRadius = '24px';
+      groupCard.style.background = `${unitColor}12`;
+      groupCard.innerHTML = `<div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+          <div>
+            <div class="fw-semibold text-white">${unitName}</div>
+            <div class="text-muted small">
+              <span class="badge bg-secondary-lt me-1 text-uppercase">${unitType}</span>
+              <span class="unit-role-count">0 roles</span>
+            </div>
+          </div>
+          <span class="rounded-circle flex-shrink-0" style="width:12px;height:12px;background:${unitColor};"></span>
+        </div>
+        <div class="d-flex flex-column gap-2 unit-role-group-list"></div>`;
+      container.appendChild(groupCard);
+    }
+ 
+    const list = groupCard.querySelector('.unit-role-group-list');
+    const item = document.createElement('div');
+    item.className = 'd-flex align-items-center justify-content-between gap-2 px-3 py-2';
+    item.dataset.id = d.id;
+    item.dataset.unitRoleItem = 'true';
+    item.style.borderRadius = '24px';
+    item.style.boxShadow = 'inset 0 2px 2px #000000d2';
+    item.innerHTML = `<div>
+        <div class="fw-semibold text-white">${d.name}</div>
+        <div class="text-muted small">${d.tier_label}</div>
+      </div>
+      <button class="btn btn-sm text-danger unit-role-delete-btn" data-id="${d.id}"
+              style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+              viewBox="0 0 24 24" fill="currentColor">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M20 6a1 1 0 0 1 .117 1.993l-.117.007h-.081l-.919 11a3 3 0 0 1-2.824 2.995l-.176.005h-8c-1.598 0-2.904-1.249-2.992-2.75l-.005-.167-.923-11.083h-.08a1 1 0 0 1-.117-1.993l.117-.007zm-10 4a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1m4 0a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1"/>
+          <path d="M14 2a2 2 0 0 1 2 2a1 1 0 0 1-1.993.117l-.007-.117h-4l-.007.117a1 1 0 0 1-1.993-.117a2 2 0 0 1 1.85-1.995l.15-.005z"/>
+        </svg>
+      </button>`;
+    list.appendChild(item);
+    updateUnitRoleCount(groupCard);
+    item.querySelector('.unit-role-delete-btn').addEventListener('click', deleteUnitRole);
+    document.getElementById('newUnitRoleName').value = '';
+  });
+});
+ 
+function updateUnitRoleCount(groupCard) {
+  if (!groupCard) return;
+  const count = groupCard.querySelectorAll('[data-unit-role-item="true"]').length;
+  const label = count === 1 ? '1 role' : `${count} roles`;
+  const countNode = groupCard.querySelector('.unit-role-count');
+  if (countNode) countNode.textContent = label;
+}
+ 
+function deleteUnitRole() {
+  const id = this.dataset.id;
+  if (!confirm('Remove this unit role?')) return;
+  post(`/settings/unit-role/${id}/delete/`, {}).then(d => {
+    if (!d.ok) { alert(d.error); return; }
+    const item = this.closest('[data-unit-role-item="true"]');
+    const groupCard = this.closest('.unit-role-group-card');
+    item?.remove();
+    if (groupCard && !groupCard.querySelector('[data-unit-role-item="true"]')) {
+      groupCard.remove();
+    } else {
+      updateUnitRoleCount(groupCard);
+    }
+    const container = document.getElementById('unitRolesList');
+    if (container && !container.querySelector('.unit-role-group-card')) {
+      container.innerHTML = '<div class="text-muted text-center py-3" id="unitRolesEmptyState">No unit roles defined yet.</div>';
+    }
+  });
+}
+document.addEventListener('click', function _unitRoleDeleteDelegate(e) {
+  const btn = e.target.closest('.unit-role-delete-btn');
+  if (btn) deleteUnitRole.call(btn, e);
+});
+// ── Inline Unit Role Editing ─────────────────────────────
+ 
+function updateUnitRole(id, payload) {
+  return post(`/settings/unit-role/${id}/update/`, payload);
+}
+ 
+// Name edit (debounced)
+let roleEditTimer = null;
+ 
+document.addEventListener('input', e => {
+  if (!e.target.classList.contains('unit-role-name')) return;
+ 
+  clearTimeout(roleEditTimer);
+ 
+  const input = e.target;
+  const id = input.dataset.id;
+ 
+  roleEditTimer = setTimeout(() => {
+    updateUnitRole(id, { name: input.value.trim() });
+  }, 500);
+});
+ 
+// Tier change (instant)
+document.addEventListener('change', e => {
+  if (!e.target.classList.contains('unit-role-tier')) return;
+ 
+  const select = e.target;
+  const id = select.dataset.id;
+ 
+  updateUnitRole(id, { tier: select.value }).then(d => {
+    if (!d.ok) {
+      alert(d.error || "Update failed");
+    }
+  });
+});
+ 
+// ── Stage description inline edit ────────────────────────────────────────────
+function bindStageDesc(tr) {
+  const editBtn  = tr.querySelector('.stage-desc-edit-btn');
+  const display  = tr.querySelector('.stage-desc-display');
+  const input    = tr.querySelector('.stage-desc-input');
+  if (!editBtn || !display || !input) return;
+  editBtn.addEventListener('click', () => {
+    display.classList.add('d-none'); input.classList.remove('d-none'); input.focus();
+  });
+  input.addEventListener('blur', () => {
+    const id  = input.dataset.id;
+    const val = input.value.trim();
+    post(`/settings/workforce/stage/${id}/rename/`, {description: val, name: tr.querySelector('.item-name')?.textContent.trim() || ''})
+      .then(d => {
+        if (!d.ok) { alert(d.error); return; }
+        display.textContent = d.description || '—';
+        display.classList.remove('d-none'); input.classList.add('d-none');
+      });
+  });
+}
+ 
+// Bind existing rows on first load; new rows created via addStage/addRole
+// call bindWfRow(tr) and bindStageDesc(tr) directly — no forEach needed.
+document.querySelectorAll('.wf-item-row').forEach(bindWfRow);
+document.querySelectorAll('#stagesList .wf-item-row').forEach(bindStageDesc);
+ 
+// Step delete — delegated so dynamically added steps also work
+document.addEventListener('click', function _stepDeleteDelegate(e) {
+  const btn = e.target.closest('.step-delete-btn');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const li = btn.closest('li[data-step-id]');
+  if (!confirm('Remove this step? This cannot be undone.')) return;
+  post(`/settings/track/step/${id}/delete/`, {}).then(function(d) {
+    if (d.ok) { li && li.remove(); }
+    else { alert(d.error || 'Could not remove step.'); }
+  });
+});
+ 
+document.getElementById('addInlineCourseBtn')?.addEventListener('click', function() {
+  document.getElementById('addInlineCourseForm')?.classList.toggle('d-none');
+});
+ 
+document.getElementById('inlineCourseCreateForm')?.addEventListener('submit', function(e) {
+  e.preventDefault();
+  const payload = Object.fromEntries(new FormData(this).entries());
+  post('/settings/lms/course/create/', payload).then(d => {
+    if (!d.ok) { alert(d.error || 'Could not create course.'); return; }
+    const selects = document.querySelectorAll('select[name="track_lms_course_ids"], select[name="lms_course_ids"], select[name="step_lms_course_ids"]');
+    selects.forEach(sel => {
+      if ([...sel.options].some(opt => opt.value === String(d.id))) return;
+      const opt = document.createElement('option');
+      opt.value = String(d.id);
+      opt.textContent = d.title;
+      sel.appendChild(opt);
+    });
+    selects.forEach(sel => {
+      if (sel.name !== 'step_lms_course_ids') {
+        [...sel.options].forEach(opt => {
+          if (opt.value === String(d.id)) opt.selected = true;
+        });
+      }
+    });
+    const tbody = document.querySelector('#coursesTable tbody');
+    if (tbody) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${d.title}</td><td>${d.course_type_display}</td><td>${d.delivery_mode_display}</td><td>${d.passing_score}</td><td>—</td><td></td>`;
+      tbody.appendChild(tr);
+    }
+    this.reset();
+  });
+});
+ 
+// Track step panel toggles — delegated
+document.addEventListener('click', function _trackToggleDelegate(e) {
+  const stepsBtn = e.target.closest('.toggle-track-steps');
+  if (stepsBtn) {
+    const panel = document.getElementById('trackSteps_' + stepsBtn.dataset.track);
+    if (!panel) return;
+    const isOpen = !panel.classList.contains('d-none');
+    panel.classList.toggle('d-none', isOpen);
+    stepsBtn.textContent = isOpen ? 'Steps ▾' : 'Steps ▴';
+    return;
+  }
+  const editBtn = e.target.closest('.toggle-track-edit');
+  if (editBtn) {
+    document.getElementById('trackEdit_' + editBtn.dataset.track)?.classList.toggle('d-none');
+  }
+});
+ 
+// ── Campus growth stages: toggle show/hide ───────────────────────────────────
+(function() {
+  const campusToggle = document.getElementById('campusStagesEnabled');
+  const campusBody   = document.getElementById('campusStagesBody');
+  if (campusToggle) {
+    campusToggle.addEventListener('change', () => {
+      campusBody?.classList.toggle('d-none', !campusToggle.checked);
+    });
+  }
+
+  // Campus stages drag-to-reorder
+  const campusList = document.getElementById('campusStagesList');
+  if (campusList) {
+    let dragged = null;
+    campusList.addEventListener('dragstart', e => { dragged = e.target.closest('tr'); if(dragged) dragged.style.opacity='0.4'; });
+    campusList.addEventListener('dragend',   e => { if(dragged) dragged.style.opacity=''; dragged=null; });
+    campusList.addEventListener('dragover',  e => { e.preventDefault(); const over=e.target.closest('tr'); if(over&&over!==dragged) campusList.insertBefore(dragged,over.nextSibling); });
+  }
+
+  // Add campus stage row
+  document.getElementById('addCampusStageBtn')?.addEventListener('click', () => {
+    const campusList = document.getElementById('campusStagesList');
+    const name = document.getElementById('newCampusStageName')?.value.trim();
+    const desc = document.getElementById('newCampusStageDesc')?.value.trim() || '';
+    if (!name || !campusList) return;
+    const tr = document.createElement('tr');
+    tr.draggable = true; tr.className = 'campus-stage-row';
+    tr.innerHTML = `<td class="drag-handle text-muted" style="cursor:grab;">⠿</td>
+      <td><input class="form-control form-control-sm campus-stage-name" value="${name}"></td>
+      <td><input class="form-control form-control-sm campus-stage-desc" value="${desc}" placeholder="Describe this stage"></td>
+      <td><button type="button" class="btn btn-sm btn-outline-danger remove-campus-stage">✕</button></td>`;
+    campusList.appendChild(tr);
+    tr.querySelector('.remove-campus-stage').addEventListener('click', () => tr.remove());
+    const campusStageSelect = document.getElementById('campusGrowthStage');
+    if (campusStageSelect) {
+      const existing = [...campusStageSelect.options].some(opt => opt.value === name);
+      if (!existing) {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = desc ? `${name} — ${desc}` : name;
+        campusStageSelect.appendChild(option);
+        campusStageSelect.value = name;
+      }
+    }
+    if (document.getElementById('newCampusStageName')) document.getElementById('newCampusStageName').value = '';
+    if (document.getElementById('newCampusStageDesc')) document.getElementById('newCampusStageDesc').value = '';
+  });
+
+  // Save campus stages
+  document.getElementById('saveCampusStagesBtn')?.addEventListener('click', () => {
+    const campusList = document.getElementById('campusStagesList');
+    const enabled = document.getElementById('campusStagesEnabled')?.checked;
+    if (!campusList) return;
+    const stages = [...campusList.querySelectorAll('tr.campus-stage-row')].map((r, i) => ({
+      name:        r.querySelector('.campus-stage-name')?.value.trim(),
+      description: r.querySelector('.campus-stage-desc')?.value.trim(),
+      order: i + 1,
+    })).filter(s => s.name);
+    post('/settings/campus-stages/save/', {enabled, stages: JSON.stringify(stages)})
+      .then(d => { if (d.ok) alert(`Saved ${d.count} stage(s).`); else alert(d.error); });
+  });
+})();
+
+// remove-campus-stage — delegated (also covers dynamically added rows)
+document.addEventListener('click', function _removeCampusStage(e) {
+  const btn = e.target.closest('.remove-campus-stage');
+  if (btn) btn.closest('tr')?.remove();
+});
+ 
+// ── Campus inline add ─────────────────────────────────────────────────────────
+document.getElementById('addCampusBtn')?.addEventListener('click', () => {
+  document.getElementById('addCampusForm').classList.remove('d-none');
+});
+document.getElementById('cancelCampusBtn')?.addEventListener('click', () => {
+  document.getElementById('addCampusForm').classList.add('d-none');
+});
+document.getElementById('saveCampusBtn')?.addEventListener('click', () => {
+  const name           = document.getElementById('campusName').value.trim();
+  const locationName   = document.getElementById('campusLocationName').value.trim();
+  const stage          = document.getElementById('campusGrowthStage').value;
+  const addr           = document.getElementById('campusAddress').value.trim();
+  const campusLeaderId = document.getElementById('campusLeaderSelect')?.value || '';
+  if (!name) { alert('Campus name is required'); return; }
+  if (!locationName) { alert('Location ID is required (e.g. abuja)'); return; }
+ 
+  const btn = document.getElementById('saveCampusBtn');
+  btn.disabled = true;
+  btn.textContent = 'Provisioning…';
+ 
+  post('/settings/campus/create/', {name, location_name: locationName, growth_stage: stage, address: addr, campus_leader_id: campusLeaderId})
+    .then(d => {
+      btn.disabled = false;
+      btn.textContent = 'Save Campus';
+      if (!d.ok) { alert(d.error); return; }
+      const tbody = document.getElementById('campusesTbody');
+      document.getElementById('noCampusRow')?.remove();
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="fw-semibold">
+          ${d.name}
+          ${d.campus_church_url ? `<a href="${d.campus_church_url}" target="_blank" class="badge bg-purple-lt ms-2 text-decoration-none" style="font-size:.65rem;">Open Church ↗</a>` : ''}
+        </td>
+        <td><span class="badge bg-secondary-lt small">${d.growth_stage}</span></td>
+        <td class="text-end"><button type="button" class="btn btn-sm btn-outline-secondary campus-manage-btn" data-campus-slug="${d.slug}">Manage</button></td>`;
+      tbody.appendChild(tr);
+      tr.querySelector('.campus-manage-btn')?.addEventListener('click', () => {
+        openCampusManager(d.slug || String(d.id));
+      });
+      window.__campusData[d.slug || String(d.id)] = {
+        id: String(d.id),
+        name: d.name,
+        slug: d.slug || '',
+        location_name: d.location_name || '',
+        description: d.description || '',
+        address: d.address || '',
+        latitude: d.latitude || '',
+        longitude: d.longitude || '',
+        growth_stage: d.growth_stage || '',
+        report_to_id: d.report_to_id || '',
+        campus_leader_id: d.campus_leader_id || '',
+        contributes_to_parent_metrics: d.contributes_to_parent_metrics !== false,
+        workspace_config_json: JSON.stringify(d.workspace_config || {}),
+        campus_church_slug: d.campus_church_slug || '',
+        campus_church_url: d.campus_church_url || '',
+      };
+      document.getElementById('addCampusForm').classList.add('d-none');
+      document.getElementById('campusName').value = '';
+      document.getElementById('campusLocationName').value = '';
+      document.getElementById('campusAddress').value = '';
+      document.getElementById('campusLeaderSelect').value = '';
+      document.getElementById('campusSlugPreview').textContent = '';
+      if (d.campus_church_url) {
+        const msg = document.createElement('div');
+        msg.className = 'alert alert-success mt-3';
+        msg.innerHTML = `Campus <strong>${d.name}</strong> provisioned. Access at: <a href="${d.campus_church_url}" target="_blank">${d.campus_church_url}</a>`;
+        document.getElementById('campusesTbody').parentElement.before(msg);
+        setTimeout(() => msg.remove(), 10000);
+      }
+    });
+});
+ 
+// Live slug preview
+document.getElementById('campusLocationName')?.addEventListener('input', function() {
+  const hqSlug = '{{ church.slug }}';
+  const hqSub  = '{{ church.subdomain|default:"" }}';
+  const loc    = this.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  const preview = hqSub
+    ? `${loc}.${hqSub}.workforce.church`
+    : `{{ request.get_host }}/${hqSlug}-${loc}`;
+  document.getElementById('campusSlugPreview').textContent = loc ? `URL: ${preview}` : '';
+});
+ 
+// campus-manage-btn clicks are handled by the delegated listener above.
+// openCampusManager defined below.
+ 
+function openCampusManager(campusSlug) {
+  const campus = window.__campusData?.[String(campusSlug)];
+  const campusId = campus?.id || campusSlug;
+  const modalEl = document.getElementById('campusManagerModal');
+  if (!modalEl) return;
+  const workspaceCfg = (() => {
+    try {
+      return campus?.workspace_config_json ? JSON.parse(campus.workspace_config_json) : {inherit_hq: true, modules: {}};
+    } catch (_) {
+      return {inherit_hq: true, modules: {}};
+    }
+  })();
+  document.getElementById('campusManagerId').value = campus?.slug || '';
+  document.getElementById('campusAssignCampusId').value = campus?.id || campusId || '';
+  document.getElementById('campusManagerName').value = campus?.name || '';
+  document.getElementById('campusManagerSlug').value = campus?.slug || '';
+  document.getElementById('campusManagerDescription').value = campus?.description || '';
+  document.getElementById('campusManagerAddress').value = campus?.address || '';
+  document.getElementById('campusManagerLatitude').value = campus?.latitude || '';
+  document.getElementById('campusManagerLongitude').value = campus?.longitude || '';
+  document.getElementById('campusManagerStage').value = campus?.growth_stage || '';
+  document.getElementById('campusManagerParent').value = campus?.report_to_slug || '';
+  document.getElementById('campusManagerLeader').value = campus?.campus_leader_id || '';
+  document.getElementById('campusManagerContributes').checked = campus?.contributes_to_parent_metrics !== false;
+  document.getElementById('campusManagerInheritHq').checked = workspaceCfg.inherit_hq !== false;
+  document.getElementById('campusModuleUnits').checked = workspaceCfg.modules?.units !== false;
+  document.getElementById('campusModuleWorkforce').checked = workspaceCfg.modules?.workforce !== false;
+  document.getElementById('campusModuleGuests').checked = workspaceCfg.modules?.guests !== false;
+  document.getElementById('campusModuleAttendance').checked = workspaceCfg.modules?.attendance !== false;
+  document.getElementById('campusModuleTraining').checked = workspaceCfg.modules?.training !== false;
+  document.getElementById('campusModuleLms').checked = workspaceCfg.modules?.lms !== false;
+  document.getElementById('campusModuleNotifications').checked = workspaceCfg.modules?.notifications !== false;
+  document.getElementById('campusManagerWorkspaceNotes').value = workspaceCfg.notes || '';
+  const subtitle = document.getElementById('campusManagerSubtitle');
+  if (subtitle) subtitle.textContent = campus?.name ? `(${campus.name})` : 'Create or edit a campus inline.';
+  const workspaceLink = document.getElementById('campusWorkspaceLink');
+  if (workspaceLink) workspaceLink.href = scopedPath(`/settings/campuses/${campus?.slug || campusSlug}/workspace/`);
+ 
+  // Campus-church direct link (opens in new tab)
+  const churchLink = document.getElementById('campusChurchLink');
+  if (churchLink) {
+    if (campus?.campus_church_url) {
+      churchLink.href = campus.campus_church_url;
+      churchLink.style.display = '';
+    } else {
+      churchLink.style.display = 'none';
+    }
+  }
+ 
+  // Pre-populate HQ override form
+  document.getElementById('campusOverrideCampusId').value = campus?.slug || campusSlug;
+ 
+  if (!modalEl.__modal) modalEl.__modal = new bootstrap.Modal(modalEl);
+  renderCampusRoster(String(campusSlug));
+  modalEl.__modal.show();
+}
+ 
+function renderCampusRoster(campusSlug) {
+  const campus = window.__campusData?.[String(campusSlug)];
+  const tbody = document.getElementById('campusRosterBody');
+  if (!tbody) return;
+  if (!campus?.members?.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-3">No members assigned to this campus yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = campus.members.map((item) => `
+    <tr data-membership-id="${item.campus_membership_id}" data-member-id="${item.member_id}">
+      <td class="fw-semibold">${escapeHtml(item.member_name)}</td>
+      <td>
+        ${item.is_primary ? '<span class="badge bg-green-lt">Primary</span>' : '<span class="badge bg-secondary-lt">Secondary</span>'}
+      </td>
+      <td class="text-muted small">${escapeHtml(item.notes || '—')}</td>
+      <td class="text-end">
+        <button type="button" class="btn btn-sm btn-outline-secondary campus-roster-primary-btn" data-member-id="${item.member_id}">Make Primary</button>
+        <button type="button" class="btn btn-sm btn-outline-danger campus-roster-remove-btn" data-member-id="${item.member_id}">Remove</button>
+      </td>
+    </tr>
+  `).join('');
+}
+ 
+function submitCampusMemberAction(action) {
+  const campusId = document.getElementById('campusAssignCampusId').value;
+  const memberId = document.getElementById('campusAssignMember').value;
+  const isPrimary = document.getElementById('campusAssignPrimary').checked ? 'on' : '';
+  if (!campusId || !memberId) { alert('Select a member first.'); return; }
+  const urlMap = {
+    assign: '/settings/campus/assign/',
+    transfer: '/settings/campus/transfer/',
+    remove: '/settings/campus/remove/',
+  };
+  const payload = {campus_id: campusId, member_id: memberId, is_primary: isPrimary};
+  post(urlMap[action], payload).then(d => {
+    if (!d.ok) { alert(d.error || 'Action failed.'); return; }
+    const campusKey = document.getElementById('campusManagerId').value || String(campusId);
+    const campus = window.__campusData?.[campusKey];
+    if (campus) {
+      if (action === 'transfer') {
+        Object.keys(window.__campusData || {}).forEach((key) => {
+          if (key === campusKey) return;
+          const branch = window.__campusData[key];
+          if (!branch?.members) return;
+          branch.members = branch.members.filter((item) => String(item.member_id) !== String(memberId));
+        });
+      }
+      if (Array.isArray(d.members)) {
+        campus.members = d.members;
+      }
+      window.__campusData[String(campusId)] = campus;
+      renderCampusRoster(campusKey);
+    }
+    document.getElementById('campusAssignMember').value = '';
+    document.getElementById('campusAssignPrimary').checked = false;
+  });
+}
+ 
+document.getElementById('campusManagerForm')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const campusId = document.getElementById('campusManagerId').value;
+  const payload = {
+    campus_slug: document.getElementById('campusManagerId').value,
+    name: document.getElementById('campusManagerName').value.trim(),
+    slug: document.getElementById('campusManagerSlug').value.trim(),
+    description: document.getElementById('campusManagerDescription').value.trim(),
+    address: document.getElementById('campusManagerAddress').value.trim(),
+    latitude: document.getElementById('campusManagerLatitude').value.trim(),
+    longitude: document.getElementById('campusManagerLongitude').value.trim(),
+    growth_stage: document.getElementById('campusManagerStage').value,
+    report_to_slug: document.getElementById('campusManagerParent').value,
+    campus_leader_id: document.getElementById('campusManagerLeader').value,
+    contributes_to_parent_metrics: document.getElementById('campusManagerContributes').checked ? 'on' : '',
+  };
+  post(`/settings/campus/${document.getElementById('campusManagerId').value}/update/`, payload).then(d => {
+    if (!d.ok) { alert(d.error); return; }
+    const previousKey = document.getElementById('campusManagerId').value;
+    const currentCampus = window.__campusData[String(d.id)] || window.__campusData[String(d.slug)] || {};
+    const updatedCampus = {
+      ...currentCampus,
+      id: String(d.id),
+      name: d.name,
+      slug: d.slug,
+      description: d.description,
+      address: d.address,
+      growth_stage: d.growth_stage,
+      report_to_slug: document.getElementById('campusManagerParent').value,
+      campus_leader_id: document.getElementById('campusManagerLeader').value,
+      contributes_to_parent_metrics: document.getElementById('campusManagerContributes').checked,
+      workspace_config_json: JSON.stringify(d.workspace_config || {}),
+      members: Array.isArray(d.members) ? d.members : (window.__campusData[String(d.id)]?.members || []),
+    };
+    if (previousKey && previousKey !== d.slug) {
+      delete window.__campusData[previousKey];
+    }
+    window.__campusData[d.slug || String(d.id)] = updatedCampus;
+    window.__campusData[String(d.id)] = updatedCampus;
+    const row = [...document.querySelectorAll('#campusesTbody tr')].find(tr => tr.querySelector('.campus-manage-btn')?.dataset.campusSlug === String(d.slug));
+    if (row) {
+      row.children[0].textContent = d.name;
+      row.children[1].innerHTML = `<span class="badge bg-secondary-lt small">${d.growth_stage || '—'}</span>`;
+    }
+    const modalEl = document.getElementById('campusManagerModal');
+    bootstrap.Modal.getInstance(modalEl)?.hide();
+  });
+});
+ 
+document.getElementById('campusAssignBtn')?.addEventListener('click', () => submitCampusMemberAction('assign'));
+document.getElementById('campusTransferBtn')?.addEventListener('click', () => submitCampusMemberAction('transfer'));
+document.getElementById('campusRemoveBtn')?.addEventListener('click', () => submitCampusMemberAction('remove'));
+ 
+document.getElementById('campusOverrideForm')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const campusId = document.getElementById('campusOverrideCampusId').value;
+  if (!campusId) return;
+  const disabledMods = [...document.querySelectorAll('.campus-override-module:checked')].map(el => el.value).join(',');
+  post(`/settings/campus/${document.getElementById('campusOverrideCampusId').value}/hq-override/`, {
+    campus_slug: document.getElementById('campusOverrideCampusId').value,
+    disable_modules: disabledMods,
+    read_only: document.getElementById('overrideReadOnly').checked ? 'on' : '',
+    restrict_member_create: document.getElementById('overrideRestrictCreate').checked ? 'on' : '',
+    custom_message: document.getElementById('overrideCustomMessage').value.trim(),
+  }).then(d => {
+    if (!d.ok) { alert(d.error || 'Override failed'); return; }
+    const override = d.override || {};
+    const messageBadge = document.getElementById('hqOverrideCustomMessageBadge');
+    const readOnlyBadge = document.getElementById('hqOverrideReadOnlyBadge');
+    if (messageBadge) {
+      if (override.custom_message) {
+        messageBadge.textContent = override.custom_message;
+        messageBadge.classList.remove('d-none');
+      } else {
+        messageBadge.textContent = '';
+        messageBadge.classList.add('d-none');
+      }
+    }
+    if (readOnlyBadge) {
+      if (override.read_only) {
+        readOnlyBadge.classList.remove('d-none');
+      } else {
+        readOnlyBadge.classList.add('d-none');
+      }
+    }
+    alert('HQ overrides pushed to campus-church successfully.');
+  });
+});
+ 
+document.getElementById('clearOverridesBtn')?.addEventListener('click', () => {
+  const campusId = document.getElementById('campusOverrideCampusId').value;
+  if (!campusId || !confirm('Clear all HQ overrides for this campus?')) return;
+  post(`/settings/campus/${document.getElementById('campusOverrideCampusId').value}/hq-override/`, {
+    campus_slug: document.getElementById('campusOverrideCampusId').value,
+    disable_modules: '',
+    read_only: '',
+    restrict_member_create: '',
+    custom_message: '',
+  }).then(d => {
+    if (!d.ok) { alert(d.error); return; }
+    document.querySelectorAll('.campus-override-module').forEach(el => el.checked = false);
+    document.getElementById('overrideReadOnly').checked = false;
+    document.getElementById('overrideRestrictCreate').checked = false;
+    document.getElementById('overrideCustomMessage').value = '';
+    const messageBadge = document.getElementById('hqOverrideCustomMessageBadge');
+    const readOnlyBadge = document.getElementById('hqOverrideReadOnlyBadge');
+    if (messageBadge) {
+      messageBadge.textContent = '';
+      messageBadge.classList.add('d-none');
+    }
+    if (readOnlyBadge) {
+      readOnlyBadge.classList.add('d-none');
+    }
+    alert('HQ overrides cleared.');
+  });
+});
+ 
+document.getElementById('campusManagerDeleteBtn')?.addEventListener('click', () => {
+  const campusId = document.getElementById('campusManagerId').value;
+  if (!campusId) return;
+  if (!confirm('Delete this campus? This will deactivate it and its campus-church.')) return;
+  post(`/settings/campus/${document.getElementById('campusManagerId').value}/delete/`, {campus_slug: document.getElementById('campusManagerId').value}).then(d => {
+    if (!d.ok) { alert(d.error); return; }
+    const row = [...document.querySelectorAll('#campusesTbody tr')].find(tr => tr.querySelector('.campus-manage-btn')?.dataset.campusSlug === String(document.getElementById('campusManagerId').value));
+    row?.remove();
+    bootstrap.Modal.getInstance(document.getElementById('campusManagerModal'))?.hide();
+  });
+});
+ 
+document.addEventListener('click', (e) => {
+  const primaryBtn = e.target.closest('.campus-roster-primary-btn');
+  const removeBtn = e.target.closest('.campus-roster-remove-btn');
+  if (primaryBtn) {
+    const campusId = document.getElementById('campusAssignCampusId').value;
+    const memberId = primaryBtn.dataset.memberId;
+    document.getElementById('campusAssignMember').value = memberId;
+    document.getElementById('campusAssignPrimary').checked = true;
+    submitCampusMemberAction('assign');
+  }
+  if (removeBtn) {
+    const campusId = document.getElementById('campusAssignCampusId').value;
+    const memberId = removeBtn.dataset.memberId;
+    document.getElementById('campusAssignMember').value = memberId;
+    submitCampusMemberAction('remove');
+  }
+});
+ 
+// ── Lookup: add ───────────────────────────────────────────────────────────────
+function postLookup(type, subpath, data) {
+  return post(`/settings/lookup/${type}/${subpath}`, data);
+}
+// Lookup add — delegated
+document.addEventListener('click', function _lookupAddDelegate(e) {
+  const btn = e.target.closest('.lookup-add-btn');
+  if (!btn) return;
+  const type  = btn.dataset.type;
+  const input = document.querySelector(`.lookup-new-input[data-type="${type}"]`);
+  const name  = input?.value.trim();
+  if (!name) return;
+  postLookup(type, 'add/', {name}).then(d => {
+    if (!d.ok) { alert(d.error); return; }
+    const tbody = document.getElementById(`lookup-${type}`);
+    const tr = document.createElement('tr');
+    tr.draggable = true; tr.className = 'lookup-row'; tr.dataset.id = d.id;
+    tr.innerHTML = `<td class="drag-handle text-muted" style="cursor:grab;">
+                      <span style="box-shadow:0 4px 8px #000000d2;border-radius:24px;width:24px;height:24px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-drag-drop">
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M19 11v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2" />
+                          <path d="M13 13l9 3l-4 2l-2 4l-3 -9" /><path d="M3 3l0 .01" /><path d="M7 3l0 .01" /><path d="M11 3l0 .01" />
+                          <path d="M15 3l0 .01" /><path d="M3 7l0 .01" /><path d="M3 11l0 .01" /><path d="M3 15l0 .01" />
+                        </svg>
+                      </span>
+                    </td>
+      <td><span class="lookup-name">${d.name}</span>
+          <input class="form-control form-control-sm lookup-edit d-none" value="${d.name}" 
+                  style="max-width:200px;box-shadow:0 4px 8px #000000d2;border-radius:24px;>
+      </td>
+      <td><span class="badge bg-green-lt">Active</span></td>
+      <td class="text-end">
+        <button class="btn btn-sm lookup-rename-btn" data-id="${d.id}" data-type="${type}"
+                style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4l-10.5 10.5v4"/>
+            <path d="M13.5 6.5l4 4"/>
+          </svg>
+        </button>
+        <button class="btn btn-sm text-danger lookup-toggle-btn" data-id="${d.id}" data-type="${type}"
+                style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                viewBox="0 0 24 24" fill="currentColor">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M20 6a1 1 0 0 1 .117 1.993l-.117.007h-.081l-.919 11a3 3 0 0 1-2.824 2.995l-.176.005h-8c-1.598 0-2.904-1.249-2.992-2.75l-.005-.167-.923-11.083h-.08a1 1 0 0 1-.117-1.993l.117-.007zm-10 4a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1m4 0a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1"/>
+            <path d="M14 2a2 2 0 0 1 2 2a1 1 0 0 1-1.993.117l-.007-.117h-4l-.007.117a1 1 0 0 1-1.993-.117a2 2 0 0 1 1.85-1.995l.15-.005z"/>
+          </svg>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+    if (input) input.value = '';
+    bindLookupRow(tr);
+    setupLookupDrag(tbody);
+  });
+});
+ 
+function bindLookupRow(tr) {
+  tr.querySelector('.lookup-rename-btn')?.addEventListener('click', function() {
+    const nameSpan = tr.querySelector('.lookup-name');
+    const input    = tr.querySelector('.lookup-edit');
+    const _renameBtn = this;
+    nameSpan.classList.add('d-none'); input.classList.remove('d-none'); input.focus();
+    function _onLookupBlur() {
+      input.removeEventListener('blur', _onLookupBlur);
+      const newName = input.value.trim();
+      const id = _renameBtn.dataset.id, type = _renameBtn.dataset.type;
+      nameSpan.classList.remove('d-none'); input.classList.add('d-none');
+      if (!newName || newName === nameSpan.textContent.trim()) return;
+      postLookup(type, `${id}/rename/`, {name: newName}).then(d => {
+        if (!d.ok) { alert(d.error); return; }
+        nameSpan.textContent = d.name;
+      });
+    }
+    input.addEventListener('blur', _onLookupBlur);
+  });
+  tr.querySelector('.lookup-toggle-btn')?.addEventListener('click', function() {
+    const id = this.dataset.id, type = this.dataset.type;
+    postLookup(type, `${id}/toggle/`, {}).then(d => {
+      if (!d.ok) { alert(d.error); return; }
+      const badge = tr.querySelector('.badge');
+      badge.textContent = d.is_active ? 'Active' : 'Inactive';
+      badge.className   = `badge ${d.is_active ? 'bg-green' : 'bg-secondary'}`;
+      this.textContent  = d.is_active ? 'Deactivate' : 'Activate';
+    });
+  });
+}
+ 
+function setupLookupDrag(tbody) {
+  if (!tbody || tbody._dragBound) return;
+  tbody._dragBound = true;
+  let dragged = null;
+  tbody.addEventListener('dragstart', e => { dragged = e.target.closest('tr'); if(dragged) dragged.style.opacity='0.4'; });
+  tbody.addEventListener('dragend',   e => { if(dragged) dragged.style.opacity=''; dragged=null; });
+  tbody.addEventListener('dragover',  e => { e.preventDefault(); const over=e.target.closest('tr'); if(over&&over!==dragged) tbody.insertBefore(dragged,over.nextSibling); });
+  tbody.addEventListener('drop', e => {
+    e.preventDefault();
+    const type = tbody.dataset.type;
+    const ids  = [...tbody.querySelectorAll('.lookup-row')].map(r => r.dataset.id);
+    postLookup(type, 'reorder/', {'ids[]': ids});
+  });
+}
+document.querySelectorAll('.lookup-row').forEach(bindLookupRow);
+document.querySelectorAll('.lookup-sortable').forEach(setupLookupDrag);
+ 
+})(); // end IIFE — prevents const/let redeclaration errors on soft-nav re-runs
+</script>
+ 
+<script>
+// ── Training tab: form toggles + step reorder ─────────────────────────────
+ 
+// Course create form toggle
+document.getElementById('addCourseBtn')?.addEventListener('click', function() {
+  const f = document.getElementById('addCourseForm');
+  if (f) f.classList.toggle('d-none');
+});
+document.getElementById('cancelCourseBtn')?.addEventListener('click', function() {
+  document.getElementById('addCourseForm')?.classList.add('d-none');
+});
+ 
+// Track create form toggle (Training tab)
+document.getElementById('addTrackBtn')?.addEventListener('click', function() {
+  const f = document.getElementById('addTrackForm');
+  if (f) f.classList.toggle('d-none');
+});
+document.getElementById('cancelTrackBtn')?.addEventListener('click', function() {
+  document.getElementById('addTrackForm')?.classList.add('d-none');
+});
+ 
+// Promotion mode: hide/show approval role field
+(function() {
+  const sel  = document.querySelector('#id_promotion_mode, [name="promotion_mode"]');
+  const wrap = document.getElementById('approval-role-wrap');
+  function sync() { if (wrap && sel) wrap.style.display = sel.value === 'manual' ? '' : 'none'; }
+  if (sel) { sel.addEventListener('change', sync); sync(); }
+})();
+ 
+// Step reorder via HTML5 drag — no SortableJS dependency
+document.querySelectorAll('.sortable-steps').forEach(function(ul) {
+  let draggedLi = null;
+  ul.addEventListener('dragstart', function(e) {
+    draggedLi = e.target.closest('li[data-step-id]');
+    if (draggedLi) draggedLi.style.opacity = '0.4';
+  });
+  ul.addEventListener('dragend', function() {
+    if (draggedLi) { draggedLi.style.opacity = ''; draggedLi = null; }
+  });
+  ul.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    const over = e.target.closest('li[data-step-id]');
+    if (over && over !== draggedLi) ul.insertBefore(draggedLi, over.nextSibling);
+  });
+  ul.addEventListener('drop', function(e) {
+    e.preventDefault();
+    const trackId = ul.dataset.track;
+    const stepIds = [...ul.querySelectorAll('[data-step-id]')].map(li => li.dataset.stepId);
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    fetch('{% url "guests:reorder_track_steps" %}', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+      body: JSON.stringify({track_id: trackId, step_ids: stepIds}),
+    }).catch(function() {});
+  });
+  // Make list items draggable
+  ul.querySelectorAll('li[data-step-id]').forEach(function(li) { li.draggable = true; });
+});
+ 
+</script>
+{# ════════════════════════════════════════════════════════════════════════ #}
+{# TAB: Chat Settings                                                       #}
+{# ════════════════════════════════════════════════════════════════════════ #}
+{% if active_tab == 'chat' %}
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}<input type="hidden" name="tab" value="chat">
+
+  {# ── Default Tier Visibility ─────────────────────────────────────── #}
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold">Default Chat Member Visibility</h5>
+    </div>
+    <div class="card-body p-4">
+      <p class="text-muted small mb-3">
+        When a chat room has no members assigned, the active-user list falls back to members
+        in the tiers selected below. Superusers are always excluded.
+        Select the global tiers that should always be visible in such rooms.
+      </p>
+      <div class="row g-3">
+        {% for tier_val, tier_name in tier_choices %}
+          {% if tier_val != 0 and tier_val != 7 %}{# exclude superuser (0) and Custom Role (7) #}
+          <div class="col-6 col-md-4 col-lg-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="chat_default_tiers"
+                     value="{{ tier_val }}" id="chatTier{{ tier_val }}"
+                     {% if tier_val in chat_settings.default_tier_list %}checked{% endif %}>
+              <label class="form-check-label" for="chatTier{{ tier_val }}">
+                {{ tier_name }}
+              </label>
+            </div>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <hr class="border-secondary my-4">
+
+      <h6 class="fw-semibold mb-3">Per-Room Tier Overrides</h6>
+      <p class="text-muted small mb-3">
+        Optionally override which tiers are always visible in specific rooms,
+        regardless of whether they have assigned members.
+      </p>
+      <div class="table-responsive">
+        <table class="table table-sm table-dark table-hover mb-0" id="roomTierTable">
+          <thead>
+            <tr class="text-muted small">
+              <th>Room</th>
+              <th>Override Tiers (leave blank to use global default)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for room in all_chat_rooms %}
+            <tr>
+              <td class="text-white small align-middle">{{ room.name }}</td>
+              <td>
+                <div class="d-flex flex-wrap gap-2">
+                  {% for tier_val, tier_name in tier_choices %}
+                    {% if tier_val != 0 and tier_val != 7 %}
+                    <div class="form-check form-switch mb-0">
+                      <input class="form-check-input" type="checkbox"
+                             name="chat_room_tier_{{ room.id }}"
+                             value="{{ tier_val }}"
+                             id="chatRoomTier{{ room.id }}_{{ tier_val }}"
+                             {% if tier_val in room.chat_tier_overrides %}checked{% endif %}>
+                      <label class="form-check-label small" for="chatRoomTier{{ room.id }}_{{ tier_val }}">
+                        {{ tier_name }}
+                      </label>
+                    </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="2" class="text-muted small fst-italic">No chat rooms found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer text-end">
+      <button type="submit" name="chat_action" value="tiers" class="btn btn-primary">Save Tier Settings</button>
+    </div>
+  </div>
+</form>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}<input type="hidden" name="tab" value="chat">
+
+  {# ── Chat Background ─────────────────────────────────────────────── #}
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header">
+      <h5 class="mb-0 fw-bold">Chat Background</h5>
+    </div>
+    <div class="card-body p-4">
+      <p class="text-muted small mb-3">
+        Set a background for the chat message area. Choose between your church logo
+        (shown as a watermark), a custom uploaded image, or no background.
+      </p>
+
+      <div class="mb-3">
+        <label class="form-label">Background Type</label>
+        <div class="d-flex gap-4 flex-wrap" id="bgTypeRadios">
+          {% for val, label in chat_bg_type_choices %}
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="chat_bg_type"
+                   value="{{ val }}" id="bgType{{ val }}"
+                   {% if chat_settings.bg_type == val %}checked{% endif %}
+                   onchange="toggleBgUpload()">
+            <label class="form-check-label" for="bgType{{ val }}">{{ label }}</label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div id="bgUploadWrap" style="{% if chat_settings.bg_type != 'upload' %}display:none;{% endif %}">
+        <label class="form-label">Upload Background Image</label>
+        <input type="file" name="chat_bg_image" class="form-control bg-dark text-white border-secondary"
+               accept="image/*" id="chatBgImageInput">
+        {% if chat_settings.bg_image %}
+        <div class="mt-2 d-flex align-items-center gap-3">
+          <img src="{{ chat_settings.bg_image.url }}" alt="Current background"
+               style="max-height:80px;border-radius:8px;opacity:.7;">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="chat_bg_clear" value="1" id="chatBgClear">
+            <label class="form-check-label text-danger small" for="chatBgClear">Remove current image</label>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      {# Logo preview #}
+      <div id="bgLogoPreview" style="{% if chat_settings.bg_type != 'logo' %}display:none;{% endif %}margin-top:12px;">
+        <div class="text-muted small mb-1">The church logo will appear as a centred watermark.</div>
+        {% if church.logo %}
+        <img src="{{ church.logo.url }}" alt="{{ church.name }} logo"
+             style="max-height:60px;opacity:.3;border-radius:4px;">
+        {% else %}
+        <span class="text-muted small fst-italic">No logo uploaded yet (set in General settings).</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card-footer text-end">
+      <button type="submit" name="chat_action" value="background" class="btn btn-primary">Save Background</button>
+    </div>
+  </div>
+</form>
+
+<script>
+function toggleBgUpload() {
+  const val = document.querySelector('input[name="chat_bg_type"]:checked')?.value;
+  document.getElementById("bgUploadWrap").style.display  = val === "upload" ? "" : "none";
+  document.getElementById("bgLogoPreview").style.display = val === "logo"   ? "" : "none";
+}
+</script>
+{% endif %}{# /chat tab #}

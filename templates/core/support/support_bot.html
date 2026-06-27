@@ -1,0 +1,110 @@
+{% extends base_template %}
+{% load static %}
+{% block title %}ChurchForce Support{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:700px;">
+  <div class="d-flex align-items-center gap-3 mb-3">
+    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+         style="width:42px;height:42px;background:linear-gradient(135deg,#6366f1,#ff5e01);">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+           fill="none" stroke="#fff" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+    </div>
+    <div>
+      <h4 class="fw-bold mb-0">ChurchForce Support</h4>
+      <p class="text-muted small mb-0">AI-powered · Available 24/7 · Tenant-aware</p>
+    </div>
+    <button class="ms-auto btn btn-sm btn-ghost text-muted" id="clearBtn">Clear chat</button>
+  </div>
+
+  <div class="alert alert-info py-2 small mb-3" style="border-radius:10px;font-size:.78rem;">
+    <strong>Privacy:</strong> This assistant uses non-sensitive operational data (member counts,
+    active modules, plan tier) to give relevant answers. No personal names, guest records, or
+    financial details are shared with the AI.
+  </div>
+
+  <div id="chatWindow" class="card bg-dark border-secondary mb-3"
+       style="height:420px;overflow-y:auto;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+    <div style="align-self:flex-start;max-width:85%;">
+      <div style="background:#1e293b;border-radius:0 12px 12px 12px;padding:10px 14px;color:#e2e8f0;font-size:.875rem;">
+        👋 Hi! I'm your ChurchForce Support assistant. I can help you with any feature or question about the platform. What do you need help with today?
+      </div>
+    </div>
+  </div>
+
+  <div id="thinkingIndicator" class="text-muted small mb-2 d-none" style="padding-left:4px;">
+    <span class="spinner-border spinner-border-sm me-1" style="width:.7rem;height:.7rem;"></span>
+    Thinking…
+  </div>
+
+  <div class="d-flex gap-2">
+    <textarea id="msgInput" class="form-control bg-dark border-secondary text-white"
+              rows="2" placeholder="Ask me anything about ChurchForce…"
+              style="border-radius:10px;resize:none;font-size:.875rem;"></textarea>
+    <button id="sendBtn" class="btn btn-primary flex-shrink-0" style="border-radius:10px;padding:0 20px;">Send</button>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mt-2">
+    {% for prompt in quick_prompts %}
+    <button class="btn btn-sm btn-outline-secondary quick-prompt" style="font-size:.75rem;border-radius:99px;"
+            data-text="{{ prompt }}">{{ prompt }}</button>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/support/`;
+let socket = null;
+const chatWindow = document.getElementById('chatWindow');
+const msgInput   = document.getElementById('msgInput');
+const sendBtn    = document.getElementById('sendBtn');
+const thinking   = document.getElementById('thinkingIndicator');
+
+function connect() {
+  socket = new WebSocket(WS_URL);
+  socket.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    thinking.classList.add('d-none');
+    if (data.type === 'reply') appendMsg(data.text, 'assistant');
+    else if (data.type === 'cleared') chatWindow.innerHTML = '';
+    sendBtn.disabled = false;
+  };
+  socket.onclose = () => setTimeout(connect, 2000);
+}
+connect();
+
+function appendMsg(text, role) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = `align-self:${role === 'user' ? 'flex-end' : 'flex-start'};max-width:85%;`;
+  const bubble = document.createElement('div');
+  bubble.style.cssText = role === 'user'
+    ? 'background:#3b4fd8;border-radius:12px 0 12px 12px;padding:10px 14px;color:#fff;font-size:.875rem;white-space:pre-wrap;'
+    : 'background:#1e293b;border-radius:0 12px 12px 12px;padding:10px 14px;color:#e2e8f0;font-size:.875rem;white-space:pre-wrap;';
+  bubble.textContent = text;
+  wrap.appendChild(bubble);
+  chatWindow.appendChild(wrap);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function send() {
+  const text = msgInput.value.trim();
+  if (!text || !socket || socket.readyState !== WebSocket.OPEN) return;
+  appendMsg(text, 'user');
+  msgInput.value = '';
+  thinking.classList.remove('d-none');
+  sendBtn.disabled = true;
+  socket.send(JSON.stringify({ type: 'message', text }));
+}
+
+sendBtn.addEventListener('click', send);
+msgInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+document.getElementById('clearBtn').addEventListener('click', () => {
+  chatWindow.innerHTML = '';
+  if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'clear' }));
+});
+document.querySelectorAll('.quick-prompt').forEach(btn => {
+  btn.addEventListener('click', () => { msgInput.value = btn.dataset.text; send(); });
+});
+</script>
+{% endblock %}

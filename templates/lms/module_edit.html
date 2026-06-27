@@ -1,0 +1,462 @@
+{% extends base_template %}
+{% load static access_tags %}
+{% block title %}Edit Module — {{ module.title }}{% endblock %}
+{% block content %}
+<div class="container-xl py-4" style="max-width:860px;">
+  <div class="mb-4"><a href="{% url 'lms:course_detail' course.slug %}" class="text-muted small">← Back to {{ course.title }}</a></div>
+  <h2 class="fw-bold mb-4">Edit Module</h2>
+
+  <div class="d-flex gap-1 mb-4 p-1 rounded" style="background:#0f172a;">
+    <button type="button" id="tabContent" class="btn btn-sm flex-fill active" style="border-radius:8px;" onclick="switchTab('content')">📄 Content</button>
+    <button type="button" id="tabTemplate" class="btn btn-sm flex-fill" style="border-radius:8px;" onclick="switchTab('template')">🧩 Template</button>
+    <button type="button" id="tabSettings" class="btn btn-sm flex-fill" style="border-radius:8px;" onclick="switchTab('settings')">⚙️ Settings</button>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" id="editModForm">
+    {% csrf_token %}
+
+    {# ════════════════════════ CONTENT TAB ════════════════════════ #}
+    <div id="tabPaneContent">
+      <div class="card bg-dark border-secondary mb-3" style="border-radius:18px;">
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-md-7">
+              <label class="form-label">Title</label>
+              <input name="title" class="form-control bg-dark text-white border-secondary"
+                     value="{{ module.title }}" required>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Order</label>
+              <input name="order" type="number" min="1" class="form-control bg-dark text-white border-secondary"
+                     value="{{ module.order }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Est. minutes</label>
+              <input name="estimated_minutes" type="number" min="1" class="form-control bg-dark text-white border-secondary"
+                     value="{{ module.estimated_minutes|default_if_none:'' }}">
+            </div>
+            <div class="col-md-5">
+              <label class="form-label">Content type</label>
+              <select name="content_type" id="editContentType"
+                      class="form-select bg-dark text-white border-secondary">
+                {% for val, lbl in content_type_choices %}
+                <option value="{{ val }}" {% if module.content_type == val %}selected{% endif %}>{{ lbl }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-7">
+              <label class="form-label">Description</label>
+              <textarea name="description" class="form-control bg-dark text-white border-secondary"
+                        rows="2">{{ module.description }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# ── Text / Reading ── #}
+      <div class="card bg-dark border-secondary mb-3" id="editTextArea" style="border-radius:18px;">
+        <div class="card-header border-secondary"><h6 class="mb-0">Content / Instructions</h6></div>
+        <div class="card-body p-3">
+          <textarea name="content" class="form-control bg-dark text-white border-secondary font-monospace"
+                    rows="10" placeholder="Write module content, instructions, or devotional text here…">{{ module.content }}</textarea>
+          <div class="form-text text-muted small mt-1">Supports basic Markdown: **bold**, *italic*, # headings, - lists.</div>
+        </div>
+      </div>
+
+      {# ── Quiz ── #}
+      <div class="card bg-dark border-secondary mb-3" id="editQuizArea" style="display:none;border-radius:18px;">
+        <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">Quiz Questions</h6>
+          <button type="button" class="btn btn-xs btn-outline-secondary" id="editQuizQuestion" style="border-radius:8px;">+ Add Question</button>
+        </div>
+        <div class="card-body p-3">
+          <div id="editQuizRows">
+            {% for question in module.template_data.questions %}
+            <div class="quiz-row card bg-dark border-secondary mb-3 p-3" style="border-radius:12px;">
+              <div class="row g-2">
+                <div class="col-12"><input name="quiz_question" class="form-control bg-dark text-white border-secondary" placeholder="Question *" value="{{ question.question }}"></div>
+                <div class="col-md-6"><input name="quiz_option_a" class="form-control bg-dark text-white border-secondary" placeholder="Option A" value="{{ question.options.0 }}"></div>
+                <div class="col-md-6"><input name="quiz_option_b" class="form-control bg-dark text-white border-secondary" placeholder="Option B" value="{{ question.options.1 }}"></div>
+                <div class="col-md-6"><input name="quiz_option_c" class="form-control bg-dark text-white border-secondary" placeholder="Option C (optional)" value="{{ question.options.2 }}"></div>
+                <div class="col-md-6"><input name="quiz_option_d" class="form-control bg-dark text-white border-secondary" placeholder="Option D (optional)" value="{{ question.options.3 }}"></div>
+                <div class="col-md-6"><input name="quiz_answer" class="form-control bg-dark text-white border-secondary" placeholder="Correct answer (e.g. A)" value="{{ question.answer }}"></div>
+                <div class="col-md-6"><input name="quiz_explanation" class="form-control bg-dark text-white border-secondary" placeholder="Explanation / feedback" value="{{ question.explanation }}"></div>
+              </div>
+            </div>
+            {% empty %}
+            <div class="quiz-row card bg-dark border-secondary mb-3 p-3" style="border-radius:12px;">
+              <div class="row g-2">
+                <div class="col-12"><input name="quiz_question" class="form-control bg-dark text-white border-secondary" placeholder="Question *"></div>
+                <div class="col-md-6"><input name="quiz_option_a" class="form-control bg-dark text-white border-secondary" placeholder="Option A"></div>
+                <div class="col-md-6"><input name="quiz_option_b" class="form-control bg-dark text-white border-secondary" placeholder="Option B"></div>
+                <div class="col-md-6"><input name="quiz_option_c" class="form-control bg-dark text-white border-secondary" placeholder="Option C (optional)"></div>
+                <div class="col-md-6"><input name="quiz_option_d" class="form-control bg-dark text-white border-secondary" placeholder="Option D (optional)"></div>
+                <div class="col-md-6"><input name="quiz_answer" class="form-control bg-dark text-white border-secondary" placeholder="Correct answer (e.g. A)"></div>
+                <div class="col-md-6"><input name="quiz_explanation" class="form-control bg-dark text-white border-secondary" placeholder="Explanation / feedback"></div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      {# ── Reading Plan embed ── #}
+      <div class="card bg-dark border-secondary mb-3" id="editReadingPlanArea" style="display:none;border-radius:18px;">
+        <div class="card-header border-secondary"><h6 class="mb-0">Linked Bible Reading Plan</h6></div>
+        <div class="card-body p-3">
+          <label class="form-label">Reading Plan</label>
+          <select name="reading_plan_id" class="form-select bg-dark text-white border-secondary mb-2">
+            <option value="">— None —</option>
+            {% for rp in reading_plans %}
+            <option value="{{ rp.id }}" {% if module.reading_plan_id == rp.id %}selected{% endif %}>{{ rp.title }} ({{ rp.translation }})</option>
+            {% endfor %}
+          </select>
+          <div class="form-text text-muted small">Members will complete reading plan entries as part of this module. Their progress is tracked in the Bible dashboard.</div>
+        </div>
+      </div>
+
+      {# ── File upload ── #}
+      <div class="card bg-dark border-secondary mb-3" id="editFileArea" style="display:none;border-radius:18px;">
+        <div class="card-header border-secondary"><h6 class="mb-0">Resource File</h6></div>
+        <div class="card-body p-3">
+          {% if module.resource %}
+          <div class="mb-2">
+            <span class="badge bg-success-lt me-2">File uploaded</span>
+            <a href="{{ module.resource.url }}" target="_blank" class="small text-info">View current file</a>
+          </div>
+          {% endif %}
+          <input type="file" name="resource" class="form-control bg-dark text-white border-secondary"
+                 accept=".pdf,.mp4,.mov,.avi,.mp3,.wav,.jpg,.jpeg,.png,.gif,.pptx,.docx,.xlsx,.zip">
+          <div class="form-text text-muted small">PDF, video, audio, images, Office docs, ZIP.</div>
+        </div>
+      </div>
+
+      {# ── External link ── #}
+      <div class="card bg-dark border-secondary mb-3" id="editLinkArea" style="display:none;border-radius:18px;">
+        <div class="card-header border-secondary"><h6 class="mb-0">External URL</h6></div>
+        <div class="card-body p-3">
+          <input type="url" name="external_url" class="form-control bg-dark text-white border-secondary"
+                 value="{{ module.external_url }}" placeholder="https://…">
+          <div class="form-text text-muted small">YouTube, Google Drive, website, etc.</div>
+        </div>
+      </div>
+
+      {# ── Embed code ── #}
+      <div class="card bg-dark border-secondary mb-3" id="editEmbedArea" style="display:none;border-radius:18px;">
+        <div class="card-header border-secondary"><h6 class="mb-0">Embed Code</h6></div>
+        <div class="card-body p-3">
+          <textarea name="embed_code" class="form-control bg-dark text-white border-secondary font-monospace"
+                    rows="4" placeholder="<iframe …></iframe>">{{ module.embed_code }}</textarea>
+          <div class="form-text text-muted small">Google Slides, H5P, Canva, Typeform, or any iframe.</div>
+        </div>
+      </div>
+    </div>
+
+    {# ════════════════════════ TEMPLATE TAB ════════════════════════ #}
+    <div id="tabPaneTemplate" class="d-none">
+      <div class="card bg-dark border-secondary mb-3" style="border-radius:18px;">
+        <div class="card-header border-secondary">
+          <h6 class="mb-0">🧩 Module Template</h6>
+          <div class="card-subtitle text-muted small mt-1">Templates provide structured content areas — like Notion page templates or Canvas module layouts. Select one to populate the module with a pre-defined structure.</div>
+        </div>
+        <div class="card-body p-4">
+          <div class="mb-3">
+            <label class="form-label">Template Type</label>
+            <select name="template_type" id="templateTypeSelect" class="form-select bg-dark text-white border-secondary">
+              {% for val, lbl in template_type_choices %}
+              <option value="{{ val }}" {% if module.template_type == val %}selected{% endif %}>{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          {# Template previews — hidden until relevant type selected #}
+          <div id="tplPreviewNone" class="tpl-preview p-3 rounded text-muted small" style="background:#0f172a;border:1px dashed #334155;">
+            No template selected — use free-form content in the Content tab.
+          </div>
+
+          <div id="tplPreviewLesson" class="tpl-preview d-none">
+            <div class="fw-semibold text-white mb-2">Lesson Page structure</div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #3b82f6;">
+              <label class="form-label text-muted small mb-1">Learning Objective</label>
+              <input name="tpl_objective" class="form-control bg-dark text-white border-secondary form-control-sm" placeholder="By the end of this lesson, members will be able to…" value="{{ module.template_data.objective|default:'' }}">
+            </div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #a855f7;">
+              <label class="form-label text-muted small mb-1">Key Scripture</label>
+              <input name="tpl_scripture" class="form-control bg-dark text-white border-secondary form-control-sm" placeholder="e.g. Romans 12:1-2" value="{{ module.template_data.scripture|default:'' }}">
+            </div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #10b981;">
+              <label class="form-label text-muted small mb-1">Main Content / Teaching</label>
+              <textarea name="tpl_teaching" class="form-control bg-dark text-white border-secondary form-control-sm" rows="5" placeholder="Lesson content, teaching points, illustrations…">{{ module.template_data.teaching|default:'' }}</textarea>
+            </div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #f59e0b;">
+              <label class="form-label text-muted small mb-1">Reflection Questions</label>
+              <textarea name="tpl_reflection" class="form-control bg-dark text-white border-secondary form-control-sm" rows="3" placeholder="1. Question one&#10;2. Question two">{{ module.template_data.reflection|default:'' }}</textarea>
+            </div>
+            <div class="p-3 rounded" style="background:#0f172a;border-left:3px solid #ef4444;">
+              <label class="form-label text-muted small mb-1">Action Step / Application</label>
+              <input name="tpl_action" class="form-control bg-dark text-white border-secondary form-control-sm" placeholder="One concrete thing to do this week…" value="{{ module.template_data.action|default:'' }}">
+            </div>
+          </div>
+
+          <div id="tplPreviewCaseStudy" class="tpl-preview d-none">
+            <div class="fw-semibold text-white mb-2">Case Study structure</div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #3b82f6;">
+              <label class="form-label text-muted small mb-1">Background / Context</label>
+              <textarea name="tpl_context" class="form-control bg-dark text-white border-secondary form-control-sm" rows="3" placeholder="Describe the situation or scenario…">{{ module.template_data.context|default:'' }}</textarea>
+            </div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #f59e0b;">
+              <label class="form-label text-muted small mb-1">The Challenge</label>
+              <textarea name="tpl_challenge" class="form-control bg-dark text-white border-secondary form-control-sm" rows="3" placeholder="What was the problem or challenge?">{{ module.template_data.challenge|default:'' }}</textarea>
+            </div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #10b981;">
+              <label class="form-label text-muted small mb-1">Biblical Principle Applied</label>
+              <textarea name="tpl_principle" class="form-control bg-dark text-white border-secondary form-control-sm" rows="3" placeholder="Which principle or scripture guided the resolution?">{{ module.template_data.principle|default:'' }}</textarea>
+            </div>
+            <div class="p-3 rounded" style="background:#0f172a;border-left:3px solid #a855f7;">
+              <label class="form-label text-muted small mb-1">Discussion Questions</label>
+              <textarea name="tpl_discussion" class="form-control bg-dark text-white border-secondary form-control-sm" rows="3" placeholder="1.&#10;2.&#10;3.">{{ module.template_data.discussion|default:'' }}</textarea>
+            </div>
+          </div>
+
+          <div id="tplPreviewReflection" class="tpl-preview d-none">
+            <div class="fw-semibold text-white mb-2">Guided Reflection structure</div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #3b82f6;">
+              <label class="form-label text-muted small mb-1">Opening Prompt</label>
+              <textarea name="tpl_opening" class="form-control bg-dark text-white border-secondary form-control-sm" rows="2" placeholder="e.g. Take a moment to quiet yourself before God…">{{ module.template_data.opening|default:'' }}</textarea>
+            </div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #a855f7;">
+              <label class="form-label text-muted small mb-1">Scripture for Meditation</label>
+              <input name="tpl_med_scripture" class="form-control bg-dark text-white border-secondary form-control-sm" placeholder="e.g. Psalm 46:10" value="{{ module.template_data.med_scripture|default:'' }}">
+            </div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #10b981;">
+              <label class="form-label text-muted small mb-1">Reflection Prompts</label>
+              <textarea name="tpl_prompts" class="form-control bg-dark text-white border-secondary form-control-sm" rows="4" placeholder="What is God saying to you through this passage?&#10;&#10;How does this apply to your current season?&#10;&#10;What do you need to surrender?">{{ module.template_data.prompts|default:'' }}</textarea>
+            </div>
+            <div class="p-3 rounded" style="background:#0f172a;border-left:3px solid #f59e0b;">
+              <label class="form-label text-muted small mb-1">Prayer / Response</label>
+              <textarea name="tpl_prayer" class="form-control bg-dark text-white border-secondary form-control-sm" rows="2" placeholder="Closing prayer focus or journaling prompt…">{{ module.template_data.prayer|default:'' }}</textarea>
+            </div>
+          </div>
+
+          <div id="tplPreviewBibleDevotional" class="tpl-preview d-none">
+            <div class="fw-semibold text-white mb-2">Bible Devotional structure</div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #f59e0b;">
+              <label class="form-label text-muted small mb-1">Devotional Title</label>
+              <input name="tpl_dev_title" class="form-control bg-dark text-white border-secondary form-control-sm" placeholder="e.g. Living Water" value="{{ module.template_data.dev_title|default:'' }}">
+            </div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #3b82f6;">
+              <label class="form-label text-muted small mb-1">Key Passage</label>
+              <input name="tpl_dev_passage" class="form-control bg-dark text-white border-secondary form-control-sm" placeholder="e.g. John 4:13-14" value="{{ module.template_data.dev_passage|default:'' }}">
+            </div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #10b981;">
+              <label class="form-label text-muted small mb-1">Devotional Body</label>
+              <textarea name="tpl_dev_body" class="form-control bg-dark text-white border-secondary form-control-sm" rows="6" placeholder="Inspirational content…&#10;&#10;Use [REF:John 3:16] to inline Bible references.">{{ module.template_data.dev_body|default:'' }}</textarea>
+            </div>
+            <div class="p-3 rounded" style="background:#0f172a;border-left:3px solid #a855f7;">
+              <label class="form-label text-muted small mb-1">Application &amp; Prayer</label>
+              <textarea name="tpl_dev_application" class="form-control bg-dark text-white border-secondary form-control-sm" rows="3" placeholder="How to apply this. Close with a prayer prompt.">{{ module.template_data.dev_application|default:'' }}</textarea>
+            </div>
+          </div>
+
+          <div id="tplPreviewChecklist" class="tpl-preview d-none">
+            <div class="fw-semibold text-white mb-2">Action Checklist structure</div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #3b82f6;">
+              <label class="form-label text-muted small mb-1">Context / Why</label>
+              <textarea name="tpl_check_context" class="form-control bg-dark text-white border-secondary form-control-sm" rows="2" placeholder="Why these actions matter…">{{ module.template_data.check_context|default:'' }}</textarea>
+            </div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #10b981;">
+              <label class="form-label text-muted small mb-1">Checklist Items (one per line)</label>
+              <textarea name="tpl_check_items" class="form-control bg-dark text-white border-secondary form-control-sm" rows="6" placeholder="[ ] Attend Sunday service&#10;[ ] Read assigned passage&#10;[ ] Submit written reflection&#10;[ ] Meet with your mentor">{{ module.template_data.check_items|default:'' }}</textarea>
+            </div>
+            <div class="p-3 rounded" style="background:#0f172a;border-left:3px solid #f59e0b;">
+              <label class="form-label text-muted small mb-1">Completion Criteria</label>
+              <input name="tpl_check_criteria" class="form-control bg-dark text-white border-secondary form-control-sm" placeholder="All items checked + trainer sign-off" value="{{ module.template_data.check_criteria|default:'' }}">
+            </div>
+          </div>
+
+          <div id="tplPreviewDiscussionPrompt" class="tpl-preview d-none">
+            <div class="fw-semibold text-white mb-2">Discussion Prompt structure</div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #3b82f6;">
+              <label class="form-label text-muted small mb-1">Background Reading / Scripture</label>
+              <input name="tpl_disc_scripture" class="form-control bg-dark text-white border-secondary form-control-sm" placeholder="e.g. Matthew 5:1-12" value="{{ module.template_data.disc_scripture|default:'' }}">
+            </div>
+            <div class="p-3 rounded mb-2" style="background:#0f172a;border-left:3px solid #a855f7;">
+              <label class="form-label text-muted small mb-1">Discussion Questions</label>
+              <textarea name="tpl_disc_questions" class="form-control bg-dark text-white border-secondary form-control-sm" rows="5" placeholder="1. First question&#10;2. Second question&#10;3. Third question">{{ module.template_data.disc_questions|default:'' }}</textarea>
+            </div>
+            <div class="p-3 rounded" style="background:#0f172a;border-left:3px solid #10b981;">
+              <label class="form-label text-muted small mb-1">Facilitator Notes (admin only)</label>
+              <textarea name="tpl_disc_facilitator" class="form-control bg-dark text-white border-secondary form-control-sm" rows="3" placeholder="Guidance for the discussion leader or group facilitator…">{{ module.template_data.disc_facilitator|default:'' }}</textarea>
+            </div>
+          </div>
+
+          <div id="tplPreviewReadingPlanEmbed" class="tpl-preview d-none">
+            <div class="fw-semibold text-white mb-2">Reading Plan Embed</div>
+            <div class="p-3 rounded" style="background:#0f172a;border:1px solid #334155;">
+              <div class="text-muted small mb-2">Select a Bible reading plan to embed in this module. Members work through it as a course requirement.</div>
+              <div class="text-muted small">👉 Use the <strong>Content</strong> tab → Content type: <code>Bible Reading Plan</code> to link the plan.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    {# ════════════════════════ SETTINGS TAB ════════════════════════ #}
+    <div id="tabPaneSettings" class="d-none">
+      <div class="card bg-dark border-secondary mb-3" style="border-radius:18px;">
+        <div class="card-header border-secondary"><h6 class="mb-0">⚙️ Module Settings</h6></div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-auto">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="is_required" id="req"
+                       {% if module.is_required %}checked{% endif %}>
+                <label class="form-check-label" for="req">Required for progression</label>
+              </div>
+            </div>
+            <div class="col-auto">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="requires_attachment" id="att"
+                       {% if module.requires_attachment %}checked{% endif %}>
+                <label class="form-check-label" for="att">Trainees must submit a file</label>
+              </div>
+            </div>
+            <div class="col-auto">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="enable_peer_review" id="peer"
+                       {% if module.enable_peer_review %}checked{% endif %}>
+                <label class="form-check-label" for="peer">Enable peer review</label>
+              </div>
+            </div>
+            <div class="col-md-3" id="peerCountArea">
+              <label class="form-label">Peer reviewers</label>
+              <input name="peer_review_count" type="number" min="1" max="10"
+                     class="form-control bg-dark text-white border-secondary"
+                     value="{{ module.peer_review_count }}">
+            </div>
+            <div class="col-auto">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="discussion_enabled" id="disc"
+                       {% if module.discussion_enabled %}checked{% endif %}>
+                <label class="form-check-label" for="disc">Discussion board</label>
+              </div>
+            </div>
+            <div class="col-auto">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="is_active" id="ia"
+                       {% if module.is_active %}checked{% endif %}>
+                <label class="form-check-label" for="ia">Active</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Save Module</button>
+      <a href="{% url 'lms:course_detail' course.slug %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function() {
+  // ── Tab switching ──────────────────────────────────────────────────────────
+  function switchTab(tab) {
+    ['content','template','settings'].forEach(t => {
+      document.getElementById('tabPane' + t.charAt(0).toUpperCase() + t.slice(1))
+        ?.classList.toggle('d-none', t !== tab);
+      document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1))
+        ?.classList.toggle('active', t === tab);
+    });
+  }
+  window.switchTab = switchTab;
+
+  // ── Content type visibility ────────────────────────────────────────────────
+  const ct         = document.getElementById('editContentType');
+  const textArea   = document.getElementById('editTextArea');
+  const quizArea   = document.getElementById('editQuizArea');
+  const fileArea   = document.getElementById('editFileArea');
+  const linkArea   = document.getElementById('editLinkArea');
+  const embedArea  = document.getElementById('editEmbedArea');
+  const planArea   = document.getElementById('editReadingPlanArea');
+  const peer       = document.getElementById('peer');
+  const peerCount  = document.getElementById('peerCountArea');
+
+  function toggleContentAreas() {
+    const v = ct.value;
+    textArea.style.display  = ['quiz','embed'].includes(v) ? 'none' : '';
+    quizArea.style.display  = v === 'quiz' ? '' : 'none';
+    fileArea.style.display  = ['pdf','video','audio'].includes(v) ? '' : 'none';
+    linkArea.style.display  = ['link','video','embed'].includes(v) ? '' : 'none';
+    embedArea.style.display = v === 'embed' ? '' : 'none';
+    planArea.style.display  = v === 'reading_plan' ? '' : 'none';
+    peerCount.style.display = peer?.checked ? '' : 'none';
+
+    // Default content scaffold
+    const content = document.querySelector('textarea[name="content"]');
+    if (content && !content.value.trim()) {
+      const scaffolds = {
+        text:         'Overview\n\nKey Scriptures\n\nTeaching Points\n- \n- \n\nApplication / Next Steps',
+        video:        'Watch the video below, then note key ideas and any questions.',
+        audio:        'Listen to the recording, then answer the reflection prompts.\n\n1. \n2. \n3. ',
+        pdf:          'Read the document, then summarise the key points.\n\n- \n- \n\nAction step:',
+        assessment:   'Reflection Prompt\n\nWrite a short reflection covering what you learned, how it applies, and one action you will take.',
+        practical:    'Task\n\nSteps\n1. \n2. \n3. \n\nEvidence to submit:',
+        reading_plan: 'Complete the assigned Bible reading plan entries. Track your progress in the Bible dashboard.',
+        link:         'Visit the link below, then note your key takeaways.\n\n- \n- ',
+        embed:        'Work through the embedded content, then complete the reflection below.\n\nReflection:\n',
+      };
+      if (scaffolds[v]) content.value = scaffolds[v];
+    }
+  }
+
+  ct.addEventListener('change', toggleContentAreas);
+  peer?.addEventListener('change', () => {
+    peerCount.style.display = peer.checked ? '' : 'none';
+  });
+
+  // ── Template type preview switching ───────────────────────────────────────
+  const tplSelect  = document.getElementById('templateTypeSelect');
+  const tplPreviews = document.querySelectorAll('.tpl-preview');
+
+  const TPL_MAP = {
+    'none':                 'None',
+    'lesson':               'Lesson',
+    'case_study':           'CaseStudy',
+    'reflection':           'Reflection',
+    'bible_devotional':     'BibleDevotional',
+    'reading_plan_embed':   'ReadingPlanEmbed',
+    'discussion_prompt':    'DiscussionPrompt',
+    'checklist':            'Checklist',
+    'quiz_bank':            'None',  // uses quiz area in content tab
+  };
+
+  function showTemplatePreview() {
+    const val    = tplSelect.value;
+    const suffix = TPL_MAP[val] || 'None';
+    tplPreviews.forEach(el => el.classList.add('d-none'));
+    document.getElementById('tplPreview' + suffix)?.classList.remove('d-none');
+  }
+
+  tplSelect?.addEventListener('change', showTemplatePreview);
+
+  // ── Quiz: add question ─────────────────────────────────────────────────────
+  document.getElementById('editQuizQuestion')?.addEventListener('click', () => {
+    const rows  = document.getElementById('editQuizRows');
+    const first = rows?.querySelector('.quiz-row');
+    if (!rows || !first) return;
+    const clone = first.cloneNode(true);
+    clone.querySelectorAll('input').forEach(i => i.value = '');
+    rows.appendChild(clone);
+  });
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  toggleContentAreas();
+  showTemplatePreview();
+})();
+</script>
+{% endblock %}

@@ -6,11 +6,28 @@ from workforce.services.approvals import check_required_approvals
 
 def evaluate_trainee_readiness(trainee):
     from workforce.models import WorkforceReadinessSnapshot
+    from guests.models import MembershipApplication
 
-    lms_ok = (
-        trainee.lms_enrollment
-        and trainee.lms_enrollment.is_completed
+    application = (
+        MembershipApplication.raw_objects.filter(
+            church=trainee.church,
+            inducted_member=trainee.member,
+            status__in=(
+                MembershipApplication.STATUS_TRAINING,
+                MembershipApplication.STATUS_PASSED,
+            ),
+            is_active=True,
+        )
+        .select_related("track")
+        .first()
     )
+
+    lms_ok = True
+    if application and application.track.requires_lms_training():
+        lms_ok = bool(
+            trainee.lms_enrollment
+            and trainee.lms_enrollment.is_completed
+        )
 
     probation_ok = (
         not trainee.probation_ends_at

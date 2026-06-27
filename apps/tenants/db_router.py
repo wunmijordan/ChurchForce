@@ -1,6 +1,5 @@
 from core.request_context import get_current_church
 
-
 # Apps whose tables must always live in the shared (default) DB.
 # Django internals, sessions, and the tenant registry itself never move.
 SHARED_APPS = {
@@ -31,6 +30,7 @@ def _db_alias_for_church(church):
     # in settings.DATABASES.  Unregistered aliases fall back to default
     # so a misconfigured tenant never hard-crashes the request.
     from django.conf import settings
+
     if alias not in settings.DATABASES:
         return "default"
 
@@ -59,12 +59,28 @@ class TenantDatabaseRouter:
         if model._meta.app_label in SHARED_APPS:
             return "default"
 
-        # Prefer an instance hint if Django provides one (e.g. related lookups)
+        # Prefer an instance hint if Django provides one (e.g. related lookups).
+        # Use church_id (the raw FK column) instead of church (the relation
+        # descriptor) to avoid triggering deferred-field loading, which would
+        # call refresh_from_db → db_for_read again → infinite recursion.
         instance = hints.get("instance")
         if instance is not None:
-            church = getattr(instance, "church", None)
-            if church is not None:
-                return _db_alias_for_church(church)
+            church_id = getattr(instance, "church_id", None)
+            if church_id is not None:
+                # Resolve the Church object only if already cached on the instance
+                church = instance.__dict__.get("church")
+                if church is None:
+                    # Look up cheaply without hitting the descriptor
+                    from tenants.models import Church
+
+                    try:
+                        church = Church.objects.only("slug", "is_white_label").get(
+                            pk=church_id
+                        )
+                    except Exception:
+                        church = None
+                if church is not None:
+                    return _db_alias_for_church(church)
 
         church = get_current_church()
         return _db_alias_for_church(church)
@@ -79,9 +95,20 @@ class TenantDatabaseRouter:
 
         instance = hints.get("instance")
         if instance is not None:
-            church = getattr(instance, "church", None)
-            if church is not None:
-                return _db_alias_for_church(church)
+            church_id = getattr(instance, "church_id", None)
+            if church_id is not None:
+                church = instance.__dict__.get("church")
+                if church is None:
+                    from tenants.models import Church
+
+                    try:
+                        church = Church.objects.only("slug", "is_white_label").get(
+                            pk=church_id
+                        )
+                    except Exception:
+                        church = None
+                if church is not None:
+                    return _db_alias_for_church(church)
 
         church = get_current_church()
         return _db_alias_for_church(church)
@@ -102,11 +129,25 @@ class TenantDatabaseRouter:
         if app1 in SHARED_APPS or app2 in SHARED_APPS:
             return True
 
-        # Both tenant-owned: allow only if they resolve to the same alias
-        church1 = getattr(obj1, "church", None)
-        church2 = getattr(obj2, "church", None)
+        # Use church_id (raw FK int) to avoid triggering deferred field loading
+        # which would recurse back into the router via refresh_from_db.
+        def _alias(obj):
+            church = obj.__dict__.get("church")
+            if church is None:
+                church_id = getattr(obj, "church_id", None)
+                if church_id is None:
+                    return "default"
+                from tenants.models import Church
 
-        return _db_alias_for_church(church1) == _db_alias_for_church(church2)
+                try:
+                    church = Church.objects.only("slug", "is_white_label").get(
+                        pk=church_id
+                    )
+                except Exception:
+                    return "default"
+            return _db_alias_for_church(church)
+
+        return _alias(obj1) == _alias(obj2)
 
     # ----------------------------------------------------------------
     # Migration routing

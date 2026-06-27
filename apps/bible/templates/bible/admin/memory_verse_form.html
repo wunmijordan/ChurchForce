@@ -1,0 +1,130 @@
+{% extends base_template %}
+{% load static %}
+{% block title %}{{ page_title }} — {{ church.name }}{% endblock %}
+{% block content %}
+<div class="page-wrapper">
+  <div class="page-header d-print-none">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'bible:admin_memory_verse_list' %}">Memory Verses</a></li>
+            <li class="breadcrumb-item active">{{ page_title }}</li>
+          </ol>
+          <h2 class="page-title">{{ page_title }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="container-xl">
+      <div class="row">
+        <div class="col-lg-7">
+          <form method="post">
+            {% csrf_token %}
+            <div class="card" style="border-radius:20px;">
+              <div class="card-body">
+                {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+                <div class="mb-3">
+                  <label class="form-label required">Reference</label>
+                  <input type="text" name="reference" class="form-control" value="{{ verse.reference|default:'' }}" required placeholder="e.g. Philippians 4:13">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label required">Verse Text</label>
+                  <textarea name="text" class="form-control" rows="4" required placeholder="I can do all things through Christ who strengthens me.">{{ verse.text|default:'' }}</textarea>
+                  <div class="form-hint">Paste the full verse text from the HelloAO API or your preferred translation.</div>
+                </div>
+                <div class="row">
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label">Translation</label>
+                    <input type="text" name="translation" class="form-control" value="{{ verse.translation|default:'BSB' }}" placeholder="BSB">
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label required">Scope</label>
+                    <select name="scope" class="form-select">
+                      <option value="daily" {% if verse.scope == "daily" %}selected{% endif %}>Daily</option>
+                      <option value="weekly" {% if verse.scope == "weekly" or not verse %}selected{% endif %}>Weekly</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label required">Active From</label>
+                    <input type="date" name="active_date" class="form-control" value="{{ verse.active_date|default:'' }}" required>
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label">Ends</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ verse.end_date|default:'' }}">
+                    <div class="form-hint">Leave blank to stay active indefinitely.</div>
+                  </div>
+                  <div class="col-md-4 mb-3 d-flex align-items-end">
+                    <div class="form-check form-switch">
+                      <input type="checkbox" name="is_published" class="form-check-input" id="publishCheck"
+                        {% if verse.is_published or not verse %}checked{% endif %}>
+                      <label class="form-check-label" for="publishCheck">Publish to members</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between mt-3">
+              <a href="{% url 'bible:admin_memory_verse_list' %}" class="btn btn-outline-secondary">Cancel</a>
+              <button type="submit" class="btn btn-warning">{% if verse %}Save Changes{% else %}Add Verse{% endif %}</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="card" style="border-radius:20px;background:#1e293b;">
+            <div class="card-body">
+                {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+              <h4 class="text-white mb-3">🔍 Look up verse text</h4>
+              <div class="input-group mb-2">
+                <input type="text" id="lookupRef" class="form-control" placeholder="John 3:16" style="background:#0f172a;color:#e2e8f0;border-color:#334155;">
+                <button class="btn btn-outline-primary" id="lookupBtn">Fetch</button>
+              </div>
+              <div id="lookupResult" class="p-2 rounded mt-2 d-none" style="background:#0f172a;color:#cbd5e1;font-family:Georgia,serif;font-size:.875rem;line-height:1.6;"></div>
+              <button id="useVerseBtn" class="btn btn-sm btn-success mt-2 d-none">Use this verse</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SEARCH_URL = "{% url 'bible:search' %}";
+let _fetchedVerse = null;
+
+document.getElementById('lookupBtn')?.addEventListener('click', function() {
+  const q = document.getElementById('lookupRef').value.trim();
+  if (!q) return;
+  this.textContent = 'Fetching…'; this.disabled = true;
+  fetch(`${SEARCH_URL}?q=${encodeURIComponent(q)}`)
+    .then(r => r.json())
+    .then(data => {
+      this.textContent = 'Fetch'; this.disabled = false;
+      const r = data.results?.[0];
+      if (r) {
+        _fetchedVerse = r;
+        const el = document.getElementById('lookupResult');
+        el.classList.remove('d-none');
+        el.innerHTML = `<strong class="text-warning">${r.reference}</strong> (${r.translation})<br><br>"${r.text}"`;
+        document.getElementById('useVerseBtn').classList.remove('d-none');
+      } else {
+        document.getElementById('lookupResult').classList.remove('d-none');
+        document.getElementById('lookupResult').textContent = 'No results. Try a direct reference like "John 3:16".';
+      }
+    })
+    .catch(() => { this.textContent = 'Fetch'; this.disabled = false; });
+});
+
+document.getElementById('useVerseBtn')?.addEventListener('click', function() {
+  if (!_fetchedVerse) return;
+  document.querySelector('input[name="reference"]').value = _fetchedVerse.reference;
+  document.querySelector('textarea[name="text"]').value = _fetchedVerse.text;
+  document.querySelector('input[name="translation"]').value = _fetchedVerse.translation;
+});
+</script>
+{% endblock %}

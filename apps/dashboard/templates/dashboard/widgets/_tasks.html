@@ -1,0 +1,237 @@
+{% if my_tasks %}
+<div class="card bg-dark border-secondary mb-3" style="border-radius:12px;">
+  <div class="card-header border-secondary py-2 d-flex align-items-center justify-content-between">
+    <span class="fw-semibold small">✅ My Tasks</span>
+    <span class="badge bg-secondary" style="border-radius:20px;">{{ my_tasks|length }}</span>
+  </div>
+  <div class="list-group list-group-flush rounded-bottom" style="max-height:380px;overflow-y:auto;">
+    {% for task in my_tasks %}
+    <div class="list-group-item bg-dark border-secondary p-3 cf-task-item"
+         id="cf-task-{{ task.assignment_id }}"
+         data-status="{{ task.status }}">
+
+      <div class="d-flex align-items-start gap-2">
+        {# Status icon #}
+        <div class="cf-task-icon flex-shrink-0 mt-1" style="width:18px;text-align:center;">
+          {% if task.status == "done" %}<span class="text-success">✓</span>
+          {% elif task.is_overdue %}<span class="text-danger">⚠</span>
+          {% elif task.status == "in_progress" %}<span class="text-warning">◑</span>
+          {% else %}<span class="text-muted" style="font-size:.85rem;">○</span>
+          {% endif %}
+        </div>
+
+        <div class="flex-grow-1 min-w-0">
+          {# Title + status badge #}
+          <div class="d-flex align-items-center gap-1 flex-wrap mb-1">
+            <span class="small fw-semibold cf-task-title{% if task.status == 'done' %} text-muted text-decoration-line-through{% endif %}"
+                  style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                  title="{{ task.title }}">{{ task.title }}</span>
+            <span class="badge cf-task-badge flex-shrink-0
+              {% if task.status == 'done' %}bg-success-lt
+              {% elif task.status == 'in_progress' %}bg-warning-lt
+              {% else %}bg-secondary-lt{% endif %}"
+              style="font-size:.6rem;">
+              {% if task.status == "done" %}Done
+              {% elif task.status == "in_progress" %}In Progress
+              {% else %}Open{% endif %}
+            </span>
+          </div>
+
+          {# Meta row #}
+          <div class="text-muted d-flex flex-wrap align-items-center gap-1 mb-1" style="font-size:.72rem;">
+            <span class="badge {% if task.kind == 'workforce' %}bg-blue-lt{% else %}bg-orange-lt{% endif %}" style="font-size:.6rem;">{{ task.kind|default:"task"|title }}</span>
+            <span>{{ task.source }}</span>
+            {% if task.due_date %}
+            <span class="{% if task.is_overdue %}text-danger fw-semibold{% endif %}">
+              · Due {{ task.due_date|date:"M d" }}{% if task.is_overdue %} ⚠{% endif %}
+            </span>
+            {% endif %}
+          </div>
+
+          {# Progress bar (unit tasks only) #}
+          {% if task.kind == "unit" and task.completion_pct is not None %}
+          <div class="mt-1 mb-2 cf-task-progress-wrap">
+            <div class="d-flex justify-content-between mb-1" style="font-size:.68rem;">
+              <span class="text-muted">Progress</span>
+              <span class="fw-semibold cf-task-pct">{{ task.completion_pct }}%</span>
+            </div>
+            <div class="progress" style="height:5px;border-radius:4px;background:rgba(255,255,255,.07);">
+              <div class="progress-bar cf-task-bar
+                {% if task.completion_pct == 100 %}bg-success
+                {% elif task.completion_pct > 0 %}bg-warning
+                {% else %}bg-secondary{% endif %}"
+                role="progressbar"
+                style="width:{{ task.completion_pct }}%;transition:width .4s ease;"></div>
+            </div>
+          </div>
+          {% endif %}
+
+          {# Action buttons (unit tasks only) #}
+          {% if task.kind == "unit" and task.assignment_id %}
+          <div class="d-flex flex-wrap gap-2 cf-task-actions">
+            {% if task.status == "open" %}
+              <button class="btn btn-xs btn-primary cf-ack-btn"
+                      style="border-radius:20px;font-size:.72rem;"
+                      data-id="{{ task.assignment_id }}">
+                Acknowledge
+              </button>
+            {% endif %}
+            {% if task.status == "in_progress" %}
+              <button class="btn btn-xs btn-outline-success cf-complete-toggle"
+                      style="border-radius:20px;font-size:.72rem;"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#cfCompletePanel{{ task.assignment_id }}">
+                Mark Complete
+              </button>
+            {% endif %}
+            {% if task.unit_slug %}
+              <a class="btn btn-xs btn-outline-secondary"
+                 style="border-radius:20px;font-size:.72rem;"
+                 href="{% url 'units:detail' task.unit_slug %}">View Unit</a>
+            {% endif %}
+          </div>
+
+          {% if task.status == "in_progress" %}
+          <div class="collapse mt-2" id="cfCompletePanel{{ task.assignment_id }}">
+            <form class="cf-complete-form p-2" style="border-radius:10px;background:rgba(255,255,255,.04);"
+                  data-id="{{ task.assignment_id }}"
+                  data-url="{% url 'units:complete_task' task.assignment_id %}">
+              {% csrf_token %}
+              <textarea name="completion_notes" rows="2"
+                        class="form-control form-control-sm bg-dark text-white border-secondary mb-2"
+                        style="border-radius:8px;font-size:.78rem;"
+                        placeholder="Completion note (optional)…"></textarea>
+              <button type="submit" class="btn btn-xs btn-success" style="border-radius:20px;">
+                Submit
+              </button>
+            </form>
+          </div>
+          {% endif %}
+
+          {% endif %}{# end unit task block #}
+
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  function csrf() {
+    var el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+  }
+
+  function setProgress(item, pct) {
+    var bar   = item.querySelector('.cf-task-bar');
+    var label = item.querySelector('.cf-task-pct');
+    if (!pct && pct !== 0) return;
+    if (bar) {
+      bar.style.width = pct + '%';
+      bar.className = bar.className
+        .replace(/bg-\w+/, pct === 100 ? 'bg-success' : pct > 0 ? 'bg-warning' : 'bg-secondary');
+    }
+    if (label) label.textContent = pct + '%';
+  }
+
+  function markInProgress(item) {
+    var icon  = item.querySelector('.cf-task-icon span');
+    var badge = item.querySelector('.cf-task-badge');
+    if (icon)  { icon.className = 'text-warning'; icon.textContent = '◑'; }
+    if (badge) { badge.className = 'badge cf-task-badge bg-warning-lt flex-shrink-0'; badge.textContent = 'In Progress'; }
+    // Swap action buttons: remove Acknowledge, add Mark Complete
+    var actions = item.querySelector('.cf-task-actions');
+    if (actions) {
+      var id  = item.id.replace('cf-task-', '');
+      var slug = item.dataset.unitSlug || '';
+      var unitBtn = slug ? '<a class="btn btn-xs btn-outline-secondary" style="border-radius:20px;font-size:.72rem;" href="/units/' + slug + '/">View Unit</a>' : '';
+      actions.innerHTML =
+        '<button class="btn btn-xs btn-outline-success cf-complete-toggle" style="border-radius:20px;font-size:.72rem;" data-bs-toggle="collapse" data-bs-target="#cfCompletePanel' + id + '">Mark Complete</button>' + unitBtn;
+      // Inject the complete form panel if missing
+      if (!document.getElementById('cfCompletePanel' + id)) {
+        var panel = document.createElement('div');
+        panel.className = 'collapse mt-2';
+        panel.id = 'cfCompletePanel' + id;
+        panel.innerHTML =
+          '<form class="cf-complete-form p-2" style="border-radius:10px;background:rgba(255,255,255,.04);" data-id="' + id + '" data-url="/units/tasks/' + id + '/complete/">' +
+          '<input type="hidden" name="csrfmiddlewaretoken" value="">' +
+          '<textarea name="completion_notes" rows="2" class="form-control form-control-sm bg-dark text-white border-secondary mb-2" style="border-radius:8px;font-size:.78rem;" placeholder="Completion note (optional)…"></textarea>' +
+          '<button type="submit" class="btn btn-xs btn-success" style="border-radius:20px;">Submit</button>' +
+          '</form>';
+        actions.after(panel);
+      }
+    }
+  }
+
+  function markDone(item) {
+    var icon  = item.querySelector('.cf-task-icon span');
+    var badge = item.querySelector('.cf-task-badge');
+    var title = item.querySelector('.cf-task-title');
+    if (icon)  { icon.className = 'text-success'; icon.textContent = '✓'; }
+    if (badge) { badge.className = 'badge cf-task-badge bg-success-lt flex-shrink-0'; badge.textContent = 'Done'; }
+    if (title) { title.classList.add('text-muted', 'text-decoration-line-through'); }
+    var collapse = item.querySelector('.collapse');
+    if (collapse) collapse.remove();
+    var actions = item.querySelector('.cf-task-actions');
+    if (actions) actions.innerHTML = '';
+    setProgress(item, 100);
+  }
+
+  // Acknowledge button
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.cf-ack-btn');
+    if (!btn) return;
+    btn.disabled = true;
+    btn.textContent = '…';
+    var id = btn.dataset.id;
+    fetch('/units/tasks/' + id + '/acknowledge/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrf(), 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        var item = document.getElementById('cf-task-' + id);
+        if (item) {
+          markInProgress(item);
+          if (d.completion_pct !== undefined) setProgress(item, d.completion_pct);
+        }
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Acknowledge';
+      }
+    })
+    .catch(function() { btn.disabled = false; btn.textContent = 'Acknowledge'; });
+  });
+
+  // Complete form submit
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!form.classList.contains('cf-complete-form')) return;
+    e.preventDefault();
+    var id   = form.dataset.id;
+    var url  = form.dataset.url;
+    var body = new FormData(form);
+    body.set('csrfmiddlewaretoken', csrf());
+    fetch(url, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: body,
+      credentials: 'same-origin',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        var item = document.getElementById('cf-task-' + id);
+        if (item) markDone(item);
+      }
+    });
+  });
+})();
+</script>
+{% endif %}

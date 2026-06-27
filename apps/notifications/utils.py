@@ -7,7 +7,7 @@ notify_members() is the single entry point for creating and pushing
 notifications. It accepts ChurchMember objects (not CustomUser) because
 notifications are church-scoped.
 
-All old references to is_project_admin / is_magnet_admin / TeamMembership
+All old references to is_project_admin / is_magnet_admin / UnitMembership
 have been removed — recipient selection is now the caller's responsibility,
 using PermissionResolver.can() or direct queryset filters.
 """

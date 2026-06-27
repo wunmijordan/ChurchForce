@@ -13,19 +13,15 @@ from units.models import ChurchUnit
 from workforce.models import WorkforceStage, WorkforceRole
 from permissions.models import UnitRole
 
-GLOBAL_ADMIN_PERMISSION_KEYS = [
-    "dashboard.admin",
-    "accounts.manage_users",
-    "attendance.view_all",
-    "events.manage_all",
-    "events.view_all",
-    "team.view_all",
-    "messaging.send",
-    "messaging.send_bulk",
-    "messaging.view_log",
-]
+from permissions.registry import (
+    permissions_for_tier as _perms_for_tier,
+    TIER_ADMIN as _TIER_ADMIN,
+)
 
-GLOBAL_ADMIN_PERMISSIONS = {key: True for key in GLOBAL_ADMIN_PERMISSION_KEYS}
+# Legacy constant — kept for template data compatibility.
+# The authoritative source is permissions/registry.py.
+GLOBAL_ADMIN_PERMISSION_KEYS = list(_perms_for_tier(_TIER_ADMIN).keys())
+GLOBAL_ADMIN_PERMISSIONS = _perms_for_tier(_TIER_ADMIN)
 
 DEFAULT_TEMPLATE_DATA = {
     "name": "Default System Template",
@@ -50,13 +46,14 @@ DEFAULT_TEMPLATE_DATA = {
         ("Online Service", 5),
     ],
     "workforce_stages": [
-        ("New", 1),
+        ("Probationer", 1),
         ("Active", 2),
         ("Leader", 3),
     ],
     "workforce_roles": [
-        ("Admin", True, 1, GLOBAL_ADMIN_PERMISSIONS),
-        ("Worker", False, 2, {}),
+        ("Pastor", True, 1, GLOBAL_ADMIN_PERMISSIONS),
+        ("Admin", True, 2, GLOBAL_ADMIN_PERMISSIONS),
+        ("Member", False, 4, {}),
     ],
 }
 
@@ -125,7 +122,9 @@ def ensure_default_template():
         )
 
     # Workforce roles
-    for name, is_leadership, order, permissions in DEFAULT_TEMPLATE_DATA["workforce_roles"]:
+    for name, is_leadership, order, permissions in DEFAULT_TEMPLATE_DATA[
+        "workforce_roles"
+    ]:
         TemplateWorkforceRole.objects.get_or_create(
             template=template,
             name=name,
@@ -137,6 +136,140 @@ def ensure_default_template():
         )
 
     return template
+
+
+def _ensure_admin_bootstrap(
+    church,
+    *,
+    admin_user=None,
+    admin_member=None,
+    hq_campus=None,
+):
+    """
+    Idempotently wire the founding tenant admin into the tier-1 permission path.
+
+    This runs both during full template application and after signup flows where
+    the church may already have been seeded by a post-save signal.
+    """
+    from accounts.models import ChurchMember
+    from tenants.models import CampusMembership
+    from units.models import ChatRoom, ChurchUnit, UnitMembership
+    from workforce.models import WorkforceMember, WorkforceMembershipRole
+
+    if not admin_member and admin_user:
+        admin_member = ChurchMember.raw_objects.filter(
+            church=church,
+            user=admin_user,
+            is_active=True,
+        ).first()
+
+    if not admin_member:
+        admin_member = ChurchMember.raw_objects.filter(
+            church=church,
+            is_admin=True,
+            is_active=True,
+        ).first()
+
+    if not admin_member:
+        return
+
+    if not admin_member.is_active or not admin_member.is_admin:
+        admin_member.is_active = True
+        admin_member.is_admin = True
+        admin_member.save(update_fields=["is_active", "is_admin", "updated_at"])
+
+    stage = (
+        WorkforceStage.raw_objects.filter(
+            church=church,
+            slug=WorkforceStage.SLUG_ACTIVE,
+            is_active=True,
+        ).first()
+        or WorkforceStage.raw_objects.filter(church=church, is_active=True)
+        .order_by("order", "id")
+        .first()
+    )
+    if not stage:
+        stage = WorkforceStage.raw_objects.create(
+            church=church,
+            name="Active",
+            slug=WorkforceStage.SLUG_ACTIVE,
+            order=2,
+            is_active=True,
+        )
+
+    wf_member, created = WorkforceMember.raw_objects.get_or_create(
+        church=church,
+        member=admin_member,
+        defaults={"stage": stage, "is_active": True},
+    )
+    if not created:
+        changed = []
+        if not wf_member.is_active:
+            wf_member.is_active = True
+            changed.append("is_active")
+        if not wf_member.stage and stage:
+            wf_member.stage = stage
+            changed.append("stage")
+        if changed:
+            wf_member.save(update_fields=[*changed, "updated_at"])
+
+    from permissions.registry import TIER_ADMIN, permissions_for_tier
+
+    WorkforceRole.raw_objects.get_or_create(
+        church=church,
+        name="Pastor",
+        defaults={
+            "tier": TIER_ADMIN,
+            "scope": "global",
+            "permissions": permissions_for_tier(TIER_ADMIN),
+            "is_leadership": True,
+            "order": 1,
+            "is_active": True,
+        },
+    )
+    admin_role, _ = WorkforceRole.raw_objects.get_or_create(
+        church=church,
+        name="Admin",
+        defaults={
+            "tier": TIER_ADMIN,
+            "scope": "global",
+            "permissions": permissions_for_tier(TIER_ADMIN),
+            "is_leadership": True,
+            "order": 2,
+            "is_active": True,
+        },
+    )
+    if not admin_role.is_active:
+        admin_role.is_active = True
+        admin_role.save(update_fields=["is_active", "updated_at"])
+
+    WorkforceMembershipRole.raw_objects.get_or_create(
+        church=church,
+        workforce_member=wf_member,
+        role=admin_role,
+    )
+
+    if hq_campus:
+        CampusMembership.raw_objects.get_or_create(
+            church=church,
+            campus=hq_campus,
+            member=admin_member,
+            defaults={"is_primary": True},
+        )
+
+    for unit_obj in ChurchUnit.raw_objects.filter(church=church, is_active=True):
+        ChatRoom.raw_objects.get_or_create(
+            church=church,
+            unit=unit_obj,
+            defaults={"name": unit_obj.name, "is_default": True, "is_active": True},
+        )
+        UnitMembership.raw_objects.get_or_create(
+            church=church,
+            unit=unit_obj,
+            workforce_member=wf_member,
+            defaults={"is_active": True},
+        )
+
 
 def apply_template_to_church(template, church, *, admin_user=None, admin_member=None):
 
@@ -176,7 +309,7 @@ def apply_template_to_church(template, church, *, admin_user=None, admin_member=
             "color": "green",
             "order": 4,
             "is_default": False,
-            "is_terminal": True,   # inducted — pipeline complete
+            "is_terminal": True,  # inducted — pipeline complete
         },
         {
             "name": "Not Planted",
@@ -184,7 +317,7 @@ def apply_template_to_church(template, church, *, admin_user=None, admin_member=
             "color": "red",
             "order": 5,
             "is_default": False,
-            "is_terminal": True,   # opted out / dormant — stops progression
+            "is_terminal": True,  # opted out / dormant — stops progression
         },
     ]
 
@@ -261,51 +394,182 @@ def apply_template_to_church(template, church, *, admin_user=None, admin_member=
         unit_map[unit.name] = obj
 
     # ── Workforce stages ──────────────────────────────────────────────
-    # "Inductee" is always seeded as the locked default stage.
-    # It is auto-assigned when a trainee is promoted to WorkforceMember.
-    # Church admins cannot rename or delete it, but can add stages above it.
-    WorkforceStage.raw_objects.get_or_create(
-        church=church,
-        name="Inductee",
-        defaults={
-            "order": 0,
-            "is_default": True,
-            "is_locked": True,
-            "description": "Auto-assigned on promotion from Trainee. Church admin can add stages above this.",
-            "is_active": True,
-        },
-    )
+    # Three system stages, identified by slug. Order 0-2 reserved.
+    # Custom stages start at order 3.
+    #
+    # "Inductee" is NOT seeded here — it belongs exclusively to
+    # WorkforceTraineeProfile (the guest→workforce pipeline).
+    # A trainee becomes a WorkforceMember at Probationer stage only
+    # after completing the LMS induction course.
+    #
+    # Probationer — first real workforce stage. Default for new WF members
+    #               auto-promoted from the trainee pipeline, AND used for
+    #               disciplinary demotion.
+    # Active      — full active member; auto-set when probation clears.
+    # Leader      — manually assigned by admin.
+
+    SYSTEM_STAGES = [
+        # (slug, name, order, is_default, is_locked, is_order_locked, description)
+        (
+            "probationer",
+            "Probationer",
+            0,
+            True,
+            True,
+            True,
+            "First workforce stage. Auto-assigned on promotion from trainee pipeline, "
+            "or used for disciplinary demotion by admin.",
+        ),
+        (
+            "active",
+            "Active",
+            1,
+            False,
+            True,
+            True,
+            "Full active workforce member — reached automatically when probation period ends.",
+        ),
+        (
+            "leader",
+            "Leader",
+            2,
+            False,
+            True,
+            False,
+            "Manually assigned by admin for members who qualify for a leadership role.",
+        ),
+    ]
+
+    for (
+        slug,
+        name,
+        order,
+        is_default,
+        is_locked,
+        is_order_locked,
+        description,
+    ) in SYSTEM_STAGES:
+        existing = WorkforceStage.raw_objects.filter(church=church, slug=slug).first()
+        if not existing:
+            WorkforceStage.raw_objects.create(
+                church=church,
+                name=name,
+                slug=slug,
+                order=order,
+                is_default=is_default,
+                is_locked=is_locked,
+                is_order_locked=is_order_locked,
+                description=description,
+                is_active=True,
+            )
+
+    # Custom stages from template (order starts at 4 to sit after system stages)
     for stage in template.workforce_stages.all():
-        WorkforceStage.raw_objects.get_or_create(
-            church=church,
-            name=stage.name,
-            defaults={"order": stage.order + 1, "is_active": True},
-        )
+        if not WorkforceStage.raw_objects.filter(
+            church=church, name__iexact=stage.name
+        ).exists():
+            WorkforceStage.raw_objects.create(
+                church=church,
+                name=stage.name,
+                slug="",
+                order=stage.order + 3,
+                is_default=False,
+                is_locked=False,
+                is_order_locked=False,
+                is_active=True,
+            )
 
     # ── Workforce roles ───────────────────────────────────────────────
-    # "Member" is always seeded as the locked default role.
-    # Every WorkforceMember has this role. Admins can add more.
-    WorkforceRole.raw_objects.get_or_create(
-        church=church,
-        name="Member",
-        defaults={
-            "order": 0,
-            "is_default": True,
-            "is_locked": True,
-            "is_leadership": False,
-            "is_active": True,
-        },
+    # We seed the complete 5-tier hierarchy so every church starts with
+    # a clean, configurable permission structure.
+    # Admins can rename roles and customise individual permission keys
+    # in Settings → Workforce. The tier field remains authoritative.
+    #
+    # Tier 0 (Superuser) is Django-level — never seeded here.
+    # "Member" is the locked base role all workforce members receive.
+
+    from permissions.registry import (
+        TIER_ADMIN,
+        TIER_SUB_ADMIN,
+        TIER_ASSISTANT_PASTOR,
+        TIER_CUSTOM,
+        permissions_for_tier,
     )
+
+    SYSTEM_WORKFORCE_ROLES = [
+        # (name, tier, scope, is_leadership, is_default, is_locked, order)
+        # Pastor: Tier 1 — most powerful per-tenant role. Full church access.
+        ("Pastor", TIER_ADMIN, "global", True, False, False, 1),
+        ("Admin", TIER_ADMIN, "global", True, False, False, 2),
+        # Assistant Pastor: Tier 3 — church-wide oversight, below Sub-Admin.
+        # Sits between Sub-Admin and Overseer; global scope, no admin powers.
+        ("Assistant Pastor", TIER_ASSISTANT_PASTOR, "global", True, False, False, 3),
+        ("Member", TIER_CUSTOM, "unit", False, True, True, 4),
+    ]
+
+    for (
+        r_name,
+        r_tier,
+        r_scope,
+        r_lead,
+        r_default,
+        r_locked,
+        r_order,
+    ) in SYSTEM_WORKFORCE_ROLES:
+        existing = WorkforceRole.raw_objects.filter(church=church, name=r_name).first()
+        if not existing:
+            WorkforceRole.raw_objects.create(
+                church=church,
+                name=r_name,
+                tier=r_tier,
+                scope=r_scope,
+                permissions=permissions_for_tier(r_tier),
+                is_leadership=r_lead,
+                is_default=r_default,
+                is_locked=r_locked,
+                order=r_order,
+                is_active=True,
+            )
+        else:
+            # Backfill tier/scope if this is an existing install without them
+            changed = False
+            if (
+                not hasattr(existing, "tier")
+                or existing.tier == TIER_CUSTOM
+                and r_tier != TIER_CUSTOM
+            ):
+                existing.tier = r_tier
+                changed = True
+            # Only backfill scope if the target scope is "global" and the role
+            # is a privileged tier (1-3). Never force-upgrade tier-7 to global.
+            from permissions.registry import TIER_ASSISTANT_PASTOR
+
+            if not hasattr(existing, "scope") or (
+                existing.scope == "unit"
+                and r_scope == "global"
+                and r_tier <= TIER_ASSISTANT_PASTOR
+            ):
+                existing.scope = r_scope
+                changed = True
+            if changed:
+                existing.save(update_fields=["tier", "scope"])
+
+    # Also process any additional roles from the template (custom church roles)
     for role in template.workforce_roles.all():
-        WorkforceRole.raw_objects.get_or_create(
+        # Skip if already seeded above
+        if WorkforceRole.raw_objects.filter(church=church, name=role.name).exists():
+            continue
+        role_tier = getattr(role, "tier", TIER_CUSTOM)
+        WorkforceRole.raw_objects.create(
             church=church,
             name=role.name,
-            defaults={
-                "permissions": role.permissions,
-                "is_leadership": role.is_leadership,
-                "order": role.order + 1,
-                "is_active": True,
-            },
+            tier=role_tier,
+            # Only tiers 1-3 get global scope; custom roles are unit-scoped
+            scope="global" if role_tier <= TIER_ASSISTANT_PASTOR else "unit",
+            permissions=role.permissions or {},
+            is_leadership=role.is_leadership,
+            order=role.order + 10,
+            is_active=True,
         )
 
     # ── Unit roles ────────────────────────────────────────────────────
@@ -342,10 +606,10 @@ def apply_template_to_church(template, church, *, admin_user=None, admin_member=
 
     if created:
         DEFAULT_STEPS = [
-            ("Membership orientation class",  True,  1),
-            ("One-on-one with pastor/leader", True,  2),
-            ("Membership interview",          True,  3),
-            ("Induction Sunday",              False, 4),
+            ("Membership orientation class", True, 1),
+            ("One-on-one with pastor/leader", True, 2),
+            ("Membership interview", True, 3),
+            ("Induction Sunday", False, 4),
         ]
         for name, required, order in DEFAULT_STEPS:
             MembershipTrackStep.raw_objects.create(
@@ -361,31 +625,42 @@ def apply_template_to_church(template, church, *, admin_user=None, admin_member=
     # Seed a basic induction LMS course linked to the default track.
     try:
         from lms.models import LMSCourse, LMSModule
+
+        from django.utils.text import slugify as _slugify
+
+        _lms_title = f"{church.name} New Member Induction"
+        _lms_slug = _slugify(_lms_title)[:100] or "new-member-induction"
+
         lms_course, lms_created = LMSCourse.raw_objects.get_or_create(
             church=church,
             course_type="induction",
             membership_track=track,
             defaults={
-                "title":          f"{church.name} New Member Induction",
-                "description":    "Complete this course to become a full workforce member.",
-                "delivery_mode":  "physical",
-                "passing_score":  70,
+                "title": _lms_title,
+                "slug": _lms_slug,
+                "description": "Complete this course to become a full workforce member.",
+                "delivery_mode": "physical",
+                "passing_score": 70,
                 "strict_sequence": True,
-                "is_active":       True,
+                "is_active": True,
             },
         )
+        # Back-fill slug if this is an existing course without one
+        if not lms_course.slug:
+            lms_course.slug = _lms_slug
+            lms_course.save(update_fields=["slug"])
         if lms_created:
             DEFAULT_MODULES = [
-                ("Welcome & Church Vision",           "text",       1, True,  False),
-                ("Church Values & Culture",           "text",       2, True,  False),
-                ("Attendance & Commitment Policy",    "text",       3, True,  False),
-                ("Induction Assessment",              "assessment", 4, True,  True),
+                ("Welcome & Church Vision", "text", 1, True, False),
+                ("Church Values & Culture", "text", 2, True, False),
+                ("Attendance & Commitment Policy", "text", 3, True, False),
+                ("Induction Assessment", "assessment", 4, True, True),
             ]
             for title, ctype, order, required, attach in DEFAULT_MODULES:
                 LMSModule.raw_objects.get_or_create(
                     church=church,
                     course=lms_course,
-                    title=title, # Title should be in the lookup to avoid duplicates
+                    title=title,  # Title should be in the lookup to avoid duplicates
                     defaults={
                         "content_type": ctype,
                         "order": order,
@@ -400,13 +675,14 @@ def apply_template_to_church(template, church, *, admin_user=None, admin_member=
     # ── Default HQ campus
     # Seed a headquarter campus so the campus model is populated by default.
     try:
-        from units.models import Campus
+        from tenants.models import Campus
+
         hq_campus, _ = Campus.raw_objects.get_or_create(
             church=church,
             slug="hq",
             defaults={
                 "name": f"{church.name} (HQ)",
-                "growth_stage": "headquarters",
+                "growth_stage": "Headquarters",
                 "is_active": True,
                 "contributes_to_parent_metrics": False,
             },
@@ -414,88 +690,33 @@ def apply_template_to_church(template, church, *, admin_user=None, admin_member=
     except Exception:
         hq_campus = None
 
-    # -- Final wiring: Admin membership, chat rooms, and campus link -----
-    from accounts.models import ChurchMember
-    from units.models import ChatRoom, UnitMembership, CampusMembership
-    from workforce.models import WorkforceMember, WorkforceMembershipRole
+    _ensure_admin_bootstrap(
+        church,
+        admin_user=admin_user,
+        admin_member=admin_member,
+        hq_campus=hq_campus,
+    )
 
-    if not admin_member and admin_user:
-        admin_member = ChurchMember.raw_objects.filter(
-            church=church, user=admin_user, is_active=True
-        ).first()
+    # ── Seed baseline music content for current plan ─────────────────
+    # Bible passage seeding has been removed — bible content is handled
+    # entirely by the ai_skills system, not bootstrap.
+    try:
+        from music.services.catalog import seed_tracks_for_plan
 
-    if not admin_member:
-        admin_member = ChurchMember.raw_objects.filter(
-            church=church, is_admin=True, is_active=True
-        ).first()
+        plan_name = "trial"
+        sub = getattr(church, "churchsubscription", None)
+        if sub and sub.plan:
+            plan_name = sub.plan.name
 
-    if admin_member:
-        # Ensure workforce member exists for permission resolver
-        stage = WorkforceStage.raw_objects.filter(
-            church=church, is_active=True
-        ).order_by("order", "id").first()
-        if not stage:
-            stage = WorkforceStage.raw_objects.create(
-                church=church, name="Active", order=1, is_active=True
-            )
+        seed_tracks_for_plan(church, plan_name)
+    except Exception:
+        # Never block bootstrap over optional starter-content warmup.
+        pass
 
-        wf_member, _ = WorkforceMember.raw_objects.get_or_create(
-            church=church,
-            member=admin_member,
-            defaults={"stage": stage},
-        )
 
-        # Ensure an admin workforce role exists and assign it
-        admin_role = WorkforceRole.raw_objects.filter(
-            church=church, name__iexact="admin"
-        ).first()
-        if not admin_role:
-            admin_role = WorkforceRole.raw_objects.filter(
-                church=church, is_leadership=True
-            ).order_by("order", "id").first()
-        if not admin_role:
-            admin_role, _ = WorkforceRole.raw_objects.get_or_create(
-                church=church,
-                name="Admin",
-                defaults={
-                    "permissions": GLOBAL_ADMIN_PERMISSIONS,
-                    "is_leadership": True,
-                    "order": 1,
-                    "is_active": True,
-                },
-            )
-
-        WorkforceMembershipRole.raw_objects.get_or_create(
-            church=church, workforce_member=wf_member, role=admin_role
-        )
-
-        # Link Admin to HQ campus
-        if hq_campus:
-            CampusMembership.raw_objects.get_or_create(
-                church=church,
-                campus=hq_campus,
-                member=admin_member,
-                defaults={"is_primary": True},
-            )
-
-        # Create ChatRooms for each unit and auto-join admin
-        for unit_obj in unit_map.values():
-            ChatRoom.raw_objects.get_or_create(
-                church=church,
-                unit=unit_obj,
-                defaults={"name": unit_obj.name, "is_default": True, "is_active": True},
-            )
-            UnitMembership.raw_objects.get_or_create(
-                church=church,
-                unit=unit_obj,
-                workforce_member=wf_member,
-                defaults={"is_active": True},
-            )
-
-            
 def seed_church(church, *, admin_user=None):
     """
-    Wrapper for the reset script to apply the default template 
+    Wrapper for the reset script to apply the default template
     to a newly created church.
     """
     from bootstrap.models import ChurchTemplate
@@ -515,15 +736,3 @@ def seed_church(church, *, admin_user=None):
         return
 
     return apply_template_to_church(template, church, admin_user=admin_user)
-
-
-
-
-
-
-
-
-
-
-
-

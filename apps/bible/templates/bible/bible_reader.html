@@ -1,0 +1,691 @@
+{% extends base_template %}
+{% load static %}
+{% block title %}Bible Reader — {{ church.name }}{% endblock %}
+{% block extra_head %}
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+  <div class="page-header d-print-none">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col d-flex align-items-center gap-2">
+          <a href="{% url 'bible:dashboard' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:12px;">← Bible</a>
+          <kbd class="bg-gray-800" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+            <h2 class="page-title mb-0">📖 Bible Reader</h2>
+          </kbd>
+        </div>
+        <div class="col-auto ms-auto d-flex gap-2 align-items-center">
+          {# Translation selector — populated dynamically; no hardcoded BSB #}
+          <select id="readerTranslation" class="form-select form-select-sm" style="width:220px;background:#1e293b;color:#e2e8f0;border-color:#334155;border-radius:12px;">
+            <option value="" disabled>Loading translations…</option>
+          </select>
+          <button class="btn btn-sm btn-outline-warning" id="highlighterToggle" title="Toggle Highlighter" style="border-radius:12px;">
+            🖊 Highlight
+          </button>
+          {# ── YouVersion sign-in / avatar button (hidden until status loads) ── #}
+          <div id="yvAuthArea" class="d-none">
+            {# Not connected — show sign-in button; href is updated by JS to carry current reader state #}
+            <a id="yvSignInBtn" href="{% url 'bible:youversion_login' %}"
+               class="btn btn-sm btn-outline-info d-none"
+               style="border-radius:12px;white-space:nowrap;"
+               title="Sign in to sync your YouVersion highlights & bookmarks">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1" style="vertical-align:-2px;">
+                <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+              </svg>
+              YouVersion
+            </a>
+            {# Connected — show avatar + sync button #}
+            <div id="yvConnectedArea" class="d-none d-flex align-items-center gap-1">
+              <img id="yvAvatar" src="" alt="" width="26" height="26"
+                   style="border-radius:50%;object-fit:cover;border:2px solid #38bdf8;"
+                   onerror="this.style.display='none'">
+              <span id="yvUsername" class="text-info small" style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+              <button id="yvSyncBtn" class="btn btn-xs btn-outline-info" style="border-radius:10px;padding:1px 6px;font-size:.7rem;" title="Re-sync YouVersion highlights">⟳</button>
+              <button id="yvDisconnectBtn" class="btn btn-xs btn-outline-danger" style="border-radius:10px;padding:1px 6px;font-size:.7rem;" title="Disconnect YouVersion">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <div class="container-xl">
+      <div class="row g-4">
+
+        {# ── Left sidebar: Book/Chapter navigation ── #}
+        <div class="col-12 col-lg-3">
+          <div class="card sticky-top" style="border-radius:20px;top:80px;background:#1e293b;">
+            <div class="card-body p-3 scrollbar-container">
+              <label class="form-label text-muted small">Book</label>
+              <select id="readerBook" class="form-select form-select-sm mb-2" style="background:#0f172a;color:#e2e8f0;border-color:#334155;border-radius:10px;">
+                <option value="">— Select book —</option>
+              </select>
+              <label class="form-label text-muted small">Chapter</label>
+              <div id="readerChapterGrid" class="d-flex flex-wrap gap-1"></div>
+            </div>
+          </div>
+        </div>
+
+        {# ── Main reader pane ── #}
+        <div class="col-12 col-lg-6">
+          <div class="card" style="border-radius:24px;background:#111827;min-height:70vh;">
+            <div class="card-header py-3 d-flex align-items-center justify-content-between" style="border-bottom:1px solid #1e293b;">
+              <div>
+                <span id="readerRef" class="fw-bold text-warning fs-5">{{ initial_book_id }} {{ initial_chapter }}</span>
+                <span id="readerTransLabel" class="text-muted small ms-2">({{ initial_translation }})</span>
+              </div>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-secondary" id="prevChapterBtn" style="border-radius:10px;">‹ Prev</button>
+                <button class="btn btn-sm btn-outline-secondary" id="nextChapterBtn" style="border-radius:10px;">Next ›</button>
+              </div>
+            </div>
+            <div id="selectionToolbar" class="d-none px-3 py-2 d-flex align-items-center gap-2 flex-wrap" style="background:#1e293b;border-bottom:1px solid #334155;">
+              <span id="selectionCount" class="text-warning small fw-semibold"></span>
+              <button id="copySelectionBtn" class="btn btn-sm btn-outline-secondary" style="box-shadow:0 2px 4px #000000d2;border-radius:24px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-clipboard-check">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M17.997 4.17a3 3 0 0 1 2.003 2.83v12a3 3 0 0 1 -3 3h-10a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 2.003 -2.83a4 4 0 0 0 3.997 3.83h4a4 4 0 0 0 3.98 -3.597zm-3.704 7.123l-3.293 3.292l-1.293 -1.292a1 1 0 1 0 -1.414 1.414l2 2a1 1 0 0 0 1.414 0l4 -4a1 1 0 0 0 -1.414 -1.414m-.293 -9.293a2 2 0 1 1 0 4h-4a2 2 0 1 1 0 -4z" />
+                </svg>
+                Copy
+              </button>
+              <button id="shareSelectionBtn" class="btn btn-sm btn-outline-success" style="box-shadow:0 2px 4px #000000d2;border-radius:24px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-share-3">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M13 4v4c-6.575 1.028 -9.02 6.788 -10 12c-.037 .206 5.384 -5.962 10 -6v4l8 -7l-8 -7" />
+                </svg>
+                Share
+              </button>
+              <button id="clearSelectionBtn" class="btn btn-sm btn-outline-danger ms-auto" style="box-shadow:0 2px 4px #000000d2;border-radius:24px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-cancel">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                  <path d="M18.364 5.636l-12.728 12.728" />
+                </svg>
+                Cancel
+              </button>
+            </div>
+            <div class="card-body p-3 p-md-4 scrollbar-container" id="readerVerseContainer" style="line-height:1.9;font-family:Georgia,'Times New Roman',serif;font-size:1.05rem;color:#e2e8f0;">
+              <div class="text-muted text-center py-5" id="readerLoadingMsg">Loading…</div>
+            </div>
+          </div>
+        </div>
+
+        {# ── Right sidebar: Highlights & Notes ── #}
+        <div class="col-12 col-lg-3">
+          <div class="card sticky-top" style="border-radius:20px;top:80px;background:#1e293b;">
+            <div class="card-header py-2">
+              <h5 class="card-title mb-0 small">🖊 Your Highlights</h5>
+            </div>
+            <div class="card-body p-2 scrollbar-container" id="highlightsSidebar" style="max-height:65vh;overflow-y:auto;">
+              <div class="text-muted small text-center py-3" id="noHighlightsMsg">No highlights in this chapter yet.</div>
+            </div>
+          </div>
+
+          {# Highlighter colour picker — appears on verse click when highlighter active #}
+          <div id="highlightPicker" class="card mt-3 d-none" style="border-radius:20px;background:#0f172a;border:1px solid #334155;">
+            <div class="card-body p-3">
+              <div class="text-muted small mb-2">Highlight colour</div>
+              <div class="d-flex gap-2 mb-3">
+                <button class="hl-color-btn" data-color="yellow" style="background:#fde68a;width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;" title="Yellow"></button>
+                <button class="hl-color-btn" data-color="green" style="background:#6ee7b7;width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;" title="Green"></button>
+                <button class="hl-color-btn" data-color="blue" style="background:#93c5fd;width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;" title="Blue"></button>
+                <button class="hl-color-btn" data-color="pink" style="background:#f9a8d4;width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;" title="Pink"></button>
+                <button class="hl-color-btn" data-color="purple" style="background:#c4b5fd;width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;" title="Purple"></button>
+              </div>
+              <textarea id="hlNoteInput" class="form-control form-control-sm mb-2" placeholder="Add a personal note… (optional)" rows="2" style="background:#1e293b;color:#e2e8f0;border-color:#334155;border-radius:10px;font-size:.8rem;"></textarea>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-warning flex-fill" id="saveHighlightBtn" style="border-radius:10px;">Save</button>
+                <button class="btn btn-sm btn-outline-danger" id="removeHighlightBtn" style="border-radius:10px;">Remove</button>
+                <button class="btn btn-sm btn-outline-secondary" id="cancelHighlightBtn" style="border-radius:10px;">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="shareVerseModal" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title text-white">Share Verses</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="shareVersePreview" class="p-2 rounded mb-3" style="background:#0f172a;color:#cbd5e1;font-family:Georgia,serif;font-size:.9rem;line-height:1.6;"></div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-success w-100" id="shareToFeedBtn" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-share-3">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M13 4v4c-6.575 1.028 -9.02 6.788 -10 12c-.037 .206 5.384 -5.962 10 -6v4l8 -7l-8 -7" />
+              </svg>
+              Share to Feed
+            </button>
+            <button class="btn btn-outline-secondary w-100" id="copyVerseBtn" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-clipboard-check">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M17.997 4.17a3 3 0 0 1 2.003 2.83v12a3 3 0 0 1 -3 3h-10a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 2.003 -2.83a4 4 0 0 0 3.997 3.83h4a4 4 0 0 0 3.98 -3.597zm-3.704 7.123l-3.293 3.292l-1.293 -1.292a1 1 0 1 0 -1.414 1.414l2 2a1 1 0 0 0 1.414 0l4 -4a1 1 0 0 0 -1.414 -1.414m-.293 -9.293a2 2 0 1 1 0 4h-4a2 2 0 1 1 0 -4z" />
+              </svg>
+              Copy
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TRANSLATIONS_URL = "{% url 'bible:translations_list' %}";
+const BIBLE_BOOKS_URL   = "{% url 'bible:book_list' %}";
+const BIBLE_PASSAGE_URL = "{% url 'bible:fetch_passage' %}";
+const BIBLE_CHAPTER_URL = "{% url 'bible:chapter_verses' %}";
+const HL_SAVE_URL       = "{% url 'bible:ajax_save_highlight' %}";
+const HL_LOAD_URL       = "{% url 'bible:ajax_load_highlights' %}";
+const YV_STATUS_URL     = "{% url 'bible:youversion_status' %}";
+const YV_SYNC_URL       = "{% url 'bible:youversion_sync' %}";
+const YV_LOGOUT_URL     = "{% url 'bible:youversion_logout' %}";
+const CSRF_TOKEN        = "{{ csrf_token }}";
+
+const HIGHLIGHT_COLORS = {
+  yellow: "#fde68a", green: "#6ee7b7", blue: "#93c5fd",
+  pink: "#f9a8d4",   purple: "#c4b5fd"
+};
+
+let _state = {
+  bookId: "{{ initial_book_id|escapejs }}",
+  bookName: "",
+  chapter: {{ initial_chapter }},
+  translation: "{{ initial_translation|escapejs }}",
+  totalChapters: 1,
+  highlights: {},
+  highlighterOn: false,
+  pickerVerses: new Set(),
+  pickerColor: "yellow",
+  currentVerses: [],
+  selectionAnchor: null,
+};
+
+{% if highlights %}
+{% for h in highlights %}
+_state.highlights[{{ h.verse_number }}] = {color:"{{ h.color|escapejs }}", note:"{{ h.note|escapejs }}"};
+{% endfor %}
+{% endif %}
+
+// ── YouVersion auth flash (from OAuth callback redirect) ─────────────────
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const yvAuth = params.get("yv_auth");
+  if (yvAuth === "ok") {
+    console.info("YouVersion connected successfully.");
+    // Clean the URL
+    const clean = window.location.pathname + (window.location.search.replace(/[?&]yv_auth=[^&]*/g, "").replace(/^\?$/, "") || "");
+    history.replaceState({}, "", clean);
+  } else if (yvAuth === "error") {
+    console.warn("YouVersion connection failed or was cancelled.");
+    history.replaceState({}, "", window.location.pathname);
+  }
+})();
+
+// ── Load translations ────────────────────────────────────────────────────
+async function loadTranslations() {
+  try {
+    const res = await fetch(TRANSLATIONS_URL, { cache: 'no-store' });
+    const data = await res.json();
+    const sel = document.getElementById("readerTranslation");
+    sel.innerHTML = "";
+
+    // Merge: YouVersion first, then helloao, then apibible (deduped server-side)
+    const allTranslations = [
+      ...(data.youversion || []),
+      ...(data.helloao || []),
+      ...(data.apibible || []),
+    ];
+
+    if (!allTranslations.length) {
+      // Absolute fallback so the reader is never blank
+      const opt = document.createElement("option");
+      opt.value = "BSB"; opt.textContent = "Berean Standard Bible (BSB)"; opt.selected = true;
+      sel.appendChild(opt);
+      return;
+    }
+
+    let matched = false;
+    allTranslations.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t.id;
+      opt.textContent = t.name || t.id;
+      if (t.needs_key) {
+        opt.disabled = true;
+        opt.textContent += " — needs API key";
+        opt.style.color = "#94a3b8";
+      } else {
+        const isMatch = String(t.id).toUpperCase() === String(_state.translation).toUpperCase();
+        if (isMatch) { opt.selected = true; matched = true; _state.translation = t.id; }
+      }
+      sel.appendChild(opt);
+    });
+
+    // If the initial_translation wasn't in the list, select the first available
+    if (!matched) {
+      const first = sel.querySelector("option:not([disabled])");
+      if (first) { first.selected = true; _state.translation = first.value; }
+    }
+  } catch(e) { console.warn("loadTranslations:", e); }
+}
+
+// ── YouVersion OAuth status ───────────────────────────────────────────────
+function _yvReaderNext() {
+  // Build a next= URL pointing back to the reader with current book/chapter/translation
+  const params = new URLSearchParams({
+    book_id: _state.bookId,
+    chapter: _state.chapter,
+    translation: _state.translation,
+  });
+  return window.location.pathname + "?" + params.toString();
+}
+
+function _yvUpdateSignInHref() {
+  const btn = document.getElementById("yvSignInBtn");
+  if (!btn) return;
+  const loginBase = "{% url 'bible:youversion_login' %}";
+  btn.href = loginBase + "?next=" + encodeURIComponent(_yvReaderNext());
+}
+
+async function loadYVStatus() {
+  const area = document.getElementById("yvAuthArea");
+  try {
+    const res = await fetch(YV_STATUS_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error("status " + res.status);
+    const data = await res.json();
+    area.classList.remove("d-none");
+
+    if (!data.oauth_available) {
+      // OAuth not configured in settings — hide the whole area silently
+      area.classList.add("d-none");
+      return;
+    }
+
+    _yvUpdateSignInHref();
+
+    if (data.connected) {
+      document.getElementById("yvSignInBtn").classList.add("d-none");
+      const connArea = document.getElementById("yvConnectedArea");
+      connArea.classList.remove("d-none");
+      const avatar = document.getElementById("yvAvatar");
+      if (data.yv_avatar_url) { avatar.src = data.yv_avatar_url; } else { avatar.style.display = "none"; }
+      document.getElementById("yvUsername").textContent = data.yv_username || "YouVersion";
+    } else {
+      document.getElementById("yvSignInBtn").classList.remove("d-none");
+      document.getElementById("yvConnectedArea").classList.add("d-none");
+    }
+  } catch(e) {
+    // If the status endpoint fails (e.g. DB migration not yet run), still show
+    // the sign-in button so the user can connect — it will work once the issue
+    // is fixed, and hiding it entirely is more confusing than showing it.
+    console.warn("loadYVStatus:", e);
+    area.classList.remove("d-none");
+    _yvUpdateSignInHref();
+    document.getElementById("yvSignInBtn").classList.remove("d-none");
+    document.getElementById("yvConnectedArea").classList.add("d-none");
+  }
+}
+
+document.getElementById("yvSyncBtn")?.addEventListener("click", async function() {
+  this.disabled = true; this.textContent = "…";
+  try {
+    const res = await fetch(YV_SYNC_URL, { method: "POST", headers: { "X-CSRFToken": CSRF_TOKEN } });
+    const data = await res.json();
+    this.textContent = data.ok ? "✓" : "✗";
+    if (data.ok) { await loadHighlights(); renderVerses(_state.currentVerses); }
+  } catch(e) { this.textContent = "✗"; }
+  setTimeout(() => { this.disabled = false; this.textContent = "⟳"; }, 2000);
+});
+
+document.getElementById("yvDisconnectBtn")?.addEventListener("click", async function() {
+  if (!confirm("Disconnect your YouVersion account?")) return;
+  await fetch(YV_LOGOUT_URL, { method: "POST", headers: { "X-CSRFToken": CSRF_TOKEN } });
+  loadYVStatus();
+});
+
+// ── Book list ──────────────────────────────────────────────────────────────
+async function loadBooks() {
+  try {
+    const res = await fetch(`${BIBLE_BOOKS_URL}?translation=${_state.translation}`, { cache: 'no-store' });
+    const data = await res.json();
+    const sel = document.getElementById("readerBook");
+    sel.innerHTML = "";
+    _state._booksIndex = {};
+    (data.books || []).forEach(b => {
+      _state._booksIndex[b.id] = b;
+      const opt = document.createElement("option");
+      opt.value = b.id; opt.textContent = b.name;
+      if (b.id === _state.bookId) {
+        opt.selected = true; _state.bookName = b.name;
+        _state.totalChapters = b.numberOfChapters || 1;
+      }
+      sel.appendChild(opt);
+    });
+    renderChapterGrid();
+  } catch(e) { console.warn("loadBooks:", e); }
+}
+
+// ── Chapter grid ──────────────────────────────────────────────────────────
+function renderChapterGrid() {
+  const grid = document.getElementById("readerChapterGrid");
+  grid.innerHTML = "";
+  for (let i = 1; i <= _state.totalChapters; i++) {
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.textContent = i;
+    btn.className = "btn btn-xs " + (i === _state.chapter ? "btn-warning" : "btn-outline-secondary");
+    btn.style.cssText = "border-radius:8px;min-width:32px;padding:2px 4px;font-size:.75rem;";
+    btn.addEventListener("click", () => { _state.chapter = i; loadChapter(); });
+    grid.appendChild(btn);
+  }
+}
+
+// ── Load chapter ──────────────────────────────────────────────────────────
+async function loadChapter() {
+  const container = document.getElementById("readerVerseContainer");
+  container.innerHTML = '<div class="text-muted text-center py-5">Loading…</div>';
+  _state.pickerVerses.clear();
+  _state.selectionAnchor = null;
+  hideSelectionToolbar();
+  try {
+    const url = `${BIBLE_PASSAGE_URL}?book_id=${_state.bookId}&chapter=${_state.chapter}&translation=${_state.translation}`;
+    const res  = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "no verses");
+    const verses = data.verses || [];
+    _state.bookName = data.book_name || _state.bookId;
+    if (data.total_chapters && data.total_chapters > 1) _state.totalChapters = data.total_chapters;
+    document.getElementById("readerRef").textContent = `${_state.bookName} ${_state.chapter}`;
+    document.getElementById("readerTransLabel").textContent = `(${_state.translation})`;
+    renderChapterGrid();
+    await loadHighlights();
+    _state.currentVerses = verses;
+    renderVerses(verses);
+    // Keep the sign-in link in sync with the current reader position
+    _yvUpdateSignInHref();
+  } catch(e) {
+    container.innerHTML = '<div class="text-muted text-center py-4">Could not load chapter. Please try again.</div>';
+    console.warn("loadChapter:", e);
+  }
+}
+
+// ── Render verses ──────────────────────────────────────────────────────────
+function renderVerses(verses) {
+  const container = document.getElementById("readerVerseContainer");
+  container.innerHTML = "";
+  verses.forEach(v => {
+    const hl = _state.highlights[v.number];
+    const isSelected = _state.pickerVerses.has(v.number);
+    const span = document.createElement("span");
+    span.className = "bible-reader-verse";
+    span.dataset.verse = v.number;
+    let bg = "";
+    if (isSelected) bg = "background:#facc1540;border-bottom:2px solid #facc15;";
+    else if (hl) bg = `background:${HIGHLIGHT_COLORS[hl.color]}22;border-bottom:2px solid ${HIGHLIGHT_COLORS[hl.color]};`;
+    span.style.cssText = `display:inline;cursor:pointer;padding:2px 1px;border-radius:3px;transition:background .15s;${bg}`;
+
+    const numEl = document.createElement("sup");
+    numEl.textContent = v.number;
+    numEl.style.cssText = "font-size:.65rem;color:#64748b;margin-right:3px;font-family:sans-serif;cursor:pointer;";
+    span.appendChild(numEl);
+    span.appendChild(document.createTextNode(v.text + " "));
+
+    span.addEventListener("click", (evt) => {
+      if (_state.highlighterOn) { handleVerseClick(v.number, evt); }
+    });
+    span.addEventListener("mouseenter", () => {
+      if (_state.highlighterOn && !_state.highlights[v.number] && !_state.pickerVerses.has(v.number))
+        span.style.background = "#fef9c380";
+    });
+    span.addEventListener("mouseleave", () => {
+      if (_state.pickerVerses.has(v.number)) return;
+      const hh = _state.highlights[v.number];
+      span.style.background = hh ? `${HIGHLIGHT_COLORS[hh.color]}22` : "";
+    });
+
+    container.appendChild(span);
+  });
+  renderHighlightsSidebar();
+}
+
+// ── Multi-verse click logic ───────────────────────────────────────────────
+function handleVerseClick(verseNum, evt) {
+  if (evt.shiftKey && _state.selectionAnchor !== null) {
+    const anchor = _state.selectionAnchor;
+    const lo = Math.min(anchor, verseNum), hi = Math.max(anchor, verseNum);
+    _state.pickerVerses.clear();
+    _state.currentVerses.forEach(v => { if (v.number >= lo && v.number <= hi) _state.pickerVerses.add(v.number); });
+  } else {
+    if (_state.pickerVerses.has(verseNum)) {
+      _state.pickerVerses.delete(verseNum);
+      if (_state.pickerVerses.size === 0) _state.selectionAnchor = null;
+    } else {
+      _state.pickerVerses.add(verseNum);
+      _state.selectionAnchor = verseNum;
+    }
+  }
+  renderVerses(_state.currentVerses);
+  if (_state.pickerVerses.size > 0) {
+    showSelectionToolbar();
+    openHighlightPicker();
+  } else {
+    document.getElementById("highlightPicker").classList.add("d-none");
+    hideSelectionToolbar();
+  }
+}
+
+// ── Selection toolbar (copy/share) ────────────────────────────────────────
+function showSelectionToolbar() {
+  let bar = document.getElementById("selectionToolbar");
+  if (!bar) return;
+  const count = _state.pickerVerses.size;
+  bar.querySelector("#selectionCount").textContent = `${count} Verse${count !== 1 ? "s" : ""} selected`;
+  bar.classList.remove("d-none");
+  bar.style.display = "flex";
+}
+
+function hideSelectionToolbar() {
+  const bar = document.getElementById("selectionToolbar");
+  if (bar) { bar.classList.add("d-none"); bar.style.display = ""; }
+}
+
+// ── Highlight picker ──────────────────────────────────────────────────────
+function openHighlightPicker() {
+  document.getElementById("highlightPicker").classList.remove("d-none");
+}
+
+// ── Highlights sidebar ────────────────────────────────────────────────────
+function renderHighlightsSidebar() {
+  const sidebar = document.getElementById("highlightsSidebar");
+  const noMsg = document.getElementById("noHighlightsMsg");
+  const entries = Object.entries(_state.highlights);
+  if (!entries.length) { noMsg.style.display = ""; return; }
+  noMsg.style.display = "none";
+  sidebar.innerHTML = "";
+  entries.sort((a,b) => a[0]-b[0]).forEach(([vnum, hl]) => {
+    const v = _state.currentVerses.find(x => x.number === parseInt(vnum));
+    const el = document.createElement("div");
+    el.className = "p-2 mb-1 rounded";
+    el.style.cssText = `background:${HIGHLIGHT_COLORS[hl.color]}22;border-left:3px solid ${HIGHLIGHT_COLORS[hl.color]};font-size:.78rem;`;
+    el.innerHTML = `<span class="fw-semibold text-warning">${_state.bookName} ${_state.chapter}:${vnum}</span>
+      ${v ? `<div class="text-muted mt-1" style="font-family:Georgia,serif;font-size:.8rem;">${v.text.slice(0,80)}…</div>` : ""}
+      ${hl.note ? `<div class="text-info mt-1" style="font-size:.75rem;font-style:italic;">"${hl.note}"</div>` : ""}`;
+    sidebar.appendChild(el);
+  });
+}
+
+// ── Load highlights from server ───────────────────────────────────────────
+async function loadHighlights() {
+  try {
+    const res = await fetch(`${HL_LOAD_URL}?book_id=${_state.bookId}&chapter=${_state.chapter}&translation=${_state.translation}`, { cache: 'no-store' });
+    const data = await res.json();
+    _state.highlights = {};
+    (data.highlights || []).forEach(h => {
+      _state.highlights[h.verse_number] = { color: h.color, note: h.note || "" };
+    });
+  } catch(e) { /* keep existing */ }
+}
+
+// ── Save highlight ────────────────────────────────────────────────────────
+async function saveHighlight(verses, color, note, deleteMode=false) {
+  for (const vnum of verses) {
+    try {
+      await fetch(HL_SAVE_URL, {
+        method: "POST",
+        headers: { "X-CSRFToken": CSRF_TOKEN, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          book_id: _state.bookId, book_name: _state.bookName,
+          chapter: _state.chapter, verse: vnum,
+          color, note, delete: deleteMode,
+          translation: _state.translation,
+        }),
+      });
+      if (deleteMode) { delete _state.highlights[vnum]; }
+      else { _state.highlights[vnum] = { color, note }; }
+    } catch(e) { console.warn("saveHighlight:", e); }
+  }
+  _state.pickerVerses.clear();
+  _state.selectionAnchor = null;
+  document.getElementById("highlightPicker").classList.add("d-none");
+  hideSelectionToolbar();
+  renderVerses(_state.currentVerses);
+}
+
+// ── Highlight picker buttons ──────────────────────────────────────────────
+document.querySelectorAll(".hl-color-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    _state.pickerColor = btn.dataset.color;
+    document.querySelectorAll(".hl-color-btn").forEach(b => b.style.border = "2px solid transparent");
+    btn.style.border = "2px solid white";
+  });
+});
+document.getElementById("saveHighlightBtn")?.addEventListener("click", () => {
+  const note = document.getElementById("hlNoteInput").value.trim();
+  saveHighlight([..._state.pickerVerses], _state.pickerColor, note);
+  document.getElementById("hlNoteInput").value = "";
+});
+document.getElementById("removeHighlightBtn")?.addEventListener("click", () => {
+  saveHighlight([..._state.pickerVerses], "", "", true);
+  document.getElementById("hlNoteInput").value = "";
+});
+document.getElementById("cancelHighlightBtn")?.addEventListener("click", () => {
+  _state.pickerVerses.clear();
+  _state.selectionAnchor = null;
+  document.getElementById("highlightPicker").classList.add("d-none");
+  hideSelectionToolbar();
+  renderVerses(_state.currentVerses);
+});
+
+// ── Highlighter toggle ────────────────────────────────────────────────────
+document.getElementById("highlighterToggle")?.addEventListener("click", function() {
+  _state.highlighterOn = !_state.highlighterOn;
+  this.classList.toggle("btn-warning", _state.highlighterOn);
+  this.classList.toggle("btn-outline-warning", !_state.highlighterOn);
+  if (!_state.highlighterOn) {
+    _state.pickerVerses.clear();
+    _state.selectionAnchor = null;
+    document.getElementById("highlightPicker").classList.add("d-none");
+    hideSelectionToolbar();
+    renderVerses(_state.currentVerses);
+  }
+});
+
+// ── Copy / Share selection ────────────────────────────────────────────────
+document.getElementById("copySelectionBtn")?.addEventListener("click", () => {
+  const sorted = [..._state.pickerVerses].sort((a,b)=>a-b);
+  const text = sorted.map(n => {
+    const v = _state.currentVerses.find(x => x.number === n);
+    return v ? `[${n}] ${v.text}` : "";
+  }).filter(Boolean).join(" ");
+  const ref = sorted.length === 1
+    ? `${_state.bookName} ${_state.chapter}:${sorted[0]}`
+    : `${_state.bookName} ${_state.chapter}:${sorted[0]}-${sorted[sorted.length-1]}`;
+  navigator.clipboard?.writeText(`"${text}" — ${ref} (${_state.translation})`);
+});
+document.getElementById("shareSelectionBtn")?.addEventListener("click", () => {
+  const sorted = [..._state.pickerVerses].sort((a,b)=>a-b);
+  const text = sorted.map(n => {
+    const v = _state.currentVerses.find(x => x.number === n);
+    return v ? v.text : "";
+  }).filter(Boolean).join(" ");
+  const ref = sorted.length === 1
+    ? `${_state.bookName} ${_state.chapter}:${sorted[0]}`
+    : `${_state.bookName} ${_state.chapter}:${sorted[0]}-${sorted[sorted.length-1]}`;
+  _shareData = { reference: ref, text, translation: _state.translation };
+  const preview = document.getElementById("shareVersePreview");
+  if (preview) preview.innerHTML = `<strong>${ref}</strong> (${_state.translation})<br><br>"${text}"`;
+  const modal = new bootstrap.Modal(document.getElementById("shareVerseModal"));
+  modal.show();
+});
+document.getElementById("clearSelectionBtn")?.addEventListener("click", () => {
+  _state.pickerVerses.clear();
+  _state.selectionAnchor = null;
+  document.getElementById("highlightPicker").classList.add("d-none");
+  hideSelectionToolbar();
+  renderVerses(_state.currentVerses);
+});
+
+// ── Prev / Next chapter ───────────────────────────────────────────────────
+document.getElementById("prevChapterBtn").addEventListener("click", () => {
+  if (_state.chapter > 1) { _state.chapter--; loadChapter(); }
+});
+document.getElementById("nextChapterBtn").addEventListener("click", () => {
+  if (_state.chapter < _state.totalChapters) { _state.chapter++; loadChapter(); }
+});
+
+// ── Book/Translation selects ──────────────────────────────────────────────
+document.getElementById("readerBook").addEventListener("change", function() {
+  _state.bookId  = this.value;
+  _state.chapter = 1;
+  const bookMeta = _state._booksIndex && _state._booksIndex[this.value];
+  _state.totalChapters = (bookMeta && bookMeta.numberOfChapters) || 1;
+  renderChapterGrid();
+  loadChapter();
+});
+document.getElementById("readerTranslation").addEventListener("change", function() {
+  _state.translation = this.value;
+  loadChapter();
+});
+
+// ── Share modal ───────────────────────────────────────────────────────────
+let _shareData = {};
+document.getElementById("shareToFeedBtn")?.addEventListener("click", function() {
+  this.disabled = true; this.textContent = "Sharing…";
+  const SHARE_URL = "{% url 'bible:share_to_feed' %}";
+  fetch(SHARE_URL, {
+    method: "POST",
+    headers: { "X-CSRFToken": CSRF_TOKEN, "Content-Type": "application/json" },
+    body: JSON.stringify({ share_type:"verse", reference:_shareData.reference, verse_text:_shareData.text, translation:_shareData.translation }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) bootstrap.Modal.getInstance(document.getElementById("shareVerseModal"))?.hide();
+    this.disabled = false; this.textContent = data.ok ? "✓ Shared!" : "Share to Feed";
+  }).catch(() => { this.disabled = false; this.textContent = "Share to Feed"; });
+});
+document.getElementById("copyVerseBtn")?.addEventListener("click", function() {
+  navigator.clipboard?.writeText(`"${_shareData.text}" — ${_shareData.reference} (${_shareData.translation})`)
+    .then(() => { this.textContent = "✓ Copied!"; setTimeout(() => { this.textContent = "📋 Copy to Clipboard"; }, 2000); });
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────
+(async () => {
+  await loadTranslations();   // Phase 3: populates dropdown dynamically
+  await loadYVStatus();        // Phase 2: show/hide YouVersion sign-in button
+  await loadBooks();
+  await loadChapter();
+})();
+</script>
+{% endblock %}

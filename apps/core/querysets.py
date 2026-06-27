@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import SynchronousOnlyOperation
 from core.request_context import get_current_user, get_current_church
 
 
@@ -90,6 +91,40 @@ class ChurchQuerySet(PermissionQuerySet):
             return self.for_church(church)
 
         return self.visible_to(user, church)
+
+    
+
+    def auto_scope(self):
+        """
+        Apply request-based scoping ONLY when a request context exists.
+        Safe for async + model import time.
+        """
+        try:
+            from core.request_context import get_current_request
+            request = get_current_request()
+        except Exception:
+            return self
+
+        # No request yet (import time / migrations / shell)
+        if not request:
+            return self
+
+        user = getattr(request, "user", None)
+        church = getattr(request, "church", None)
+
+        if not user or not church:
+            return self
+        
+        # If it's an admin/staff in the Django Admin, just filter by Church
+        # This prevents the 'visible_to' logic from breaking Admin fields
+        if user.is_staff or user.is_superuser:
+            return self.for_church(church)
+
+        try:
+            return self.visible_to(user, church)
+        except SynchronousOnlyOperation:
+            # Async context safety fallback
+            return self
 
 
 class GuestQuerySet(ChurchQuerySet):

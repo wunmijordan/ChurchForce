@@ -1,0 +1,1252 @@
+{% extends base_template %}
+{% load static %}
+{% load user_avatar_tags %}
+{% load guest_extras %}
+{% load access_tags %}
+{% load widget_tweaks %}
+
+{% block title %}{{ unit.name }} — {{ church.name }}{% endblock %}
+
+{% block content %}
+<div class="page-wrapper py-5">
+
+  {# ── Page header ── #}
+  <div class="page-header d-print-none" aria-label="Page header">
+    <div class="container-xl">
+      <div class="row g-2 mb-4 align-items-center">
+        <div class="col g-3">
+          <div class="d-flex align-items-center flex-wrap" style="gap:12px;">
+            <kbd style="color:{{ unit.color }}">
+              <h2 class="page-title">{{ unit.name }}</h2>
+            </kbd>
+            {% if unit.description %}
+              <span class="fst-italic">{{ unit.description }} —</span>
+            {% endif %}
+            <span class="fst-italic ms-1">{{ unit.get_unit_type_display }}</span>
+            {% if unit.report_to %}
+              <span class="ms-2">Reports to {{ unit.report_to.name }}</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-auto ms-auto">
+          {% if can_manage %}
+            <a class="btn btn-sm btn-grey"
+               style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+               href="{% url 'units:edit' unit.slug %}">Edit Unit</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Page body ── #}
+  <div class="page-body d-print-none">
+    <div class="container-xl pb-5">
+      <div class="row row-deck row-cards">
+
+        {# ── Module shortcut cards ── #}
+        {% if church_settings %}
+          {% if church_settings.enable_guest_module and unit.guest_management or church_settings.enable_music_module and unit.music_module or church_settings.enable_media_module and unit.media_module or church_settings.enable_children_module and unit.children_module or church_settings.enable_youth_module and unit.youth_module or church_settings.enable_teenagers_module and unit.teenagers_module %}
+            <div class="row g-3 mb-2">
+
+              {% if church_settings.enable_guest_module and unit.guest_management %}
+              <div class="col-sm-6 col-lg-3">
+                <div class="card h-100 bg-orange-lt" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                  <div class="card-body">
+                    <h4 class="mb-1 fw-semibold">Guest Follow-Up</h4>
+                    <p class="text-secondary small">Track assigned Guests.</p>
+                    <div class="d-flex align-items-center flex-wrap pt-2" style="gap:12px;">
+                      <a class="btn btn-sm" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                        href="{% url 'guests:guest_list' %}?unit={{ unit.slug }}{% if not can_manage and current_unit_membership %}&user_filter={{ current_unit_membership.id }}{% endif %}">View Guests</a>
+
+                     {% if can_create_guest_for_unit %}
+                      <div class="ms-auto">
+                        <a href="{% url 'guests:create_guest' %}" class="btn btn-sm d-none d-sm-inline-block"
+                            style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                          Add New Guest
+                        </a>
+                        <a href="{% url 'guests:create_guest' %}" class="btn btn-sm d-sm-none btn-icon" aria-label="Add guest"
+                            style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff5e01ff" stroke-width="2" class="icon">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/>
+                            <path d="M16 19h6"/><path d="M19 16v6"/>
+                          </svg>
+                        </a>
+                      </div>
+                      {% endif %}
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
+              {% if church_settings.enable_music_module and unit.music_module %}
+              <div class="col-sm-6 col-lg-3">
+                <div class="card bg-green-lt h-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                  <div class="card-body">
+                    <h4 class="mb-1 fw-semibold">Music</h4>
+                    <p class="text-secondary small">Setlists, rehearsals, and music planning.</p>
+                    <a class="btn btn-sm" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                       href="{% url 'units:unit_music' unit.slug %}">Open Music</a>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
+              {% if church_settings.enable_media_module and unit.media_module %}
+              <div class="col-sm-6 col-lg-3">
+                <div class="card bg-blue-lt h-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                  <div class="card-body">
+                    <h4 class="mb-1 fw-semibold">Media</h4>
+                    <p class="text-secondary small">Production planning and broadcast workflows.</p>
+                    <a class="btn btn-sm" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                       href="{% url 'units:unit_media' unit.slug %}">Open Media</a>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
+              {% if church_settings.enable_children_module and unit.children_module %}
+              <div class="col-sm-6 col-lg-3">
+                <div class="card bg-yellow-lt h-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                  <div class="card-body">
+                    <h4 class="mb-1 fw-semibold">Children</h4>
+                    <p class="text-secondary small">Check-in, sessions, and kids tracking.</p>
+                    <a class="btn btn-sm" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                       href="{% url 'units:unit_children' unit.slug %}">Open Children</a>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
+              {% if church_settings.enable_youth_module and unit.youth_module %}
+              <div class="col-sm-6 col-lg-3">
+                <div class="card bg-purple-lt h-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                  <div class="card-body">
+                    <h4 class="mb-1 fw-semibold">Youth</h4>
+                    <p class="text-secondary small">Projects, goals, and youth engagement.</p>
+                    <a class="btn btn-sm" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                       href="{% url 'units:unit_youth' unit.slug %}">Open Youth</a>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
+              {% if church_settings.enable_teenagers_module and unit.teenagers_module %}
+              <div class="col-sm-6 col-lg-3">
+                <div class="card bg-red-lt h-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+                  <div class="card-body">
+                    <h4 class="mb-1 fw-semibold">Teenagers</h4>
+                    <p class="text-secondary small">Mentorship and teen growth tracking.</p>
+                    <a class="btn btn-sm" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                       href="{% url 'units:unit_teenagers' unit.slug %}">Open Teenagers</a>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
+            </div>
+          {% else %}
+            <div class="text-muted mb-4">No dedicated modules are assigned to this Unit or Group yet.</div>
+          {% endif %}
+        {% endif %}
+
+        {# ── Functional Roles panel — all units #}
+        {# Music units: full preset bundle; others: Secretary + custom #}
+        {% if unit_functional_roles %}
+        {% include "units/partials/_functional_roles.html" %}
+        {% endif %}
+
+        {# ── Guests + Members row ── #}
+        <div class="row g-4 p-0">
+
+          
+  
+          <div class="col-md-12 col-lg-8">
+            {# Guests card #}
+            {% if church_settings.enable_guest_module and unit.guest_management %}
+            <div class="card bg-gray-900" style="border-radius:24px;box-shadow:0 4px 8px #000000d2;">
+              <div class="card-header d-flex align-items-center justify-content-between gap-3 flex-nowrap">
+  
+                <!-- Left Side: Title & Badge -->
+                <div class="d-flex align-items-center gap-2">
+                  <h3 class="mb-0 fw-semibold">Guests</h3>
+                  <span class="badge bg-secondary-lt" style="box-shadow:0 4px 8px #000000d2; border-radius:24px; color:{{ unit.color }};">
+                    {{ total_count|default:0 }}
+                  </span>
+                </div>
+
+                <!-- Filters: compact dropdown controls to keep single-line header -->
+                <form method="get" class="d-flex align-items-center gap-2 ms-auto flex-nowrap">
+                  <select name="guest_status"
+                          class="form-select form-select-sm"
+                          style="width:160px; box-shadow:inset 0 4px 8px #000000d2; border-radius:24px;"
+                          onchange="this.form.submit()">
+                    <option value="">All Statuses ({{ total_count|default:0 }})</option>
+                    {% for status in statuses %}
+                    <option value="{{ status.slug }}" {% if selected_status == status.slug %}selected{% endif %}>
+                      {{ status.name }} ({{ status_counts|get_item:status.slug|default:0 }})
+                    </option>
+                    {% endfor %}
+                  </select>
+                  {% if can_manage %}
+                  <select name="guest_assignee"
+                          class="form-select form-select-sm"
+                          style="width:160px; box-shadow:inset 0 4px 8px #000000d2; border-radius:24px;"
+                          onchange="this.form.submit()">
+                    <option value="">All Assignees</option>
+                    {% for m in assignable_members %}
+                    <option value="{{ m.id }}" {% if selected_member == m.id|stringformat:'s' %}selected{% endif %}>
+                      {{ m.workforce_member.member.user.full_name }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                  {% elif selected_member %}
+                  <input type="hidden" name="guest_assignee" value="{{ selected_member }}">
+                  {% endif %}
+                </form>
+                
+              </div>
+              <div class="card-body">
+                
+                <div class="scrollbar-container">
+                  {% include "units/_unit_guest_cards.html" with unit=unit guests=guests svg_icons=svg_icons GUESTS_ROOM_ID=GUESTS_ROOM_ID can_report=can_report can_update_status=can_update_status %}
+                </div>
+              </div>
+            </div>
+            {% endif %}{# /guest card #}
+          
+            {% if church_settings.enable_music_module and unit.music_module %}
+            {% include "units/partials/_mini_mixer.html" %}
+            {% endif %}
+
+            {% if church_settings.enable_media_module and unit.media_module %}
+            <div class="card bg-gray-900 mt-3" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0 fw-semibold">Media Overview</h3>
+                <a href="{% url 'units:unit_media' unit.slug %}" class="btn btn-sm btn-outline-secondary" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">Open Media</a>
+              </div>
+              <div class="card-body">
+                <div class="small text-muted text-uppercase mb-2">Upcoming Events</div>
+                {% for event in media_upcoming_events %}
+                  <div class="d-flex justify-content-between small border-bottom border-secondary py-1">
+                    <span>{{ event.name }}</span>
+                    <span class="text-muted">{{ event.date|date:"M j" }}</span>
+                  </div>
+                {% empty %}
+                  <div class="text-muted small">No upcoming events.</div>
+                {% endfor %}
+                <hr>
+                <div class="small text-muted text-uppercase mb-2">Recent Presentations</div>
+                {% for pres in media_presentations %}
+                  <div class="small mb-1">{{ pres.title }}</div>
+                {% empty %}
+                  <div class="text-muted small">No presentations yet.</div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          {# Members card #}
+          <div class="col-md-6 col-lg-4">
+            <div class="card bg-gray-900" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+              <div class="card-header d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                  <h3 class="mb-0 fw-semibold">Members</h3>
+                  <span class="badge bg-secondary-lt"
+                        style="box-shadow:0 4px 8px #000000d2;border-radius:24px;color:{{ unit.color }};">
+                    {{ member_cards|length }}
+                  </span>
+                </div>
+                {% if can_manage %}
+                  <button class="btn btn-sm btn-outline-secondary"
+                          style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                          type="button" data-bs-toggle="collapse" data-bs-target="#addMember">Add</button>
+                {% endif %}
+              </div>
+              <div class="card-body">
+
+                {% if can_manage %}
+                <div class="collapse mb-3" id="addMember">
+                  <form method="post" action="{% url 'units:add_member' unit.slug %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_member">
+                    <div class="mb-3">
+                      <label class="form-label">Select member</label>
+                      <select class="form-select"
+                              style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;"
+                              name="workforce_member_id" required>
+                        <option value="">Choose…</option>
+                        {% for wf in available_members %}
+                          <option value="{{ wf.id }}">
+                            {{ wf.member.user.title }} {{ wf.member.user.full_name|default:wf.member.user.username }}
+                          </option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="form-check mb-3">
+                      <input class="form-check-input" type="checkbox" name="is_probation" id="is_probation">
+                      <label class="form-check-label" for="is_probation">Add as probationary</label>
+                    </div>
+                    <button class="btn btn-sm btn-success"
+                            style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                            type="submit">Add Member</button>
+                  </form>
+                </div>
+                {% endif %}
+
+                <div class="scrollbar-container">
+                  <div class="row row-cards g-3 pb-2">
+                    {% for item in member_cards %}
+                    <div data-user-id="{{ item.user.id }}">
+                      <div class="card flex-fill border-0 pb-2"
+                           style="box-shadow:0 4px 8px #000000d2;border-radius:36px;max-height:230px;">
+
+                        <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                          <div class="text-secondary fs-3 fw-bold" style="font-family:monospace;">
+                            {% if item.is_trainee %}
+                              {# Trainees: no custom_id yet — show trainee stage badge only #}
+                              <span class="badge" style="background:#7c3c0044;color:#f59f00;border:1px solid #f59f0066;border-radius:12px;font-size:.7rem;padding:4px 10px;">
+                                🎓 Trainee
+                              </span>
+                            {% else %}
+                              {{ item.member.custom_id|default:"" }}
+                              {% if item.workforce_stage %}
+                                <span class="badge
+                                  {% if item.workforce_stage == 'Active' %}bg-success-lt
+                                  {% elif item.workforce_stage == 'Probationer' %}bg-orange-lt
+                                    {% if item.membership.is_probation %}
+                                      {% if item.is_disciplinary_probation %}
+                                        {# Disciplinary demotion — red, downward arrow #}
+                                        <span class='badge-lg bg-danger text-white px-2'
+                                              style='border-radius:12px;font-size:.65rem;'
+                                              title='Disciplinary probation'>
+                                          ↓ Probation
+                                        </span>
+                                      {% else %}
+                                        {# Pipeline promotion probation — green, upward arrow #}
+                                        <span class='badge-lg bg-success text-white px-2'
+                                              style='border-radius:12px;font-size:.65rem;'
+                                              title='Post-training probation'>
+                                          ↑ Probation
+                                        </span>
+                                      {% endif %}
+                                    {% endif %}
+                                  {% elif item.workforce_stage == 'Leader' %}bg-purple-lt
+                                  {% else %}bg-secondary-lt{% endif %}"
+                                  style="font-size:.65rem;border-radius:12px;">
+                                  {{ item.workforce_stage }}
+                                </span>
+                              {% endif %}
+                            {% endif %}
+                            
+                          </div>
+
+                          {% if can_manage %}
+                          <div class="dropdown">
+                            <a href="#" class="text-purple" data-bs-toggle="dropdown">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="5" r="1"/>
+                                <circle cx="12" cy="12" r="1"/>
+                                <circle cx="12" cy="19" r="1"/>
+                              </svg>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end p-1">
+                              {% if nav_is_admin %}
+                                <form method="post"
+                                      action="{% url 'units:set_unit_head' unit.slug item.membership.id %}">
+                                  {% csrf_token %}
+                                  <button class="dropdown-item py-1" type="submit">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" class="me-1">
+                                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    </svg>
+                                    Make Unit Head
+                                  </button>
+                                </form>
+                              {% endif %}
+                              
+                              {% if item.membership.is_probation %}
+                                <form method="post"
+                                      action="{% url 'units:clear_probation' item.membership.id %}">
+                                  {% csrf_token %}
+                                  <button class="dropdown-item py-1" type="submit">✓ Clear Probation</button>
+                                </form>
+                              {% else %}
+                                <form method="post"
+                                      action="{% url 'units:set_probation' item.membership.id %}">
+                                  {% csrf_token %}
+                                  <div class="px-3 py-2" style="min-width:220px;">
+                                    <label class="form-label small mb-1 fw-semibold">Disciplinary probation unit</label>
+                                    <select name="probation_unit_id" class="form-select form-select-sm mb-2"
+                                            style="border-radius:10px;">
+                                      <option value="">Keep {{ item.membership.unit.name }}</option>
+                                      {% for probation_unit in available_probation_units %}
+                                        <option value="{{ probation_unit.id }}">{{ probation_unit.name }}</option>
+                                      {% endfor %}
+                                    </select>
+                                    <button class="btn btn-sm btn-outline-secondary w-100"
+                                            style="border-radius:10px;" type="submit">Set Probation</button>
+                                  </div>
+                                </form>
+                              {% endif %}
+                              
+                              {# ── NEW: Unit Transfer ───────────────────────────────────────── #}
+                              {% if nav_is_admin and other_units_for_transfer %}
+                              <div class="dropdown-divider my-1"></div>
+                              <form method="post" action="{% url 'units:transfer_member' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="membership_id" value="{{ item.membership.id }}">
+                                <input type="hidden" name="next" value="{{ request.path }}">
+                                <div class="px-3 py-2" style="min-width:220px;">
+                                  <label class="form-label small mb-1 fw-semibold text-info">Transfer to Unit</label>
+                                  <select name="to_unit_id" class="form-select form-select-sm mb-1"
+                                          style="border-radius:10px;">
+                                    <option value="">— Select destination unit —</option>
+                                    {% for tu in other_units_for_transfer %}
+                                      <option value="{{ tu.id }}">{{ tu.name }}</option>
+                                    {% endfor %}
+                                  </select>
+                                  <div class="form-check mb-2">
+                                    <input type="checkbox" name="is_probation" class="form-check-input"
+                                          id="transferProbCheck_{{ item.membership.id }}">
+                                    <label class="form-check-label small"
+                                          for="transferProbCheck_{{ item.membership.id }}">
+                                      Mark as probation in new unit
+                                    </label>
+                                  </div>
+                                  <button class="btn btn-sm btn-outline-info w-100"
+                                          style="border-radius:10px;" type="submit"
+                                          onclick="return confirm('Transfer {{ item.user.full_name }} to selected unit?')">
+                                    Transfer
+                                  </button>
+                                </div>
+                              </form>
+                              {% endif %}
+                              {# ── END Unit Transfer ─────────────────────────────────────────── #}
+                              
+                              <div class="dropdown-divider my-1"></div>
+                              <form method="post"
+                                    action="{% url 'units:remove_member' unit.slug item.membership.id %}">
+                                {% csrf_token %}
+                                <button class="dropdown-item py-1 text-danger" type="submit"
+                                        onclick="return confirm('Remove {{ item.user.full_name }} from {{ unit.name }}?')">
+                                  Remove from Unit
+                                </button>
+                              </form>
+                            </div>
+                          </div>
+                          {% endif %}
+                        </div>
+
+                        <div class="position-relative" style="padding-bottom:50px;">
+                          <div class="row align-items-start mb-2 px-2">
+                            <div class="col-6 my-1 text-center position-relative" style="width:140px;">
+                              {% if item.user.image %}
+                                <span class="avatar avatar-xl"
+                                      style="background-image:url('{{ item.user.image.url }}');
+                                             display:inline-block;width:130px;height:130px;
+                                             border-radius:1rem;background-size:cover;
+                                             background-position:center;
+                                             box-shadow:0 2px 5px #000000f3;"></span>
+                              {% else %}
+                                <span class="avatar avatar-xl bg-grey text-white
+                                             d-inline-flex align-items-center justify-content-center"
+                                      style="width:130px;height:130px;font-weight:bold;
+                                             font-size:24px;border-radius:1rem;
+                                             box-shadow:0 2px 5px #000000f3;">
+                                  {{ item.user.initials }}
+                                </span>
+                              {% endif %}
+                            </div>
+
+                            <div class="col-6 mt-0 pt-0 d-flex flex-column justify-content-center"
+                                 style="height:135px;">
+                              <div>
+                                <small class="fst-italic text-secondary">{{ item.user.title|default:"" }}</small>
+                                <h3 class="d-flex text-white fs-2">
+                                  <span style="line-height:1.2;">{{ item.user.full_name }}</span>
+                                </h3>
+                              </div>
+                              <div class="gap-2">
+                                {% if item.user.phone_number %}
+                                <a href="tel:{{ item.user.phone_number }}" class="text-white" title="Call">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                       viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5-2.5l5 2v4a2 2 0 0 1-2 2a16 16 0 0 1-15-15a2 2 0 0 1 2-2"/>
+                                    <path d="M15 7a2 2 0 0 1 2 2"/><path d="M15 3a6 6 0 0 1 6 6"/>
+                                  </svg>
+                                </a>
+                                {% endif %}
+                                {% if item.user.email %}
+                                <a href="mailto:{{ item.user.email }}" class="text-white" title="Mail">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                       viewBox="0 0 24 24" fill="currentColor">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M22 7.535v9.465a3 3 0 0 1-2.824 2.995l-.176.005h-14a3 3 0 0 1-2.995-2.824l-.005-.176v-9.465l9.445 6.297.116.066a1 1 0 0 0 .878 0l.116-.066z"/>
+                                    <path d="M19 4c1.08 0 2.027.57 2.555 1.427l-9.555 6.37-9.555-6.37a2.999 2.999 0 0 1 2.354-1.42l.201-.007z"/>
+                                  </svg>
+                                </a>
+                                {% endif %}
+                              </div>
+                              <div class="small mt-2 text-muted" style="font-size:.68rem;">
+                                Attn · P: {{ item.attendance.present|default:0 }}
+                                · E: {{ item.attendance.excused|default:0 }}
+                                · A: {{ item.attendance.absent|default:0 }}
+                                {% if item.attendance.last_status %}
+                                <br>Last: {{ item.attendance.last_status|capfirst }}
+                                {% if item.attendance.last_date %} ({{ item.attendance.last_date|date:"M j" }}){% endif %}
+                                {% endif %}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="mt-1 position-absolute pb-2" style="bottom:20px;left:20px;">
+                            {% if item.user.is_online %}
+                              <div style="font-size:0.6rem;box-shadow:0 4px 8px #000000d2;
+                                          font-style:italic;border-radius:24px 0 0 24px;
+                                          padding:8px;text-align:center;width:fit-content;margin:0 auto;">
+                                <span class="badge bg-success-lt fs-6">●</span>
+                                <span style="font-family:monospace;font-size:0.8rem;">Online</span>
+                              </div>
+                            {% endif %}
+                          </div>
+
+                          <div class="mt-1 position-absolute pb-2" style="right:20px;bottom:20px;">
+                            {% if item.guest_count %}
+                              <div class="d-flex align-items-center">
+                                <span class="badge text-default ms-1 px-2 py-2"
+                                      style="font-size:0.6rem;box-shadow:0 4px 8px #000000d2;
+                                             font-style:italic;border-radius:0 24px 24px 0;">
+                                  Guests: <span style="font-family:monospace;">{{ item.guest_count }}</span>
+                                </span>
+                              </div>
+                            {% endif %}
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+                    {% empty %}
+                      <div class="col text-center text-muted py-5">No members found.</div>
+                    {% endfor %}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>{# /row guests+members #}
+
+
+        {# ── Announcements + Tasks row ── #}
+        <div class="row g-4">
+
+          {# Announcements #}
+          <div class="col-lg-6">
+            <div class="card bg-cyan-lt h-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+              <div class="card-header d-flex align-items-center justify-content-between">
+                <h3 class="mb-0 fw-semibold">Announcements</h3>
+                {% if can_manage %}
+                  <button class="btn btn-sm btn-outline-secondary"
+                          style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                          type="button" data-bs-toggle="collapse" data-bs-target="#addAnnouncement">Add</button>
+                {% endif %}
+              </div>
+              <div class="card-body">
+                {% if can_manage %}
+                <div class="collapse mb-3" id="addAnnouncement">
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_announcement">
+                    <div class="mb-2">
+                      <label class="form-label">Title</label>
+                      {% render_field announcement_form.title style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                    </div>
+                    <div class="mb-2">
+                      <label class="form-label">Body</label>
+                      {% render_field announcement_form.body style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                    </div>
+                    <div class="form-check mb-2">
+                      {{ announcement_form.is_pinned }}
+                      <label class="form-check-label">Pin announcement</label>
+                    </div>
+                    <div class="form-check mb-3">
+                      {{ announcement_form.is_banner }}
+                      <label class="form-check-label">Show in dashboard banner</label>
+                    </div>
+                    <button class="btn btn-sm btn-success"
+                            style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                            type="submit">Post</button>
+                  </form>
+                </div>
+                {% endif %}
+
+                {% for ann in announcements %}
+                  <div class="p-3 mb-3" style="box-shadow:inset 0 2px 2px #000000d2;border-radius:24px;">
+                    <div class="d-flex align-items-center justify-content-between">
+                      <div>
+                        <strong>{{ ann.title }}</strong>
+                        {% if ann.is_pinned %}
+                          <span class="badge bg-warning-lt ms-2">Pinned</span>
+                        {% endif %}
+                        <div class="text-muted small">{{ ann.created_at|date:"M d, Y" }}</div>
+                      </div>
+                      {% if can_manage %}
+                      <div class="d-flex gap-2">
+                        <a class="btn btn-xs"
+                           style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                           href="{% url 'units:announcement_edit' unit.slug ann.id %}">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                               fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4l-10.5 10.5v4"/>
+                            <path d="M13.5 6.5l4 4"/>
+                          </svg>
+                        </a>
+                        <form method="post"
+                              action="{% url 'units:announcement_delete' unit.slug ann.id %}">
+                          {% csrf_token %}
+                          <button class="btn btn-xs"
+                                  style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                                  type="submit">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                 viewBox="0 0 24 24" fill="currentColor">
+                              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                              <path d="M20 6a1 1 0 0 1 .117 1.993l-.117.007h-.081l-.919 11a3 3 0 0 1-2.824 2.995l-.176.005h-8c-1.598 0-2.904-1.249-2.992-2.75l-.005-.167-.923-11.083h-.08a1 1 0 0 1-.117-1.993l.117-.007zm-10 4a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1m4 0a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1"/>
+                              <path d="M14 2a2 2 0 0 1 2 2a1 1 0 0 1-1.993.117l-.007-.117h-4l-.007.117a1 1 0 0 1-1.993-.117a2 2 0 0 1 1.85-1.995l.15-.005z"/>
+                            </svg>
+                          </button>
+                        </form>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div class="text-secondary mt-2">{{ ann.body }}</div>
+                  </div>
+                {% empty %}
+                  <div class="text-muted">No announcements yet.</div>
+                {% endfor %}
+
+              </div>
+            </div>
+          </div>
+
+          {# Tasks #}
+          <div class="col-lg-6">
+            <div class="card bg-cyan-lt h-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+              <div class="card-header d-flex align-items-center justify-content-between">
+                <h3 class="mb-0 fw-semibold">Tasks</h3>
+                {% if can_manage %}
+                  <button class="btn btn-sm btn-outline-secondary"
+                          style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                          type="button" data-bs-toggle="collapse" data-bs-target="#addTask">Add</button>
+                {% endif %}
+              </div>
+              <div class="card-body">
+
+                {% if can_manage %}
+                <div class="collapse mb-3" id="addTask">
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_task">
+
+                    {# Task type toggle #}
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold">Task Type</label>
+                      {% render_field task_form.task_type style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                    </div>
+
+                    <div class="mb-2">
+                      <label class="form-label">Title</label>
+                      {% render_field task_form.title style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                    </div>
+                    <div class="mb-2">
+                      <label class="form-label">Description</label>
+                      {% render_field task_form.description style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                    </div>
+
+                    {# Single assignee — shown when task_type=single #}
+                    <div class="mb-2" id="single-assignee-field">
+                      <label class="form-label">Assign to</label>
+                      {% render_field task_form.assigned_to style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                    </div>
+
+                    {# Multiple assignees — shown when task_type=group #}
+                    <div class="mb-2 d-none" id="group-assignee-field">
+                      <label class="form-label">Assign to members</label>
+                      <div class="ps-2 bg-grey"
+                           style="max-height:160px;overflow-y:auto;box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;padding:8px;">
+                        {% for checkbox in task_form.assignees %}
+                          <label class="form-check d-flex align-items-center"
+                                style="cursor:pointer;">
+                              {{ checkbox.tag }}
+                              <span class="ms-2">
+                                  {{ checkbox.choice_label }}
+                              </span>
+                          </label>
+                        {% endfor %}
+                      </div>
+                      {% if task_form.assignees.errors %}
+                        <div class="text-danger small mt-1">{{ task_form.assignees.errors.0 }}</div>
+                      {% endif %}
+                    </div>
+
+                    <div class="mb-2">
+                      <label class="form-label">Due date</label>
+                      {% render_field task_form.due_date style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                    </div>
+
+                    <button class="btn btn-sm btn-success"
+                            style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                            type="submit">Create Task</button>
+                  </form>
+                </div>
+                {% endif %}
+
+                {# Task list — members can acknowledge and complete via AJAX #}
+                {% for assignment in my_assignments %}
+                  {% with task=assignment.task %}
+                  <div class="p-3 mb-3 ud-task-item" id="ud-task-{{ assignment.id }}"
+                       data-status="{{ assignment.status }}"
+                       style="box-shadow:inset 0 2px 2px #000000d2;border-radius:24px;">
+
+                    <div class="d-flex align-items-start justify-content-between gap-2">
+                      <div class="flex-grow-1">
+                        {# Title + status badges #}
+                        <div class="d-flex flex-wrap align-items-center gap-1 mb-1">
+                          <span class="ud-task-icon me-1">
+                            {% if assignment.status == "done" %}<span class="text-success">✓</span>
+                            {% elif task.is_overdue %}<span class="text-danger">⚠</span>
+                            {% elif assignment.status == "in_progress" %}<span class="text-warning">◑</span>
+                            {% else %}<span class="text-muted">○</span>
+                            {% endif %}
+                          </span>
+                          <strong class="ud-task-title{% if assignment.status == 'done' %} text-muted text-decoration-line-through{% endif %}">{{ task.title }}</strong>
+                          <span class="badge ud-task-badge
+                            {% if assignment.status == 'done' %}bg-success-lt
+                            {% elif assignment.status == 'in_progress' %}bg-warning-lt
+                            {% else %}bg-secondary-lt{% endif %}">
+                            {% if assignment.status == "done" %}Completed
+                            {% elif assignment.status == "in_progress" %}In Progress
+                            {% else %}Open{% endif %}
+                          </span>
+                          {% if task.task_type == "group" %}
+                            <span class="badge bg-blue-lt">Group</span>
+                          {% endif %}
+                          {% if task.due_date %}
+                          <span class="small {% if task.is_overdue %}text-danger fw-semibold{% else %}text-muted{% endif %}">
+                            Due {{ task.due_date|date:"M d" }}{% if task.is_overdue %} • Overdue{% endif %}
+                          </span>
+                          {% endif %}
+                        </div>
+
+                        {# Assignee chips #}
+                        {% if task.task_type == "group" %}
+                          <div class="text-muted small mt-1 d-flex flex-wrap gap-1 align-items-center">
+                            <span>Assigned:</span>
+                            {% for a in task.assignments.all %}
+                              <span class="badge
+                                {% if a.status == 'done' %}bg-success-lt
+                                {% elif a.status == 'in_progress' %}bg-warning-lt
+                                {% else %}bg-secondary-lt{% endif %}">
+                                {{ a.membership.workforce_member.member.user.get_full_name }}
+                              </span>
+                            {% endfor %}
+                          </div>
+                        {% elif task.assigned_to %}
+                          <div class="text-muted small mt-1">
+                            Assigned to {{ task.assigned_to.workforce_member.member.user.get_full_name }}
+                          </div>
+                        {% endif %}
+
+                        {% if task.description %}
+                          <div class="text-secondary mt-2 small">{{ task.description }}</div>
+                        {% endif %}
+
+                        {# Progress bar #}
+                        <div class="mt-3">
+                          <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Progress</span>
+                            <span class="fw-semibold ud-task-pct">{{ task.completion_percentage }}%</span>
+                          </div>
+                          <div class="progress" style="height:8px;border-radius:12px;">
+                            <div class="progress-bar ud-task-bar
+                                {% if task.completion_percentage == 100 %}bg-success
+                                {% elif task.completion_percentage > 0 %}bg-warning
+                                {% else %}bg-secondary{% endif %}"
+                                role="progressbar"
+                                style="width:{{ task.completion_percentage }}%;transition:width .4s ease;">
+                            </div>
+                          </div>
+                        </div>
+
+                        {# Member actions — AJAX #}
+                        <div class="mt-2 ud-task-actions" id="ud-actions-{{ assignment.id }}">
+                          {% if assignment.status == "open" %}
+                          <button class="btn btn-sm btn-primary ud-ack-btn"
+                                  style="border-radius:24px;"
+                                  data-id="{{ assignment.id }}">
+                            Acknowledge Task
+                          </button>
+                          {% endif %}
+                          {% if assignment.status == "in_progress" %}
+                          <button class="btn btn-sm btn-success"
+                                  style="border-radius:24px;"
+                                  type="button"
+                                  data-bs-toggle="collapse"
+                                  data-bs-target="#udCompletePanel{{ assignment.id }}">
+                            Complete Task
+                          </button>
+                          {% endif %}
+                        </div>
+
+                        {% if assignment.status == "in_progress" %}
+                        <div class="collapse mt-3" id="udCompletePanel{{ assignment.id }}">
+                          <form class="ud-complete-form p-3"
+                                style="box-shadow:inset 0 2px 2px #000000d2;border-radius:16px;"
+                                data-id="{{ assignment.id }}"
+                                data-url="{% url 'units:complete_task' assignment.id %}">
+                            {% csrf_token %}
+                            <div class="mb-2">
+                              <label class="form-label">Completion Notes</label>
+                              <textarea name="completion_notes" class="form-control" rows="3"></textarea>
+                            </div>
+                            <button class="btn btn-sm btn-success" type="submit">Submit Completion</button>
+                          </form>
+                        </div>
+                        {% endif %}
+
+                      </div>
+
+                      {# Leader edit/delete controls #}
+                      {% if can_manage %}
+                      <div class="d-flex gap-2 flex-shrink-0">
+                        <a class="btn btn-xs" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                           href="{% url 'units:task_edit' unit.slug task.id %}">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4l-10.5 10.5v4"/>
+                            <path d="M13.5 6.5l4 4"/>
+                          </svg>
+                        </a>
+                        <form method="post" action="{% url 'units:task_delete' unit.slug task.id %}">
+                          {% csrf_token %}
+                          <button class="btn btn-xs" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;" type="submit">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                              <path d="M20 6a1 1 0 0 1 .117 1.993l-.117.007h-.081l-.919 11a3 3 0 0 1-2.824 2.995l-.176.005h-8c-1.598 0-2.904-1.249-2.992-2.75l-.005-.167-.923-11.083h-.08a1 1 0 0 1-.117-1.993l.117-.007zm-10 4a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1m4 0a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0v-6a1 1 0 0 0-1-1"/>
+                              <path d="M14 2a2 2 0 0 1 2 2a1 1 0 0 1-1.993.117l-.007-.117h-4l-.007.117a1 1 0 0 1-1.993-.117a2 2 0 0 1 1.85-1.995l.15-.005z"/>
+                            </svg>
+                          </button>
+                        </form>
+                      </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                  {% endwith %}
+                {% empty %}
+                  <div class="text-muted">No tasks yet.</div>
+                {% endfor %}
+
+                {# ── Task interaction AJAX ────────────────────────────── #}
+                <script>
+                (function () {
+                  function csrf() {
+                    var el = document.querySelector('[name=csrfmiddlewaretoken]');
+                    return el ? el.value : '';
+                  }
+                  function udSetProgress(wrap, pct) {
+                    var bar = wrap.querySelector('.ud-task-bar');
+                    var lbl = wrap.querySelector('.ud-task-pct');
+                    if (bar) {
+                      bar.style.width = pct + '%';
+                      bar.className = 'progress-bar ud-task-bar transition' +
+                        (pct === 100 ? ' bg-success' : pct > 0 ? ' bg-warning' : ' bg-secondary');
+                    }
+                    if (lbl) lbl.textContent = pct + '%';
+                  }
+                  function udMarkInProgress(wrap, id) {
+                    var icon  = wrap.querySelector('.ud-task-icon span');
+                    var badge = wrap.querySelector('.ud-task-badge');
+                    if (icon)  { icon.className = 'text-warning'; icon.textContent = '◑'; }
+                    if (badge) { badge.className = 'badge ud-task-badge bg-warning-lt'; badge.textContent = 'In Progress'; }
+                    var actions = document.getElementById('ud-actions-' + id);
+                    if (actions) {
+                      actions.innerHTML =
+                        '<button class="btn btn-sm btn-success" style="border-radius:24px;" type="button" data-bs-toggle="collapse" data-bs-target="#udCompletePanel' + id + '">Complete Task</button>';
+                      // Inject collapse panel if not present
+                      if (!document.getElementById('udCompletePanel' + id)) {
+                        var p = document.createElement('div');
+                        p.className = 'collapse mt-3';
+                        p.id = 'udCompletePanel' + id;
+                        p.innerHTML = '<form class="ud-complete-form p-3" style="box-shadow:inset 0 2px 2px #000000d2;border-radius:16px;" data-id="' + id + '" data-url="/units/tasks/' + id + '/complete/"><input type="hidden" name="csrfmiddlewaretoken" value=""><div class="mb-2"><label class="form-label">Completion Notes</label><textarea name="completion_notes" class="form-control" rows="3"></textarea></div><button class="btn btn-sm btn-success" type="submit">Submit Completion</button></form>';
+                        actions.after(p);
+                      }
+                    }
+                  }
+                  function udMarkDone(wrap) {
+                    var icon  = wrap.querySelector('.ud-task-icon span');
+                    var badge = wrap.querySelector('.ud-task-badge');
+                    var title = wrap.querySelector('.ud-task-title');
+                    if (icon)  { icon.className = 'text-success'; icon.textContent = '✓'; }
+                    if (badge) { badge.className = 'badge ud-task-badge bg-success-lt'; badge.textContent = 'Completed'; }
+                    if (title) { title.classList.add('text-muted','text-decoration-line-through'); }
+                    udSetProgress(wrap, 100);
+                    var collapse = wrap.querySelector('.collapse');
+                    if (collapse) collapse.remove();
+                    var actions = wrap.querySelector('.ud-task-actions');
+                    if (actions) actions.innerHTML = '';
+                  }
+                  // Acknowledge
+                  document.addEventListener('click', function (e) {
+                    var btn = e.target.closest('.ud-ack-btn');
+                    if (!btn) return;
+                    btn.disabled = true; btn.textContent = '…';
+                    var id = btn.dataset.id;
+                    fetch('/units/tasks/' + id + '/acknowledge/', {
+                      method: 'POST',
+                      headers: {'X-CSRFToken': csrf(), 'X-Requested-With': 'XMLHttpRequest'},
+                      credentials: 'same-origin'
+                    })
+                    .then(function(r){ return r.json(); })
+                    .then(function(d){
+                      if (d.ok) {
+                        var wrap = document.getElementById('ud-task-' + id);
+                        if (wrap) { udMarkInProgress(wrap, id); if (d.completion_pct !== undefined) udSetProgress(wrap, d.completion_pct); }
+                      } else { btn.disabled = false; btn.textContent = 'Acknowledge Task'; }
+                    })
+                    .catch(function(){ btn.disabled = false; btn.textContent = 'Acknowledge Task'; });
+                  });
+                  // Complete
+                  document.addEventListener('submit', function (e) {
+                    var form = e.target;
+                    if (!form.classList.contains('ud-complete-form')) return;
+                    e.preventDefault();
+                    var id = form.dataset.id; var url = form.dataset.url;
+                    var body = new FormData(form); body.set('csrfmiddlewaretoken', csrf());
+                    fetch(url, {
+                      method: 'POST',
+                      headers: {'X-Requested-With': 'XMLHttpRequest'},
+                      body: body, credentials: 'same-origin'
+                    })
+                    .then(function(r){ return r.json(); })
+                    .then(function(d){ if (d.ok) { var wrap = document.getElementById('ud-task-' + id); if (wrap) udMarkDone(wrap); }});
+                  });
+                })();
+                </script>
+
+              </div>
+            </div>
+          </div>
+
+        </div>{# /row announcements+tasks #}
+
+        {# ── Unit Reports ── #}
+        <div class="row g-4 mt-1">
+          <div class="col-12">
+            <div class="card bg-gray-900" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+              <div class="card-header d-flex align-items-center justify-content-between">
+                <h3 class="mb-0 fw-semibold">Unit Reports</h3>
+                {% if can_submit_report %}
+                  <button class="btn btn-sm btn-outline-secondary"
+                          style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                          type="button" data-bs-toggle="collapse" data-bs-target="#addReport">Submit</button>
+                {% endif %}
+              </div>
+              <div class="card-body">
+                <form method="get" class="row g-2 mb-3">
+                  <div class="col-md-4">
+                    <select name="report_status" class="form-select form-select-sm" onchange="this.form.submit()">
+                      <option value="">All statuses</option>
+                      <option value="submitted" {% if report_status_filter == "submitted" %}selected{% endif %}>Submitted</option>
+                      <option value="reviewed" {% if report_status_filter == "reviewed" %}selected{% endif %}>Reviewed</option>
+                      <option value="escalated" {% if report_status_filter == "escalated" %}selected{% endif %}>Escalated</option>
+                      <option value="closed" {% if report_status_filter == "closed" %}selected{% endif %}>Closed</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <select name="report_category" class="form-select form-select-sm" onchange="this.form.submit()">
+                      <option value="">All categories</option>
+                      <option value="service" {% if report_category_filter == "service" %}selected{% endif %}>Service</option>
+                      <option value="task" {% if report_category_filter == "task" %}selected{% endif %}>Task</option>
+                      <option value="training" {% if report_category_filter == "training" %}selected{% endif %}>Training</option>
+                    </select>
+                  </div>
+                </form>
+                {% if can_submit_report %}
+                <div class="collapse mb-3" id="addReport">
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_report">
+                    <div class="row g-2">
+                      <div class="col-md-4">
+                        <label class="form-label">Category</label>
+                        {% render_field report_form.category style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                      </div>
+                      <div class="col-md-8">
+                        <label class="form-label">Title</label>
+                        {% render_field report_form.title style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                      </div>
+                      <div class="col-md-12">
+                        <label class="form-label">Report</label>
+                        {% render_field report_form.body style="box-shadow:inset 0 4px 8px #000000d2;border-radius:18px;" %}
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Related Task (optional)</label>
+                        {% render_field report_form.related_task style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Escalate To (optional)</label>
+                        {% render_field report_form.report_to_unit style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                      </div>
+                      <div class="col-md-4 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                          {{ report_form.copy_pastor }}
+                          <label class="form-check-label ms-2">Copy Pastor</label>
+                        </div>
+                      </div>
+                    </div>
+                    <button class="btn btn-sm btn-success mt-2"
+                            style="box-shadow:0 4px 8px #000000d2;border-radius:24px;"
+                            type="submit">Submit Report</button>
+                  </form>
+                </div>
+                {% endif %}
+
+                {% for report in reports %}
+                  <div class="p-3 mb-3" style="box-shadow:inset 0 2px 2px #000000d2;border-radius:24px;">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                      <div>
+                        <strong>{{ report.title }}</strong>
+                        <span class="badge bg-secondary-lt ms-2">{{ report.get_category_display }}</span>
+                        <span class="badge bg-info-lt ms-1">{{ report.get_status_display }}</span>
+                        <div class="text-muted small">{{ report.created_at|date:"M d, Y" }}</div>
+                      </div>
+                      {% if can_review_report %}
+                      <form method="post" action="{% url 'units:report_status' unit.slug report.id %}" class="d-flex gap-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="reviewed">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" style="border-radius:24px;">Mark Reviewed</button>
+                      </form>
+                      <form method="post" action="{% url 'units:report_status' unit.slug report.id %}" class="d-flex gap-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="escalated">
+                        <button type="submit" class="btn btn-sm btn-outline-warning" style="border-radius:24px;">Escalate</button>
+                      </form>
+                      {% endif %}
+                    </div>
+                    <div class="text-secondary mt-2">{{ report.body }}</div>
+                    {% if report.report_to_unit %}
+                      <div class="small text-muted mt-1">Escalation target: {{ report.report_to_unit.name }}</div>
+                    {% endif %}
+                  </div>
+                {% empty %}
+                  <div class="text-muted">No reports submitted yet.</div>
+                {% endfor %}
+
+                {% if can_review_report and incoming_reports %}
+                  <h4 class="mt-4 mb-2">Incoming Escalations</h4>
+                  {% for report in incoming_reports %}
+                    <div class="p-3 mb-2" style="box-shadow:inset 0 2px 2px #000000d2;border-radius:18px;">
+                      <div class="d-flex align-items-center justify-content-between">
+                        <strong>{{ report.title }}</strong>
+                        <span class="badge bg-warning-lt">From {{ report.unit.name }}</span>
+                      </div>
+                      <div class="text-secondary mt-1">{{ report.body }}</div>
+                    </div>
+                  {% endfor %}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        {# ── Guest follow-up table ── #}
+        {% if unit.guest_management %}
+        <div class="card bg-dark border-secondary mt-4">
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <h5 class="mb-0 fw-semibold">Guest Follow-Up</h5>
+              <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                        data-bs-toggle="dropdown">Share</button>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" href="{% url 'guests:export_guests_excel' %}">Export Excel</a>
+                  <a class="dropdown-item"
+                     href="mailto:?subject=Guest%20Entries&body=Download%20the%20guest%20list%20here:%20{{ request.build_absolute_uri|cut:request.get_full_path }}{% url 'guests:export_guests_excel' %}">
+                    Mail Link
+                  </a>
+                  <a class="dropdown-item" target="_blank"
+                     href="https://wa.me/?text=Download%20guest%20entries%20Excel%20here:%20{{ request.build_absolute_uri|cut:request.get_full_path }}{% url 'guests:export_guests_excel' %}">
+                    WhatsApp Link
+                  </a>
+                </div>
+              </div>
+            </div>
+            <a class="btn btn-sm btn-outline-secondary"
+               href="{% url 'guests:guest_list' %}?unit={{ unit.slug }}{% if not can_manage and current_unit_membership %}&user_filter={{ current_unit_membership.id }}{% endif %}">View All</a>
+          </div>
+          <div class="card-body">
+            {% if unit_guests %}
+              <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle">
+                  <thead>
+                    <tr>
+                      <th>Guest</th>
+                      <th>Status</th>
+                      <th>Assigned</th>
+                      <th>Visited</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for guest in unit_guests|slice:":12" %}
+                    <tr>
+                      <td>{{ guest.title }} {{ guest.full_name }}</td>
+                      <td>
+                        <span class="badge bg-{{ guest.status_color }}-lt">
+                          {{ guest.status.name }}
+                        </span>
+                      </td>
+                      <td>{{ guest.assigned_to.workforce_member.member.user.full_name }}</td>
+                      <td>{{ guest.date_of_visit }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="text-muted">No guests assigned yet.</div>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+      </div>{# /row-deck #}
+    </div>{# /container-xl #}
+  </div>{# /page-body #}
+
+</div>{# /page-wrapper #}
+
+{# ── Task type toggle JS ── #}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  const taskType   = document.querySelector('[name="task_type"]');
+  const singleField = document.getElementById('single-assignee-field');
+  const groupField  = document.getElementById('group-assignee-field');
+
+  if (!taskType || !singleField || !groupField) return;
+
+  function toggleAssigneeFields() {
+    const val = taskType.value;
+
+    if (val === 'group') {
+      singleField.classList.add('d-none');
+      groupField.classList.remove('d-none');
+    } else {
+      singleField.classList.remove('d-none');
+      groupField.classList.add('d-none');
+    }
+  }
+
+  // change event for SELECT
+  taskType.addEventListener('change', toggleAssigneeFields);
+
+  // run on page load
+  toggleAssigneeFields();
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  document.querySelectorAll(
+    ".scrollbar-container"
+  ).forEach(container => {
+
+    let scrollTimer;
+
+    container.addEventListener("scroll", () => {
+      container.classList.add("scrolling");
+
+      clearTimeout(scrollTimer);
+
+      scrollTimer = setTimeout(() => {
+        container.classList.remove("scrolling");
+      }, 900);
+    });
+
+  });
+
+});
+</script>
+<script>
+document.addEventListener("click", function(e){
+
+  const card = e.target.closest(".status-filter-card");
+  if(!card) return;
+
+  const active = document.querySelector(".status-filter-card.active");
+
+  // clicking same card resets filter
+  if(active === card){
+      card.classList.remove("active");
+
+      htmx.ajax(
+        "GET",
+        card.getAttribute("hx-get"),
+        { target:"#unit-guest-container" }
+      );
+      return;
+  }
+
+  document.querySelectorAll(".status-filter-card")
+      .forEach(c=>c.classList.remove("active"));
+
+  card.classList.add("active");
+});
+</script>
+
+
+<script>
+// Attach-to-chat
+document.querySelectorAll(".attach-to-chat").forEach(btn => {
+  btn.addEventListener("click", e => {
+    e.preventDefault();
+    const guestData = {
+      id: btn.dataset.id, name: btn.dataset.name, title: btn.dataset.title,
+      custom_id: btn.dataset.customId, date_of_visit: btn.dataset.date,
+      image: btn.dataset.image || null
+    };
+    sessionStorage.setItem("attachGuest", JSON.stringify(guestData));
+    const roomId = window.GUESTS_ROOM_ID || "";
+    window.location.href = roomId ? `/?room_id=${roomId}&guest_id=${guestData.id}` : "/";
+  });
+});
+
+// Status popovers
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".status-popover-trigger").forEach(el => {
+    el.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); });
+    new bootstrap.Popover(el, { trigger: "click", sanitize: false, html: true });
+  });
+  document.body.addEventListener("click", e => {
+    if (!e.target.closest(".status-popover-trigger") && !e.target.closest(".popover")) {
+      document.querySelectorAll(".status-popover-trigger").forEach(el => {
+        const pop = bootstrap.Popover.getInstance(el);
+        if (pop) pop.hide();
+      });
+    }
+  }, true);
+});
+
+</script>
+
+{% include "guests/partials/_guest_pipeline_actions.html" %}
+{% endblock %}

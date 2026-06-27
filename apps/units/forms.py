@@ -1,7 +1,7 @@
-﻿from django import forms
+from django import forms
 from django.utils.text import slugify
 
-from units.models import ChurchUnit
+from units.models import ChurchUnit, UnitAnnouncement, UnitTask, UnitReport
 
 
 class UnitQuickCreateForm(forms.Form):
@@ -22,9 +22,16 @@ class UnitQuickCreateForm(forms.Form):
     )
     color = forms.CharField(
         required=False,
+        max_length=20,
         label="Color",
         initial="blue",
-        widget=forms.TextInput(attrs={"class": "form-control"}),
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-color",
+                "type": "color",
+                "colorpick-eyedropper-active": "true",
+            }
+        ),
     )
     report_to = forms.ModelChoiceField(
         queryset=ChurchUnit.raw_objects.none(),
@@ -115,11 +122,15 @@ class UnitQuickCreateForm(forms.Form):
         if cleaned.get("media_module") and not settings.enable_media_module:
             self.add_error("media_module", "Media module is disabled in settings.")
         if cleaned.get("children_module") and not settings.enable_children_module:
-            self.add_error("children_module", "Children module is disabled in settings.")
+            self.add_error(
+                "children_module", "Children module is disabled in settings."
+            )
         if cleaned.get("youth_module") and not settings.enable_youth_module:
             self.add_error("youth_module", "Youth module is disabled in settings.")
         if cleaned.get("teenagers_module") and not settings.enable_teenagers_module:
-            self.add_error("teenagers_module", "Teenagers module is disabled in settings.")
+            self.add_error(
+                "teenagers_module", "Teenagers module is disabled in settings."
+            )
         return cleaned
 
     def save(self):
@@ -144,3 +155,143 @@ class UnitQuickCreateForm(forms.Form):
             is_active=True,
         )
 
+
+class UnitAnnouncementForm(forms.ModelForm):
+    class Meta:
+        model = UnitAnnouncement
+        fields = ["title", "body", "is_pinned", "is_banner"]
+        widgets = {
+            "title": forms.TextInput(attrs={"class": "form-control"}),
+            "body": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "is_pinned": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "is_banner": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+
+from django import forms
+from .models import UnitTask, UnitMembership
+
+
+class UnitTaskForm(forms.ModelForm):
+    """
+    Task creation form.
+
+    Status is NOT handled here anymore.
+    Status belongs to TaskAssignment workflow.
+    """
+
+    assignees = forms.ModelMultipleChoiceField(
+        queryset=UnitMembership.objects.none(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "form-check"}),
+    )
+
+    class Meta:
+        model = UnitTask
+        fields = [
+            "title",
+            "description",
+            "task_type",
+            "assigned_to",
+            "assignees",
+            "due_date",
+        ]
+
+        widgets = {
+            "title": forms.TextInput(attrs={"class": "form-control"}),
+            "description": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "task_type": forms.Select(attrs={"class": "form-select"}),
+            "assigned_to": forms.Select(attrs={"class": "form-select"}),
+            "due_date": forms.DateInput(
+                attrs={"class": "form-control", "type": "date"}
+            ),
+        }
+
+    # --------------------------------------------------
+    # INIT
+    # --------------------------------------------------
+
+    def __init__(self, *args, unit=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.unit = unit
+
+        if unit:
+            memberships = unit.memberships.filter(is_active=True)
+
+            self.fields["assigned_to"].queryset = memberships
+            self.fields["assignees"].queryset = memberships
+
+        # neither required at field level
+        self.fields["assigned_to"].required = False
+        self.fields["assignees"].required = False
+
+        # EDIT MODE SUPPORT
+        if self.instance and self.instance.pk:
+            if self.instance.task_type == "group":
+                self.initial["assignees"] = self.instance.assignees.all()
+
+    # --------------------------------------------------
+    # VALIDATION
+    # --------------------------------------------------
+
+    def clean(self):
+        cleaned = super().clean()
+
+        task_type = cleaned.get("task_type")
+        assigned_to = cleaned.get("assigned_to")
+        assignees = cleaned.get("assignees")
+
+        if task_type == "single":
+            if not assigned_to:
+                raise forms.ValidationError("Select a member for single assignment.")
+            cleaned["assignees"] = self.fields["assignees"].queryset.none()
+
+        elif task_type == "group":
+            if not assignees or assignees.count() == 0:
+                raise forms.ValidationError(
+                    "Select at least one assignee for group task."
+                )
+            cleaned["assigned_to"] = None
+
+        return cleaned
+
+    # --------------------------------------------------
+    # SAVE (SYNC ASSIGNMENTS ON EDIT)
+    # --------------------------------------------------
+
+    def save(self, commit=True):
+        task = super().save(commit=False)
+
+        if commit:
+            task.save()
+            self.save_m2m()
+
+        return task
+
+
+class UnitReportForm(forms.ModelForm):
+    class Meta:
+        model = UnitReport
+        fields = ["category", "title", "body", "related_task", "report_to_unit", "copy_pastor"]
+        widgets = {
+            "category": forms.Select(attrs={"class": "form-select"}),
+            "title": forms.TextInput(attrs={"class": "form-control"}),
+            "body": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "related_task": forms.Select(attrs={"class": "form-select"}),
+            "report_to_unit": forms.Select(attrs={"class": "form-select"}),
+            "copy_pastor": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+    def __init__(self, *args, unit=None, church=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if unit:
+            self.fields["related_task"].queryset = UnitTask.raw_objects.filter(
+                church=unit.church, unit=unit, is_active=True
+            )
+            self.fields["report_to_unit"].queryset = ChurchUnit.raw_objects.filter(
+                church=unit.church, is_active=True, pk=unit.report_to_id
+            )
+        else:
+            self.fields["related_task"].queryset = UnitTask.raw_objects.none()
+            self.fields["report_to_unit"].queryset = ChurchUnit.raw_objects.none()

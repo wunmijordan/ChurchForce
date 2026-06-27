@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends base_template %}
 {% load access_tags %}
 {% block title %}Follow-up History — {{ guest.full_name }}{% endblock %}
 
@@ -13,7 +13,7 @@
           </h3>
         </div>
         <div class="col-auto ms-auto">
-          <a href="{% url 'guests:followup_pdf' guest.id %}" class="btn btn-outline-secondary btn-sm">Export PDF</a>
+          <a href="{% url 'guests:followup_pdf' guest.uid %}" class="btn btn-outline-secondary btn-sm">Export PDF</a>
           <a href="{% url 'guests:guest_list' %}" class="btn btn-outline-secondary btn-sm ms-2">← Back</a>
         </div>
       </div>
@@ -57,7 +57,7 @@
                 </td>
                 {% if can_edit %}
                 <td>
-                  <a href="{% url 'guests:followup_report_page' guest.id %}?edit_report_id={{ report.id }}"
+                  <a href="{% url 'guests:followup_report_page' guest.uid %}?edit_report_id={{ report.id }}"
                      class="btn btn-sm btn-outline-warning">Edit</a>
                 </td>
                 {% endif %}

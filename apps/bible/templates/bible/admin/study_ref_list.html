@@ -1,0 +1,64 @@
+{% extends base_template %}
+{% load static %}
+{% block title %}Bible Study References — {{ church.name }}{% endblock %}
+{% block content %}
+<div class="page-wrapper">
+  <div class="page-header d-print-none">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <h2 class="page-title">🎓 Bible Study References</h2>
+          <div class="text-muted">Curated study passages and notes for your congregation.</div>
+        </div>
+        <div class="col-auto ms-auto">
+          <a href="{% url 'bible:admin_study_ref_create' %}" class="btn btn-warning">+ Add Study Reference</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="container-xl">
+      {% if messages %}{% for m in messages %}<div class="alert alert-{{ m.tags }} alert-dismissible"><button type="button" class="btn-close" data-bs-dismiss="alert"></button>{{ m }}</div>{% endfor %}{% endif %}
+      {% if studies %}
+      <div class="card" style="border-radius:20px;">
+        <div class="table-responsive">
+          <table class="table table-vcenter card-table">
+            <thead><tr><th>Title</th><th>Reference</th><th>Translation</th><th>Active Date</th><th>Published</th><th></th></tr></thead>
+            <tbody>
+              {% for s in studies %}
+              <tr>
+                <td>
+                  <div class="fw-semibold text-white">{{ s.title }}</div>
+                  {% if s.description %}<div class="text-muted small">{{ s.description|truncatechars:55 }}</div>{% endif %}
+                </td>
+                <td class="text-warning">{{ s.reference }}</td>
+                <td><span class="badge bg-dark">{{ s.translation }}</span></td>
+                <td>{{ s.active_date|default:"—" }}</td>
+                <td>
+                  {% if s.is_published %}<span class="badge bg-success">Live</span>
+                  {% else %}<span class="badge bg-secondary">Draft</span>{% endif %}
+                </td>
+                <td class="text-end">
+                  <a href="{% url 'bible:admin_study_ref_edit' s.id %}" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
+                  <form method="post" action="{% url 'bible:admin_study_ref_delete' s.id %}" style="display:inline;" onsubmit="return confirm('Delete this study reference?')">
+                    {% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% else %}
+      <div class="card text-center p-5" style="border-radius:20px;border:2px dashed #334155;">
+        <div class="display-6 mb-3">🎓</div>
+        <h3>No study references yet</h3>
+        <p class="text-muted">Add a study passage with notes to guide members deeper into the Word.</p>
+        <a href="{% url 'bible:admin_study_ref_create' %}" class="btn btn-warning mx-auto" style="width:fit-content;">+ Add Study Reference</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

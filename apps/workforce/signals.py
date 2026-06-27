@@ -11,12 +11,12 @@ def auto_generate_attendance(sender, request, user, **kwargs):
     events if they don't already exist.
 
     Scoped to the current church — never touches other tenants' events.
-    Uses UnitMembership as the attendance identity, consistent with
+    Uses ChurchMember as the attendance identity, consistent with
     AttendanceRecord.user FK.
     """
     from services.models import Event
     from workforce.models import AttendanceRecord
-    from units.models import UnitMembership
+    from accounts.models import ChurchMember
 
     church = getattr(request, "church", None)
     if not church:
@@ -24,14 +24,11 @@ def auto_generate_attendance(sender, request, user, **kwargs):
 
     today = timezone.localdate()
 
-    # Find this user's UnitMembership(s) in this church
-    memberships = UnitMembership.raw_objects.filter(
-        church=church,
-        workforce_member__member__user=user,
-        is_active=True,
-    )
-
-    if not memberships.exists():
+    # Resolve this user's ChurchMember record — the FK used by AttendanceRecord.user
+    church_member = ChurchMember.raw_objects.filter(
+        church=church, user=user, is_active=True
+    ).first()
+    if not church_member:
         return
 
     # Today's events for this church
@@ -48,14 +45,13 @@ def auto_generate_attendance(sender, request, user, **kwargs):
         ):
             continue
 
-        for membership in memberships:
-            AttendanceRecord.raw_objects.get_or_create(
-                church=church,
-                user=membership,
-                event=event,
-                date=today,
-                defaults={"status": "absent", "remarks": ""},
-            )
+        AttendanceRecord.raw_objects.get_or_create(
+            church=church,
+            user=church_member,
+            event=event,
+            date=today,
+            defaults={"status": "absent", "remarks": ""},
+        )
 
 
 @receiver(post_save, sender="services.Event")
@@ -66,6 +62,7 @@ def reschedule_on_event_save(sender, instance, **kwargs):
     """
     try:
         from workforce.scheduler_jobs import schedule_event_notifications
+
         schedule_event_notifications()
     except Exception as exc:
         print(f"❌ [Signal] reschedule_on_event_save failed: {exc}")

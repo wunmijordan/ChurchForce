@@ -10,13 +10,20 @@ is called from core/scheduler.py:start().
 """
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
 def run_flag_committed_guests():
     """
-    Run flag_committed_guests() for every active church.
-    Called daily by the cron job registered below.
+    Daily safety-net scan for committed guests.
+
+    This is a backup to the event-driven check_commitment_for_guest() signal
+    which fires on every FollowUpReport save. This job catches any edge cases
+    where signals were suppressed (e.g. bulk imports, management commands).
+
+    Uses flag_committed_guests() which issues a single GROUP BY aggregation
+    query per church — O(1) DB round-trips regardless of guest count.
     """
     from tenants.models import Church
     from guests.pipeline import flag_committed_guests
@@ -26,10 +33,9 @@ def run_flag_committed_guests():
 
     for church in churches:
         try:
-            # Read threshold from ChurchSetting, falling back to pipeline defaults
             church_settings = getattr(church, "settings", None)
             threshold = getattr(church_settings, "committed_attendance_threshold", None)
-            window    = getattr(church_settings, "committed_attendance_window_weeks", None)
+            window = getattr(church_settings, "committed_attendance_window_weeks", None)
 
             kwargs = {}
             if threshold is not None:
@@ -41,19 +47,16 @@ def run_flag_committed_guests():
             if count:
                 total_flagged += count
                 logger.info(
-                    "Committed guests flagged: %d for %s",
-                    count, church.name,
+                    "Committed guests (cron) flagged: %d for %s", count, church.name
                 )
+
         except Exception as exc:
             logger.error(
-                "flag_committed_guests failed for %s: %s",
-                church.name, exc,
+                "flag_committed_guests cron failed for %s: %s", church.name, exc
             )
 
-    logger.info("Total committed guests flagged today: %d", total_flagged)
+    logger.info("Daily cron: total committed guests flagged: %d", total_flagged)
     return total_flagged
-
-
 
 
 def run_followup_reminders():
@@ -68,17 +71,19 @@ def run_followup_reminders():
     from guests.models import GuestEntry, GuestStatus
     from django.utils import timezone
 
-    today  = timezone.localdate()
-    day4   = today - timezone.timedelta(days=4)
-    day7   = today - timezone.timedelta(days=7)
-    total  = 0
+    today = timezone.localdate()
+    day4 = today - timezone.timedelta(days=4)
+    day7 = today - timezone.timedelta(days=7)
+    total = 0
 
     churches = Church.raw_objects.filter(is_active=True)
     for church in churches:
         # Guests with no contact_answered report yet
-        new_status_id = GuestStatus.raw_objects.filter(
-            church=church, slug="new-guest"
-        ).values_list("id", flat=True).first()
+        new_status_id = (
+            GuestStatus.raw_objects.filter(church=church, slug="new-guest")
+            .values_list("id", flat=True)
+            .first()
+        )
 
         if not new_status_id:
             continue
@@ -119,6 +124,7 @@ def run_followup_reminders():
 
             except Exception as exc:
                 import logging
+
                 logging.getLogger(__name__).error(
                     "followup_reminder failed for guest %s: %s", guest.id, exc
                 )
@@ -134,7 +140,7 @@ def _send_contact_reminder(guest, church, level):
 
     name = guest.full_name
     officer_member = None
-    head_member    = None
+    head_member = None
 
     try:
         membership = guest.assigned_to
@@ -187,9 +193,9 @@ def run_thankyou_messages():
     from messaging.sms import send_sms
     from django.utils import timezone
 
-    today  = timezone.localdate()
+    today = timezone.localdate()
     yesterday = today - timezone.timedelta(days=1)
-    total  = 0
+    total = 0
 
     churches = Church.raw_objects.filter(is_active=True)
     for church in churches:
@@ -209,7 +215,9 @@ def run_thankyou_messages():
             ).exclude(phone_number="")
 
             for guest in first_guests:
-                msg = church_settings.thankyou_first_visit_message.format(name=guest.full_name)
+                msg = church_settings.thankyou_first_visit_message.format(
+                    name=guest.full_name
+                )
                 send_sms(
                     phone=guest.phone_number,
                     message=msg,
@@ -234,7 +242,9 @@ def run_thankyou_messages():
             ).exclude(phone_number="")
 
             for guest in second_guests:
-                msg = church_settings.thankyou_second_visit_message.format(name=guest.full_name)
+                msg = church_settings.thankyou_second_visit_message.format(
+                    name=guest.full_name
+                )
                 send_sms(
                     phone=guest.phone_number,
                     message=msg,
@@ -255,21 +265,26 @@ def register_guest_jobs(scheduler):
 
     scheduler.add_job(
         run_flag_committed_guests,
-        trigger="cron", hour=1, minute=0,
+        trigger="cron",
+        hour=1,
+        minute=0,
         id="daily_flag_committed_guests",
         replace_existing=True,
     )
     scheduler.add_job(
         run_followup_reminders,
-        trigger="cron", hour=9, minute=0,
+        trigger="cron",
+        hour=9,
+        minute=0,
         id="daily_followup_reminders",
         replace_existing=True,
     )
     scheduler.add_job(
         run_thankyou_messages,
-        trigger="cron", hour=9, minute=30,
+        trigger="cron",
+        hour=9,
+        minute=30,
         id="daily_thankyou_messages",
         replace_existing=True,
     )
     print("✅ [Scheduler] Guest pipeline jobs registered.")
-

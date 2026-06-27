@@ -1,0 +1,118 @@
+{% extends base_template %}
+{% load static access_tags %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="container-xl py-4">
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <a href="{% url 'lms:session_list' session.course.slug %}" class="text-muted small">← Back to Sessions</a>
+      <h2 class="fw-bold mt-1 mb-0">{{ session.title }}</h2>
+      <p class="text-muted small mb-0">
+        {% if session.event %}
+          {{ session.event.date|date:"D, d M Y" }}
+          {% if session.event.time %} · {{ session.event.time|time:"H:i" }}{% endif %}
+          {% if session.event.venue %} · 📍 {{ session.event.venue }}{% endif %}
+          · <span class="badge bg-secondary-lt">{{ session.event.attendance_mode }}</span>
+        {% else %}
+          <span class="text-warning">⚠ No event linked</span>
+        {% endif %}
+      </p>
+    </div>
+    <div class="text-muted small">
+      {{ enrollments|length }} enrolled
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible mb-3">
+      {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="card bg-dark border-secondary" style="border-radius:20px;">
+      <div class="card-body p-0">
+        <table class="table table-dark table-hover mb-0 align-middle">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Course Status</th>
+              <th>Attendance</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for enrollment in enrollments %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ enrollment.member }}</div>
+                <div class="text-muted small">{{ enrollment.member.user.email }}</div>
+              </td>
+              <td>
+                <span class="badge bg-{% if enrollment.status == 'passed' %}success{% elif enrollment.status == 'failed' %}danger{% else %}warning{% endif %}-lt">
+                  {{ enrollment.get_status_display }}
+                </span>
+              </td>
+              <td>
+                <div class="d-flex gap-2 flex-wrap">
+                  {% for status_val, status_label in attendance_choices %}
+                  <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="radio"
+                           name="status_{{ enrollment.id }}"
+                           id="s{{ enrollment.id }}_{{ status_val }}"
+                           value="{{ status_val }}"
+                           {% if enrollment.session_record %}
+                             {% if enrollment.session_record.status == status_val %}checked{% endif %}
+                           {% elif status_val == 'absent' %}checked
+                           {% endif %}>
+                    <label class="form-check-label small"
+                           for="s{{ enrollment.id }}_{{ status_val }}">{{ status_label }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </td>
+              <td>
+                <input type="text" name="notes_{{ enrollment.id }}"
+                       class="form-control form-control-sm bg-dark border-secondary text-white"
+                       value="{{ enrollment.session_record.remarks|default:'' }}"
+                       placeholder="Optional note" style="max-width:200px;">
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center text-muted py-4">No enrollees for this course.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if enrollments %}
+      <div class="card-footer text-end border-secondary">
+        <button type="submit" class="btn btn-success">Save Attendance</button>
+      </div>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<script>
+// Inject attendance choices inline since Django template can't loop model choices easily
+document.addEventListener('DOMContentLoaded', () => {
+  // The radio buttons are built inline above; this is a placeholder
+  // for any JS enhancements (e.g., select-all present button)
+  const allPresent = document.createElement('button');
+  allPresent.type = 'button';
+  allPresent.className = 'btn btn-sm btn-outline-success me-2';
+  allPresent.textContent = '✓ Mark All Present';
+  allPresent.addEventListener('click', () => {
+    document.querySelectorAll('input[type="radio"][value="present"]')
+      .forEach(r => r.checked = true);
+  });
+  const footer = document.querySelector('.card-footer');
+  if (footer) footer.prepend(allPresent);
+});
+</script>
+{% endblock %}

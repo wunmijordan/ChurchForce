@@ -1,0 +1,74 @@
+<div class="card h-100" style="background:#0f172a;border-radius:24px;box-shadow:0 4px 8px #000000d2;">
+  <div class="card-header py-2 d-flex align-items-center justify-content-between">
+    <h3 class="card-title mb-0 text-white">Bible API</h3>
+    <span class="badge bg-cyan-lt">7 days</span>
+  </div>
+  <div class="card-body p-3">
+    {% with a=bible_provider_analytics totals=bible_provider_analytics.totals %}
+    <div class="row g-2 mb-3">
+      <div class="col-3">
+        <div class="text-muted small">Requests</div>
+        <div class="fw-bold text-white">{{ totals.total|default:0 }}</div>
+      </div>
+      <div class="col-3">
+        <div class="text-muted small">Success</div>
+        <div class="fw-bold text-success">{{ totals.successful|default:0 }}</div>
+      </div>
+      <div class="col-3">
+        <div class="text-muted small">Fallbacks</div>
+        <div class="fw-bold text-warning">{{ totals.fallbacks|default:0 }}</div>
+      </div>
+      <div class="col-3">
+        <div class="text-muted small">Avg ms</div>
+        <div class="fw-bold text-info">{{ totals.avg_latency|floatformat:0|default:0 }}</div>
+      </div>
+    </div>
+
+    {% if a.by_provider %}
+    <div class="table-responsive">
+      <table class="table table-sm table-dark table-vcenter mb-2">
+        <thead>
+          <tr>
+            <th>Provider</th>
+            <th class="text-end">OK</th>
+            <th class="text-end">Fail</th>
+            <th class="text-end">Avg ms</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in a.by_provider %}
+          <tr>
+            <td class="text-capitalize">{{ row.provider }}</td>
+            <td class="text-end text-success">{{ row.successful }}</td>
+            <td class="text-end {% if row.failed %}text-warning{% else %}text-muted{% endif %}">{{ row.failed }}</td>
+            <td class="text-end text-muted">{{ row.avg_latency|floatformat:0 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-muted small text-center py-2">No provider traffic recorded yet.</div>
+    {% endif %}
+
+    {% if a.latest_limits.youversion %}
+    <div class="small text-muted mt-2">
+      YouVersion rate remaining:
+      <span class="text-white">{{ a.latest_limits.youversion.remaining|default:"--" }}</span>
+      {% if a.latest_limits.youversion.limit %}/ {{ a.latest_limits.youversion.limit }}{% endif %}
+    </div>
+    {% endif %}
+
+    {% if a.recent_errors %}
+    <div class="mt-3">
+      <div class="text-muted small mb-1">Recent provider issues</div>
+      {% for err in a.recent_errors %}
+      <div class="small text-warning text-truncate" title="{{ err.error }}">
+        {{ err.provider }} {{ err.operation }}{% if err.translation %} · {{ err.translation }}{% endif %}: {{ err.error }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+  </div>
+</div>

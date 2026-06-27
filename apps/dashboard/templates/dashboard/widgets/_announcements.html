@@ -1,0 +1,26 @@
+{% if workforce_announcements or unit_announcements %}
+<div class="card bg-gray-900 mb-3" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+  <div class="card-header border-secondary py-2 d-flex align-items-center justify-content-between">
+    <span class="fw-semibold">📢 Announcements</span>
+  </div>
+  <div class="card-body">
+    <div class="list-group list-group-flush" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+      {% for a in workforce_announcements %}
+      <div class="list-group-item bg-gray-900">
+        <div class="d-flex align-items-start gap-2">
+          {% if a.priority == "urgent" %}<span class="badge bg-red-lt flex-shrink-0">Urgent</span>{% elif a.priority == "high" %}<span class="badge bg-orange-lt flex-shrink-0">High</span>{% endif %}
+          <div><div class="fw-semibold small">{{ a.title }}</div><div class="text-muted" style="font-size:.78rem;">{{ a.body|truncatechars:120 }}</div><div class="text-muted mt-1 d-flex align-items-center gap-1 flex-wrap" style="font-size:.68rem;"><span class="badge bg-blue-lt" style="font-size:.58rem;">Workforce</span><span>{{ a.created_at|timesince }} ago</span></div></div>
+        </div>
+      </div>
+      {% endfor %}
+      {% for a in unit_announcements %}
+      <div class="list-group-item bg-gray-900">
+        <div class="fw-semibold small">{{ a.title }}</div>
+        <div class="text-muted" style="font-size:.78rem;">{{ a.body|truncatechars:120 }}</div>
+        <div class="text-muted mt-1 d-flex align-items-center gap-1 flex-wrap" style="font-size:.68rem;"><span class="badge bg-orange-lt" style="font-size:.58rem;">Unit</span><span>{{ a.unit.name }} · {{ a.created_at|timesince }} ago</span></div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}

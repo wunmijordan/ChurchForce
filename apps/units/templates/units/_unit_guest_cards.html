@@ -1,0 +1,419 @@
+{% load access_tags %}
+{% load guest_extras %}
+{% load guest_avatar_tags %}
+
+{% if guests %}
+<div class="row row-cards g-3 pb-2">
+  {% for guest in guests %}
+  <div class="col-12 col-xl-6" data-custom-id="{{ guest.custom_id }}" id="guest-card-{{ guest.id }}">
+    <div class="card flex-fill h-100 border-0 pb-2"
+        style="box-shadow:0 4px 8px #000000d2;border-radius:36px;min-height:236px;overflow:visible;">
+
+      <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
+        <div class="text-secondary fs-3 fw-bold" style="font-family:monospace;">
+          {{ guest.custom_id }}
+          {% if guest.is_new %}
+            <span class="badge-lg new-badge-gradient bg-green-lt text-white px-2" style="border-radius:12px;">NEW</span>
+          {% endif %}
+        </div>
+        <div class="dropdown dropup">
+          <a href="#" class="text-purple" data-bs-toggle="dropdown"
+             data-bs-boundary="viewport" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+            </svg>
+          </a>
+          <div class="card-menu dropdown-menu dropdown-menu-end p-1" style="z-index:1090;">
+            <a class="dropdown-item py-1 attach-to-chat" href="#"
+              data-id="{{ guest.id }}" data-name="{{ guest.full_name|escapejs }}"
+              data-title="{{ guest.title|escapejs }}" data-custom-id="{{ guest.custom_id|escapejs }}"
+              data-date="{{ guest.date_of_visit|date:'M d, Y' }}"
+              data-image="{% if guest.picture %}{{ guest.picture.url }}{% endif %}">
+              Attach to Chat
+            </a>
+            <div class="dropdown-divider"></div>
+            {% if can_create_guest %}
+            <a class="dropdown-item py-1" href="{% url 'guests:edit_guest' guest.uid %}">Edit Guest Info</a>
+            {% endif %}
+
+            {% if can_update_status %}
+              {% if not guest.not_planted_disabled %}
+              <a href="#"
+                class="dropdown-item py-1 text-danger mark-not-planted"
+                data-guest-id="{{ guest.uid }}"
+                data-guest-name="{{ guest.full_name|escapejs }}">
+                Mark as Not Planted
+              </a>
+              {% else %}
+              <span class="dropdown-item py-1 text-muted small disabled">
+                Status: {{ guest.status.name }} (terminal)
+              </span>
+              {% endif %}
+            {% endif %}
+            {# Force Commit — admin shortcut bypassing threshold + interest form #}
+            {% if can_update_status %}
+              {% if not guest.force_commit_disabled %}
+              <a href="#"
+                  class="dropdown-item py-1 text-warning force-commit-btn"
+                  data-guest-uid="{{ guest.uid }}"
+                  data-guest-name="{% if guest.title %}{{ guest.title|escapejs }} {% endif %}{{ guest.full_name|escapejs }}">
+                Fast Track to Training
+              </a>
+              {% else %}
+              <span class="dropdown-item py-1 text-muted small disabled">
+                Fast Track unavailable
+              </span>
+              {% endif %}
+            {% endif %}
+
+            <div class="dropdown-divider"></div>
+            {% if permissions|can:"guests.review" %}
+            <a class="dropdown-item py-1" href="#"
+              data-bs-toggle="modal" data-bs-target="#reviewModal-{{ guest.id }}">
+              Make Review
+            </a>
+            {% endif %}
+            {% if can_report %}
+            <a class="dropdown-item py-1 d-flex justify-content-between align-items-center"
+              href="{% url 'guests:followup_report_page' guest.uid %}">
+              Make Report
+              <span class="badge bg-grey text-warning ms-2">{{ guest.reports.count }}</span>
+            </a>
+            {% endif %}
+            <div class="dropdown-divider"></div>
+            {% if permissions|can:"messaging.send" %}
+            <a class="dropdown-item py-1" href="#"
+              data-bs-toggle="modal" data-bs-target="#guestMessageModal{{ guest.id }}">
+              Send Message
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body position-relative" style="padding-bottom:50px;">
+        <div class="row align-items-start mb-2">
+          <div class="col-auto pt-2 mb-2 text-center position-relative" style="width:140px;">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#previewModal{{ guest.id }}"
+              class="position-relative d-inline-block">
+              {% if guest.picture %}
+                <span class="avatar avatar-xl"
+                      style="background-image:url('{{ guest.picture.url }}');display:inline-block;
+                            width:130px;height:130px;border-radius:1rem;background-size:cover;
+                            background-position:center;box-shadow:0 2px 5px #000000f3;"></span>
+              {% else %}
+                <span class="avatar avatar-xl bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                      style="width:130px;height:130px;font-weight:bold;font-size:24px;border-radius:1rem;box-shadow:0 2px 5px #000000f3;">
+                  {{ guest.initials }}
+                </span>
+              {% endif %}
+              <div id="review-badge-{{ guest.id }}" class="review-badge-wrapper">
+                {% if guest.has_unread_reviews %}
+                  <span class="badge-wrapper position-absolute top-0 start-100">
+                    <span class="badge-lg bg-red-lt rounded-2 badge-wiggle">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M8 9h8"/><path d="M8 13h6"/>
+                        <path d="M12.01 18.594l-4.01 2.406v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v5.5"/>
+                        <path d="M16 19h6"/><path d="M19 16v6"/>
+                      </svg>
+                    </span>
+                  </span>
+                {% endif %}
+              </div>
+            </a>
+
+            <div class="modal modal-md modal-blur fade" id="previewModal{{ guest.id }}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content pb-0">
+                  <div class="modal-header">
+                    <h5 class="modal-title text-center">{{ guest.title|default:"" }} {{ guest.full_name }}</h5>
+                    <button class="btn border-0 ms-auto" data-bs-dismiss="modal" style="background:none;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff0000ff" stroke-width="2">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M18 6l-12 12"/><path d="M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="modal-body text-center p-4">
+                    {% if guest.picture %}
+                      <img src="{{ guest.picture.url }}" class="img-fluid" style="border-radius:20px;box-shadow:0 4px 8px #000000f3;" alt="{{ guest.full_name }}">
+                    {% else %}
+                      <div class="bg-grey p-5 d-inline-block" style="border-radius:20px;">
+                        <span class="fw-bold display-4">{{ guest.initials }}</span>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col px-3 mt-0 pt-0 d-flex flex-column justify-content-center" style="height:135px;">
+            <div>
+              <small class="fst-italic text-secondary">{{ guest.title }}</small>
+              <h3 class="d-flex text-white fs-2">
+                <a href="#" class="guest-name-link"
+                  style="line-height:1.2;"
+                  data-bs-toggle="modal" data-bs-target="#guestDetailModal-{{ guest.id }}">
+                  {{ guest.full_name }}
+                </a>
+              </h3>
+            </div>
+            <div class="gap-2">
+              <a href="tel:{{ guest.phone_number }}" class="text-white guest-call-action" title="Call" data-guest-uid="{{ guest.uid }}" data-phone="{{ guest.phone_number|default:'' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5-2.5l5 2v4a2 2 0 0 1-2 2a16 16 0 0 1-15-15a2 2 0 0 1 2-2"/>
+                  <path d="M15 7a2 2 0 0 1 2 2"/><path d="M15 3a6 6 0 0 1 6 6"/>
+                </svg>
+              </a>
+              {% for account in guest.social_media_accounts.all %}
+                {% if account.platform and account.handle %}
+                  {% include "guests/partials/_social_icon.html" with platform=account.platform handle=account.handle %}
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-1 position-absolute pb-2" style="right:20px;bottom:1px;">
+          {% if can_create_guest and guest.assigned_to %}
+            {% with officer=guest.assigned_to.workforce_member.member.user %}
+            <div class="d-flex align-items-center">
+              {% if officer.image %}
+                <span class="avatar" style="width:32px;height:32px;background-image:url('{{ officer.image.url }}');background-size:cover;border-radius:6px;box-shadow:0 4px 8px #000000d2;"></span>
+              {% endif %}
+              <div class="badge ms-1 px-2 py-2" style="font-size:0.6rem;box-shadow:0 4px 8px #000000d2;font-style:italic;border-radius:0 24px 24px 0;">
+                {{ officer.title|default:"" }} {{ officer.full_name }}
+              </div>
+            </div>
+            {% endwith %}
+          {% endif %}
+        </div>
+
+        <div class="mt-1 position-absolute pb-2" style="bottom:32px;left:0;">
+          <div class="my-3">
+            <div class="ribbon ribbon-start gap-1 text-uppercase fw-bold bg-{{ guest.status|status_color }}-lt text-white d-flex"
+                style="box-shadow:0 4px 8px #000000d2;font-size:0.7rem;border-radius:0 24px 24px 12px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M10 20.777a8.942 8.942 0 0 1 -2.48 -.969"/>
+                <path d="M14 3.223a9.003 9.003 0 0 1 0 17.554"/>
+                <path d="M4.579 17.093a8.961 8.961 0 0 1 -1.227 -2.592"/>
+                <path d="M3.124 10.5c.16 -.95 .468 -1.85 .9 -2.675l.169 -.305"/>
+                <path d="M6.907 4.579a8.954 8.954 0 0 1 3.093 -1.356"/>
+              </svg>
+              {{ guest.status.name }}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  {% if guest.id %}
+  <div class="modal fade modal-blur" id="guestDetailModal-{{ guest.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header align-items-center justify-content-center">
+          <h2 class="modal-title">GUEST DETAILS</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2 align-items-center">
+            <div class="col">
+              <div class="mb-4 text-center">
+                {% if guest.picture %}
+                  <span class="avatar avatar-xl"
+                        style="background-image:url('{{ guest.picture.url }}');display:inline-block;
+                                width:130px;height:130px;border-radius:1rem;background-size:cover;
+                                background-position:center;box-shadow:0 2px 5px #000000f3;"></span>
+                {% else %}
+                  <span class="avatar avatar-xl bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                        style="width:130px;height:130px;font-weight:bold;font-size:24px;border-radius:1rem;box-shadow:0 2px 5px #000000f3;">
+                    {{ guest.initials }}
+                  </span>
+                {% endif %}
+                <h3 class="m-0 mb-2 text-white mt-2 fs-2">
+                  <small>{{ guest.title }}</small> {{ guest.full_name }}
+                </h3>
+                <div class="text-muted fs-3 fw-bold" style="font-family:monospace;">{{ guest.custom_id }}</div>
+                <div class="my-2">
+                  <a href="tel:{{ guest.phone_number }}" class="text-white guest-call-action" data-guest-uid="{{ guest.uid }}" data-phone="{{ guest.phone_number|default:'' }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5-2.5l5 2v4a2 2 0 0 1-2 2a16 16 0 0 1-15-15a2 2 0 0 1 2-2"/>
+                      <path d="M15 7a2 2 0 0 1 2 2"/><path d="M15 3a6 6 0 0 1 6 6"/>
+                    </svg>
+                  </a>
+                  {% for account in guest.social_media_accounts.all %}
+                    {% if account.platform and account.handle %}
+                      {% include "guests/partials/_social_icon.html" with platform=account.platform handle=account.handle %}
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+
+              <div class="row g-4">
+                {% for field in guest.field_data %}
+                <div class="col-md-6">
+                  <ul class="timeline">
+                    <li class="timeline-event">
+                      <div class="timeline-event-icon bg-x-lt" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          {{ svg_icons|get_item:field.icon|safe }}
+                        </svg>
+                      </div>
+                      <div class="card timeline-event-card">
+                        <div class="card-body">
+                          <i><small class="text-muted">{{ field.verbose_name|capfirst }}</small></i>
+                          {% if field.name == "date_of_visit" and field.time_since %}
+                            <div class="text-secondary float-end small">{{ field.time_since }} ago</div>
+                          {% endif %}
+                          <p class="text-base text-warning fs-3">{{ field.value|default_if_none:"" }}</p>
+                        </div>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+                {% endfor %}
+              </div>
+
+              {% if permissions|can:"guests.review" %}
+              <div class="accordion accordion-tabs" id="accordion-{{ guest.id }}">
+                <div class="accordion-item bg-transparent">
+                  <div class="accordion-header">
+                    <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-reports-{{ guest.id }}">
+                      Reports
+                    </button>
+                  </div>
+                  <div id="collapse-reports-{{ guest.id }}" class="accordion-collapse collapse">
+                    <div class="accordion-body" style="overflow-y:auto;max-height:200px;">
+                      {% if guest.reports.exists %}
+                      <ul class="list-group list-group-flush">
+                        {% for report in guest.reports.all %}
+                        <li class="list-group-item">
+                          <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted" style="font-family:monospace;">{{ report.report_date|date:"M d, Y" }}</small>
+                            <span class="text-white">{{ report.note }}</span>
+                            <div>
+                              {% if report.service_sunday %}<span class="badge bg-indigo-lt">Sunday</span>{% endif %}
+                              {% if report.service_midweek %}<span class="badge bg-purple-lt">Midweek</span>{% endif %}
+                            </div>
+                          </div>
+                        </li>
+                        {% endfor %}
+                      </ul>
+                      {% else %}
+                      <p class="text-muted">No reports yet.</p>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <div class="accordion-item bg-transparent">
+                  <div class="accordion-header">
+                    <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-reviews-{{ guest.id }}">
+                      Reviews
+                    </button>
+                  </div>
+                  <div id="collapse-reviews-{{ guest.id }}" class="accordion-collapse collapse">
+                    <div class="accordion-body">
+                      {% include "guests/partials/_review_thread.html" with guest=guest %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% empty %}
+  <div class="col text-center text-muted py-5">No guests assigned yet.</div>
+  {% endfor %}
+</div>
+{% if permissions|can:"messaging.send" %}
+{% for guest in guests %}
+<div class="modal fade" id="guestMessageModal{{ guest.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Message - {{ guest.title|default:'' }} {{ guest.full_name }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="{% url 'messaging:send_guest_message' guest.uid %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Message</label>
+            <textarea name="body" rows="4" class="form-control" required></textarea>
+          </div>
+          <div class="text-end">
+            <button type="submit" class="btn btn-primary">Send</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% for guest in guests %}
+{% if permissions|can:"guests.review" %}
+<div class="modal fade modal-blur" id="reviewModal-{{ guest.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header align-items-center justify-content-center">
+        <h5 class="modal-title">Review - <span class="fs-2">{{ guest.title }} {{ guest.full_name }}</span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        {% include "guests/partials/_review_thread.html" with guest=guest %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<script>
+// Attach-to-chat
+document.querySelectorAll(".attach-to-chat").forEach(btn => {
+  btn.addEventListener("click", e => {
+    e.preventDefault();
+    const guestData = {
+      id: btn.dataset.id, name: btn.dataset.name, title: btn.dataset.title,
+      custom_id: btn.dataset.customId, date_of_visit: btn.dataset.date,
+      image: btn.dataset.image || null
+    };
+    sessionStorage.setItem("attachGuest", JSON.stringify(guestData));
+    const roomId = window.GUESTS_ROOM_ID || "";
+    window.location.href = roomId ? `/?room_id=${roomId}&guest_id=${guestData.id}` : "/";
+  });
+});
+
+// Status popovers
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".status-popover-trigger").forEach(el => {
+    el.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); });
+    new bootstrap.Popover(el, { trigger: "click", sanitize: false, html: true });
+  });
+  document.body.addEventListener("click", e => {
+    if (!e.target.closest(".status-popover-trigger") && !e.target.closest(".popover")) {
+      document.querySelectorAll(".status-popover-trigger").forEach(el => {
+        const pop = bootstrap.Popover.getInstance(el);
+        if (pop) pop.hide();
+      });
+    }
+  }, true);
+});
+
+</script>
+
+{% include "guests/partials/_guest_pipeline_actions.html" %}
+{% endif %}

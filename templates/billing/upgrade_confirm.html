@@ -1,0 +1,62 @@
+{% extends base_template %}
+{% load static %}
+{% block title %}Confirm Upgrade — {{ plan.get_name_display|default:plan.name }}{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:560px;">
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+    <div>
+      <h2 class="fw-bold mb-0">Confirm Upgrade</h2>
+    </div>
+    <a href="{% url 'billing:pricing' %}" class="btn bg-grey btn-sm" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">Back to Plans</a>
+  </div>
+
+  <div class="card bg-grey mb-4"
+       style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <div class="fw-bold fs-5">{{ plan.get_name_display|default:plan.name }}</div>
+          <div class="text-muted small">{{ interval_label }}</div>
+        </div>
+        <div class="fw-bold fs-4 text-success">₦{{ amount|floatformat:0 }}</div>
+      </div>
+      <hr class="border-secondary">
+      <div class="row g-2">
+        {% if subdomain %}
+        <div class="col-12">
+          <div class="text-muted small">Your subdomain</div>
+          <div class="fw-semibold">{{ subdomain }}.workforce.church</div>
+        </div>
+        {% endif %}
+        {% if custom_domain %}
+        <div class="col-12">
+          <div class="text-muted small">Your domain</div>
+          <div class="fw-semibold">{{ custom_domain }}</div>
+        </div>
+        {% endif %}
+        {% if campus_addon_qty %}
+        <div class="col-12">
+          <div class="text-muted small">Additional campus slots</div>
+          <div class="fw-semibold">{{ campus_addon_qty }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <form method="post" action="{% url 'billing:initiate_payment' %}">
+    {% csrf_token %}
+    <input type="hidden" name="plan"          value="{{ plan_key }}">
+    <input type="hidden" name="interval"      value="{{ interval }}">
+    <input type="hidden" name="subdomain"     value="{{ subdomain }}">
+    <input type="hidden" name="custom_domain" value="{{ custom_domain }}">
+    <input type="hidden" name="campus_addon_qty" value="{{ campus_addon_qty|default:0 }}">
+    <button type="submit" class="btn btn-primary btn-lg w-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+      Pay ₦{{ amount|floatformat:0 }} via Paystack
+    </button>
+  </form>
+  <p class="text-muted small text-center mt-3">
+    You will be redirected to Paystack's secure checkout. No card data is stored on our servers.
+  </p>
+</div>
+{% endblock %}

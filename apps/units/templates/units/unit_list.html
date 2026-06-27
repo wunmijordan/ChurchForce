@@ -1,0 +1,88 @@
+{% extends base_template %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-xl py-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="mb-0 fw-bold">{{ page_title }}</h2>
+    {% if nav_is_admin %}
+      <a class="btn btn-sm btn-outline-secondary" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;" href="{% url 'units:create' %}">
+        Create Unit or Group
+      </a>
+    {% endif %}
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card bg-gray-900 h-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h5 class="mb-0 fw-semibold">Units</h5>
+          <span class="badge bg-secondary-lt">{{ units|length }}</span>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-cyan-lt table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Members</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for unit in units %}
+              <tr>
+                <td>{{ unit.name }}</td>
+                <td class="text-muted">{{ unit.member_count }}</td>
+                <td class="text-end">
+                  <a class="btn btn-xs btn-outline-secondary" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;" href="{% url 'units:detail' unit.slug %}">
+                    View
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-muted text-center py-3">No units yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card bg-cyan-lt h-100" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h5 class="mb-0 fw-semibold">Groups</h5>
+          <span class="badge bg-secondary-lt">{{ groups|length }}</span>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-gray-900 table-hover mb-0">
+            <thead class="bg-gray-900 text-white">
+              <tr>
+                <th>Name</th>
+                <th>Members</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for unit in groups %}
+              <tr>
+                <td>{{ unit.name }}</td>
+                <td class="text-muted">{{ unit.member_count }}</td>
+                <td class="text-end">
+                  <a class="btn btn-xs btn-outline-secondary" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;" href="{% url 'units:detail' unit.slug %}">
+                    View
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-muted text-center py-3">No groups yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

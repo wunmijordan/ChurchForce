@@ -4,18 +4,43 @@
 
 {% block title %}Admin Dashboard — {{ church.name }}{% endblock %}
 
-{# Admin dashboard inherits the full member dashboard and appends admin-only panels.
-   Guard: this template should only be rendered when request|is_admin is True.
-   The view enforces this — the template is a secondary safety net only. #}
+{# ── Admin dashboard extends the full member dashboard.
+   The view enforces the admin permission guard — this template is a secondary net.
+   We inject admin-only panels before the inherited widget sidebar. #}
+
+{% block content %}
+{{ block.super }}
+
+
+{% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
 
-{% if request|is_admin %}
+{% if nav_is_admin %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll("[data-select-all]").forEach((input) => {
+    input.addEventListener("change", function () {
+      const name = this.dataset.selectAll;
+      const form = this.closest("form");
+      if (!form) return;
+      form.querySelectorAll(`input[name="${name}"]`).forEach((checkbox) => {
+        checkbox.checked = this.checked;
+      });
+    });
+  });
 
-  // ── User selector: when admin picks a user, update stats via AJAX ──
+  document.querySelectorAll(".dashboard-widget-jump").forEach((button) => {
+    button.addEventListener("click", function () {
+      const target = document.getElementById(this.dataset.target);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  });
+
+  // ── User selector: update stats via AJAX ────────────────────────────
   const userSelect = document.getElementById("userSelect");
   const summaryCol = document.getElementById("summaryColumn");
   const clockIn    = document.getElementById("totalClockIn");
@@ -25,7 +50,6 @@ document.addEventListener("DOMContentLoaded", function () {
     userSelect.addEventListener("change", function () {
       const userId = this.value;
       if (!userId) { summaryCol && (summaryCol.style.display = "none"); return; }
-
       fetch(`{% url 'dashboard:dashboard' %}?user_id=${userId}`, {
         headers: { "X-Requested-With": "XMLHttpRequest" }
       })
@@ -41,8 +65,76 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch(console.error);
     });
   }
+
+  // ── Evangelism Research: lazy-load on button click ───────────────────
+  const researchBtn = document.getElementById("loadResearchBtn");
+  const researchOut = document.getElementById("researchOutput");
+  if (researchBtn) {
+    researchBtn.addEventListener("click", function () {
+      researchBtn.disabled = true;
+      researchBtn.textContent = "Loading…";
+      researchOut.innerHTML = '<div class="spinner-border spinner-border-sm text-success me-2"></div> Generating brief…';
+      fetch("{% url 'dashboard:evangelism_research' %}")
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            researchOut.style.whiteSpace = "pre-wrap";
+            researchOut.textContent = data.report;
+          } else {
+            researchOut.innerHTML = '<span class="text-danger">⚠ ' + (data.error || "Failed") + '</span>';
+          }
+          researchBtn.textContent = "Refresh";
+          researchBtn.disabled = false;
+        })
+        .catch(() => {
+          researchOut.innerHTML = '<span class="text-danger">Network error.</span>';
+          researchBtn.textContent = "Retry";
+          researchBtn.disabled = false;
+        });
+    });
+  }
+
+  // ── Quick Announce form ──────────────────────────────────────────────
+  const announceForm = document.getElementById("quickAnnounceForm");
+  if (announceForm) {
+    announceForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+      fetch("{% url 'dashboard:announce_create' %}", {
+        method: "POST", headers: { "X-CSRFToken": csrf }, body: new FormData(announceForm),
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          announceForm.reset();
+          const fb = document.getElementById("announceFeedback");
+          if (fb) { fb.textContent = "✅ Announcement posted."; setTimeout(() => fb.textContent = "", 3000); }
+        }
+      });
+    });
+  }
+
+  // ── Quick Task form ──────────────────────────────────────────────────
+  const taskForm = document.getElementById("quickTaskForm");
+  if (taskForm) {
+    taskForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+      fetch("{% url 'dashboard:task_create' %}", {
+        method: "POST", headers: { "X-CSRFToken": csrf }, body: new FormData(taskForm),
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          taskForm.reset();
+          const fb = document.getElementById("taskFeedback");
+          if (fb) { fb.textContent = "✅ Task created."; setTimeout(() => fb.textContent = "", 3000); }
+        }
+      });
+    });
+  }
+
 });
 </script>
 {% endif %}
-
 {% endblock %}

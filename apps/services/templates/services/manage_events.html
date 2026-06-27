@@ -1,0 +1,694 @@
+{% extends base_template %}
+{% load widget_tweaks %}
+{% load access_tags %}
+
+{% block content %}
+
+<span id="editEventBase" data-url="{% url 'services:edit_event' uid='00000000-0000-0000-0000-000000000000' %}" style="display:none;"></span>
+<div class="page-wrapper">
+  <!-- BEGIN PAGE HEADER -->
+  <div class="page-header d-print-none" aria-label="Page header">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <!-- Dynamic Page Title -->
+          <kbd class="bg-success-lt"><h2 class="page-title">{{ page_title }}</h2></kbd>
+        </div>
+
+        <!-- Page title actions -->
+        <div class="col-auto ms-auto d-print-none">
+          <div class="btn-list">
+            <div>
+              <!-- Single Button for Regular Users -->
+              <a href="#" class="btn btn-gray d-none d-sm-inline-block" aria-label="Add programme" data-bs-toggle="modal" data-bs-target="#eventModal" id="addEventBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-calendar-plus">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12.5 21h-6.5a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v5" />
+                  <path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /><path d="M16 19h6" /><path d="M19 16v6" />
+                </svg>
+                Add Programme
+              </a>
+
+              <!-- Mobile Button -->
+              <a href="#" class="btn btn-gray d-sm-none btn-icon" aria-label="Add programme" data-bs-toggle="modal" data-bs-target="#eventModal" id="addEventBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-calendar-plus">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12.5 21h-6.5a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v5" />
+                  <path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /><path d="M16 19h6" /><path d="M19 16v6" />
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>   
+  </div>
+  <!-- END PAGE HEADER -->
+  <div class="page-body">
+    <div class="container-xl">
+
+      <div class="card bg-dark text-light shadow-sm p-4 rounded-3">
+        <!-- Events List -->
+
+        <h4 class="mb-3">Active Events</h4>
+        <ul id="eventList" class="list-group bg-gray" style="max-height: 60vh; overflow-y: auto;">
+          {% for event in events %}
+            {% include "services/event_item.html" %}
+          {% empty %}
+            <li class="list-group-item bg-gray text-white text-center">No events yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal modal-blur fade" id="eventModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">Add Event</h3>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="eventForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="row g-3">
+            {% for field in form %}
+              {% if field.name != "postponed" and field.name != "prepares_for_service" and field.name != "lms_course" and field.name != "modules_covered" and field.name != "trainee_access" %}
+                {% if field.field.widget.input_type == "checkbox" %}
+                  <div class="col-md-6 d-flex align-items-center mt-2">
+                    <div class="form-check m-0">
+                      {% render_field field class="form-check-input bg-cyan-lt" style="box-shadow:inset 0 4px 8px #000000d2;" %}
+                      <label class="form-check-label text-cyan ms-2" for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                      </label>
+                    </div>
+                  </div>
+                {% elif field.name == "event_type" %}
+                  <div class="col-md-6">
+                    <label class="form-label text-info">{{ field.label }}</label>
+                    {% render_field field class="form-select bg-gray-800 text-info" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                  </div>
+                  <div id="lmsCourseRow" class="col-md-6" style="display: none;">
+                    <label class="form-label text-warning">Training Course</label>
+                    {% render_field form.lms_course class="form-select bg-gray-800 text-cyan-lt" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" id="id_lms_course" %}
+                    <div class="form-text text-muted">
+                      Select which course this training session belongs to.
+                    </div>
+                  </div>
+                  <div id="modulesCoveredRow" class="col-md-6" style="display: none;">
+                    <label class="form-label text-cyan">
+                      Modules Covered <span class="text-muted small">(optional)</span>
+                    </label>
+
+                    <details class="multi-select-dropdown" data-multiselect>
+                      <summary style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;">
+                        Select modules
+                      </summary>
+
+                      <div id="moduleCheckboxList" class="multi-select-menu">
+                        <span class="text-muted small">Select a course first…</span>
+                      </div>
+                    </details>
+                    <div class="form-text text-muted" style="font-size:.72rem;">
+                      Check the modules this class covers. Leave all unchecked to unlock
+                      the entire course for enrolled trainees who attend.
+                    </div>
+                  </div>
+                  <!-- Prepares-for-service row (visible only when Rehearsal selected) -->
+                  <div id="preparesForRow" class="col-md-6" style="display: none;">
+                    <label class="form-label text-warning">Preparing for which service? <span class="text-muted">(optional)</span></label>
+                    {% render_field form.prepares_for_service class="form-control bg-cyan-lt text-white" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                    <div class="form-text text-muted" style="font-size:.72rem;">Links this rehearsal to the service it feeds into — visible on the rehearsal board and music hub.</div>
+                  </div>
+                {% elif field.name == "unit" %}
+                  <div class="col-md-6">
+                    <label class="form-label text-green">{{ field.label }}</label>
+                    {% render_field field class="form-select bg-gray-800 {{ membership.unit.color_class }}" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                  </div>
+                {% elif field.name == "event_image" %}
+                  <div class="col-md-6">
+                    <label class="form-label text-purple">{{ field.label }}</label>
+                    {% render_field field class="form-control bg-gray-800 text-purple" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                    <small class="text-muted">Upload a banner or poster for this event (optional)</small>
+                  </div>
+                  <div class="col-md-6" id="imagePreview"></div>
+                {% elif field.name == "registration_link" %}
+                  <div class="col-md-12" id="registrationLinkWrapper" style="display: none;">
+                    <label class="form-label text-teal">{{ field.label }}</label>
+                    {% render_field field class="form-control bg-gray-800 text-teal" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                    <small class="text-muted">Enter a registration link (only used if “Registrable” is checked)</small>
+                  </div>
+                {% else %}
+                  <div class="col-md-6">
+                    <label class="form-label text-warning">{{ field.label }}</label>
+                    {% render_field field class="form-control bg-gray-800 text-secondary" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px;" %}
+                  </div>
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            <div class="col-md-6 align-items-center mt-2" id="postponeWrapper" style="display: none;">
+              <div class="form-check m-0">
+                {% render_field form.postponed class="form-check-input bg-cyan-lt" style="box-shadow:inset 0 4px 8px #000000d2;" %}
+                <label class="form-check-label text-pink ms-2" for="{{ form.postponed.id_for_label }}">
+                  {{ form.postponed.label }}
+                </label>
+              </div>
+            </div>
+            <div class="col-md-6 d-flex align-items-start mt-2">
+              <div class="form-check m-0">
+                {% render_field form.trainee_access class="form-check-input bg-cyan-lt" style="box-shadow:inset 0 4px 8px #000000d2;" %}
+                <label class="form-check-label text-cyan ms-2" for="{{ form.trainee_access.id_for_label }}">
+                  {{ form.trainee_access.label }}
+                  <span class="text-muted small d-block" style="font-size:.72rem;">
+                    Tick to show this event to guest-pipeline trainees in the attendance modal.
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer bg-gray-900 border-0" style="border-radius:0 0 36px 36px;">
+          <button type="submit" class="btn bg-green-lt" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">Save</button>
+          <button type="button" class="btn bg-red-lt" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Event Details Modal -->
+<div class="modal modal-blur fade" id="eventDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detailsModalTitle">Event Details</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label text-warning">Event Name</label>
+            <p id="detailName" class="text-white"></p>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-info">Event Type</label>
+            <p id="detailEventType" class="text-white"></p>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-success">Date</label>
+            <p id="detailDate" class="text-white"></p>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-success">Time</label>
+            <p id="detailTime" class="text-white"></p>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-purple">Attendance Mode</label>
+            <p id="detailAttendanceMode" class="text-white"></p>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-teal">Unit</label>
+            <p id="detailUnit" class="text-white"></p>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-pink">Status</label>
+            <p id="detailStatus" class="text-white"></p>
+          </div>
+          <div class="col-md-6" id="detailLmsCourseWrapper" style="display: none;">
+            <label class="form-label text-cyan">LMS Course</label>
+            <p id="detailLmsCourse" class="text-white"></p>
+          </div>
+          <div class="col-md-6" id="detailPreparesForWrapper" style="display: none;">
+            <label class="form-label text-orange">Prepares For</label>
+            <p id="detailPreparesFor" class="text-white"></p>
+          </div>
+          <div class="col-12" id="detailImageWrapper" style="display: none;">
+            <label class="form-label text-purple">Event Image</label>
+            <div id="detailImage"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn bg-red-lt" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+{# ── Attendance settings (only show if linked to LMS course) ───────────────────────────────── #}
+
+<!-- Toasts -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+  <div id="toast" class="toast align-items-center text-white bg-dark border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toastMessage">Action completed.</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // --- DOM Elements ---
+  const modalEl = document.getElementById("eventModal");
+  const modal = new bootstrap.Modal(modalEl);
+  const form = document.getElementById("eventForm");
+  const eventList = document.getElementById("eventList");
+  const addBtn = document.getElementById("addEventBtn");
+  const toastEl = document.getElementById("toast");
+  const toastMessage = document.getElementById("toastMessage");
+  const toast = new bootstrap.Toast(toastEl);
+
+  const dateField = form.querySelector("[name='date']");
+  const endDateField = form.querySelector("[name='end_date']");
+  const timeField = form.querySelector("[name='time']");
+  const endTimeField = form.querySelector("[name='attendance_closes_at']");
+  const dayOfWeekField = form.querySelector("[name='day_of_week']");
+  const recurringCheckbox = form.querySelector("[name='is_recurring_weekly']");
+  const registrableCheckbox = form.querySelector("[name='registrable']");
+  const registrationLinkWrapper = document.getElementById("registrationLinkWrapper");
+  const registrationLinkField = form.querySelector("[name='registration_link']");
+  const durationField = form.querySelector("[name='duration_days']");
+
+  const postponeWrapper = document.getElementById("postponeWrapper");
+  const postponedCheckbox = form.querySelector("[name='postponed']");
+  const imagePreview = document.getElementById("imagePreview");
+
+  let editMode = false;
+  let editId = null;
+
+  // --- Helpers ---
+  function showToast(message) {
+    toastMessage.textContent = message;
+    toast.show();
+  }
+
+  function togglePostponeVisibility(isEdit) {
+    if (!postponeWrapper || !postponedCheckbox) return;
+    if (isEdit) {
+      postponeWrapper.style.display = "flex";
+    } else {
+      postponeWrapper.style.display = "none";
+      postponedCheckbox.checked = false;
+    }
+  }
+
+  // Clear fields ONLY when user actively toggles the checkbox (not when populating modal)
+  function clearFieldsForPostpone() {
+    if (dateField) dateField.value = "";
+    if (endDateField) endDateField.value = "";
+    if (timeField) timeField.value = "";
+    // Keep fields enabled for optional reselection
+    if (dateField) dateField.removeAttribute("disabled");
+    if (endDateField) endDateField.removeAttribute("disabled");
+    if (timeField) timeField.removeAttribute("disabled");
+  }
+
+  function toggleRecurringFields() {
+    if (!recurringCheckbox || !dayOfWeekField || !dateField || !endDateField) return;
+
+    if (recurringCheckbox.checked) {
+      dayOfWeekField.removeAttribute("disabled");
+      dateField.setAttribute("disabled", "disabled");
+      endDateField.setAttribute("disabled", "disabled");
+    } else {
+      dayOfWeekField.setAttribute("disabled", "disabled");
+      dateField.removeAttribute("disabled");
+      endDateField.removeAttribute("disabled");
+    }
+  }
+
+  function toggleRegistrationLink() {
+    if (!registrableCheckbox || !registrationLinkWrapper || !registrationLinkField) return;
+    if (registrableCheckbox.checked) {
+      registrationLinkWrapper.style.display = "block";
+    } else {
+      registrationLinkWrapper.style.display = "none";
+      registrationLinkField.value = "";
+    }
+  }
+
+  function toggleEndDateVisibility() {
+    if (!durationField || !endDateField) return;
+    const days = parseInt(durationField.value) || 1;
+    if (days > 1) {
+      endDateField.parentElement.style.display = "block";
+    } else {
+      endDateField.parentElement.style.display = "none";
+      endDateField.value = "";
+    }
+  }
+
+  function resetModal() {
+    editMode = false;
+    editId = null;
+    document.getElementById("modalTitle").textContent = "Add Event";
+    form.reset();
+    togglePostponeVisibility(false);
+    if (imagePreview) imagePreview.innerHTML = "";
+    toggleRecurringFields();
+    toggleRegistrationLink();
+    toggleEndDateVisibility();
+    // Clear modules list
+    const modList = document.getElementById("moduleCheckboxList");
+    if (modList) modList.innerHTML = '<span class="text-muted small">Select a course first…</span>';
+    const modRow = document.getElementById("modulesCoveredRow");
+    if (modRow) modRow.style.display = "none";
+    // Hide training/rehearsal-specific rows and re-sync event_type UI
+    const lmsCourseRow = document.getElementById("lmsCourseRow");
+    if (lmsCourseRow) lmsCourseRow.style.display = "none";
+    const preparesForRow = document.getElementById("preparesForRow");
+    if (preparesForRow) preparesForRow.style.display = "none";
+    // Fire change so any other event_type listeners also reset cleanly
+    const eventTypeField = form.querySelector("[name='event_type']");
+    if (eventTypeField) eventTypeField.dispatchEvent(new Event("change"));
+  }
+
+  function populateEditModal(btn) {
+    editMode = true;
+    editId = btn.dataset.uid;
+    document.getElementById("modalTitle").textContent = "Edit Event";
+
+    // Fields to populate — exclude unit and modules_covered (handled separately below)
+    const fieldsToPopulate = [
+      "name", "event_type", "lms_course", "count_towards_commitment", "attendance_mode", "date", "end_date",
+      "time", "attendance_closes_at", "duration_days", "is_active", "is_recurring_weekly",
+      "day_of_week", "registrable", "registration_link", "postponed", "prepares_for_service", "trainee_access"
+    ];
+
+    const item = btn.closest("li");
+    fieldsToPopulate.forEach(fieldName => {
+      const field = form.querySelector(`[name='${fieldName}']`);
+      if (!field) return;
+      const value = item.dataset[fieldName];
+      if (field.type === "checkbox") {
+        field.checked = (value === "true");
+      } else {
+        field.value = value || "";
+      }
+    });
+
+    // Unit: set from data-unit_id (the PK) not data-unit (the display name)
+    const unitField = form.querySelector("[name='unit']");
+    if (unitField) {
+      const unitId = item.dataset.unit_id || "";
+      unitField.value = unitId;
+    }
+
+    // Trigger event-type dependent UI updates AFTER all scalar values are set
+    const eventTypeField = form.querySelector("[name='event_type']");
+    if (eventTypeField) {
+      eventTypeField.dispatchEvent(new Event("change"));
+    }
+
+    // modules_covered: load checkboxes via AJAX and pre-check saved ones —
+    // ONLY for Training events. For all other types the row must stay hidden
+    // and no module checkboxes should be injected (they'd be submitted silently).
+    const selectedCourseId = item.dataset.lms_course;
+    const savedModuleIds = (item.dataset.modules_covered || "").split(",").filter(Boolean);
+    const isTrainingEvent = (item.dataset.event_type === "Training");
+    const _modList = document.getElementById("moduleCheckboxList");
+    const _modRow  = document.getElementById("modulesCoveredRow");
+    if (isTrainingEvent && selectedCourseId) {
+      loadCourseModules(selectedCourseId, savedModuleIds);
+    } else {
+      // Non-training: clear and hide the modules row so nothing leaks through
+      if (_modList) _modList.innerHTML = '<span class="text-muted small">Select a course first…</span>';
+      if (_modRow)  _modRow.style.display = "none";
+    }
+
+    // Recurring & postpone visibility — but don't clear date/time here
+    toggleRecurringFields();
+    togglePostponeVisibility(true);
+
+    // Image preview
+    if (imagePreview) {
+      const imageUrl = btn.dataset.image;
+      imagePreview.innerHTML = imageUrl
+        ? `<img src="${imageUrl}" alt="Event Image" class="rounded-3 mt-2 border border-secondary" style="width: 150px; height: auto; object-fit: cover;" />`
+        : "";
+    }
+
+    // Registration link visibility
+    toggleRegistrationLink();
+
+    // End date visibility
+    toggleEndDateVisibility();
+  }
+
+  // --- Event Listeners ---
+
+  // Add event button
+  if (addBtn) addBtn.addEventListener("click", resetModal);
+
+  // Recurring toggle
+  if (recurringCheckbox) {
+    recurringCheckbox.addEventListener("change", toggleRecurringFields);
+    toggleRecurringFields();
+  }
+
+  // Registrable toggle
+  if (registrableCheckbox) {
+    registrableCheckbox.addEventListener("change", toggleRegistrationLink);
+    toggleRegistrationLink();
+  }
+
+  // Postponed checkbox: clear fields only when user toggles it (user action)
+  if (postponedCheckbox) {
+    postponedCheckbox.addEventListener("change", (e) => {
+      if (e.target.checked) {
+        clearFieldsForPostpone();
+      }
+      // If user unchecks, do nothing (you said no second toggling flow needed)
+    });
+  }
+
+  // Duration toggle (for end date visibility)
+  if (durationField) {
+    durationField.addEventListener("input", toggleEndDateVisibility);
+    toggleEndDateVisibility();
+  }
+
+  // Edit / Delete buttons (delegated)
+  if (eventList) {
+    eventList.addEventListener("click", async (e) => {
+      const editBtn = e.target.closest(".edit-btn");
+      const deleteBtn = e.target.closest(".delete-btn");
+
+      // Edit
+      if (editBtn) {
+        populateEditModal(editBtn);
+        modal.show();
+        return;
+      }
+
+      // Delete
+      if (deleteBtn) {
+        e.preventDefault();
+        if (!confirm("Delete this event?")) return;
+
+        try {
+          const deleteBase = document.getElementById('editEventBase').dataset.url.replace('edit-event/00000000-0000-0000-0000-000000000000/', 'delete-event/');
+          const res = await fetch(`${deleteBase}${deleteBtn.dataset.uid}/`, {
+            method: "POST",
+            headers: { "X-CSRFToken": "{{ csrf_token }}" },
+          });
+
+          if (res.ok) {
+            deleteBtn.closest("li").remove();
+            showToast("🗑️ Event deleted successfully");
+          }
+        } catch (err) {
+          console.error(err);
+          showToast("⚠️ Failed to delete event");
+        }
+      }
+    });
+  }
+
+  // Form submit (Add/Edit)
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+
+      // Preserve existing image if editing and no new file selected
+      const fileInput = form.querySelector("[name='event_image']");
+      const existingImage = document.querySelector(`.edit-btn[data-uid='${editId}']`)?.dataset.image;
+      if (editMode && fileInput && !fileInput.files.length && existingImage) {
+        formData.append("existing_image", existingImage);
+      }
+
+      const editBase = document.getElementById('editEventBase').dataset.url.replace('00000000-0000-0000-0000-000000000000/', '');
+      const url = editMode ? `${editBase}${editId}/` : `{% url 'services:manage_events' %}`;
+
+      try {
+        const res = await fetch(url, { method: "POST", body: formData });
+        const data = await res.json();
+
+        if (res.ok && data.html) {
+          if (editMode) {
+            document.querySelector(`li[data-uid='${editId}']`).outerHTML = data.html;
+            showToast("✏️ Event updated successfully");
+          } else {
+            eventList.insertAdjacentHTML("beforeend", data.html);
+            showToast("✅ Event added successfully");
+          }
+
+          modal.hide();
+          resetModal();
+        } else {
+          console.error(data.errors);
+          showToast("⚠️ Error saving event");
+        }
+      } catch (err) {
+        console.error("Unexpected error:", err);
+        showToast("⚠️ Unexpected error occurred");
+      }
+    });
+  }
+});
+
+document.addEventListener("click", function(e) {
+  const btn = e.target.closest(".event-details-btn");
+  if (!btn) return;
+
+  const item = btn.closest("li");
+
+  document.getElementById("detailName").textContent = item.dataset.name || "";
+  document.getElementById("detailEventType").textContent = item.dataset.event_type || "";
+  document.getElementById("detailDate").textContent = item.dataset.date || "";
+
+  // ✅ FIXED wording
+  const time = item.dataset.time || "";
+  const closes = item.dataset.attendance_closes_at || "";
+
+  document.getElementById("detailTime").textContent =
+    time ? `Starts: ${time}${closes ? " | Attendance closes: " + closes : ""}` : "";
+
+  document.getElementById("detailAttendanceMode").textContent = item.dataset.attendance_mode || "";
+  document.getElementById("detailUnit").textContent = item.dataset.unit || "";
+
+  document.getElementById("detailStatus").textContent =
+    item.dataset.is_active === "true" ? "Active" : "Inactive";
+
+  // LMS
+  const lms = item.dataset.lms_course_name?.trim();
+  const lmsWrap = document.getElementById("detailLmsCourseWrapper");
+  lmsWrap.style.display = lms ? "block" : "none";
+  if (lms) document.getElementById("detailLmsCourse").textContent = lms;
+
+  // Prepares
+  const prep = item.dataset.prepares_for_service_name?.trim();
+  const prepWrap = document.getElementById("detailPreparesForWrapper");
+  prepWrap.style.display = prep ? "block" : "none";
+  if (prep) document.getElementById("detailPreparesFor").textContent = prep;
+
+  // Image
+  const img = item.dataset.image;
+  const imgWrap = document.getElementById("detailImageWrapper");
+  imgWrap.style.display = img ? "block" : "none";
+  if (img) {
+    document.getElementById("detailImage").innerHTML =
+      `<img src="${img}" class="img-fluid rounded">`;
+  }
+});
+</script>
+<script>
+// ── Training event: course selector + dynamic modules_covered field ──────────
+(function() {
+  const typeSelect   = document.querySelector('[name="event_type"]');
+  const lmsRow       = document.getElementById('lmsCourseRow');
+  const modRow       = document.getElementById('modulesCoveredRow');
+  const modList      = document.getElementById('moduleCheckboxList');
+  const preparesRow  = document.getElementById('preparesForRow');
+  const courseSelect = document.getElementById('id_lms_course');
+
+  if (!typeSelect) return;
+
+  function toggleEventType() {
+    const type = typeSelect.value;
+    if (lmsRow)      lmsRow.style.display      = (type === "Training")  ? "" : "none";
+    if (preparesRow) preparesRow.style.display  = (type === "Rehearsal") ? "" : "none";
+    if (type !== "Training") {
+      // Hide and clear the modules row — stale checkboxes must not be submitted
+      if (modRow)  modRow.style.display = "none";
+      if (modList) modList.innerHTML = '<span class="text-muted small">Select a course first…</span>';
+    }
+  }
+
+  // Load modules for a course via AJAX, pre-check those in checkedIds array
+  window.loadCourseModules = function(courseId, checkedIds) {
+    checkedIds = (checkedIds || []).map(String);
+    if (!courseId) {
+      if (modList) modList.innerHTML = '<span class="text-muted small">Select a course first…</span>';
+      if (modRow)  modRow.style.display = "none";
+      return;
+    }
+    if (modList) modList.innerHTML = '<span class="text-muted small">Loading…</span>';
+    fetch(`{% url 'services:course_modules_json' %}?course_id=${courseId}`)
+      .then(r => r.json())
+      .then(data => {
+        const modules = data.modules || [];
+        if (!modules.length) {
+          if (modList) modList.innerHTML = '<span class="text-muted small">No modules defined for this course yet.</span>';
+          if (modRow)  modRow.style.display = "";
+          return;
+        }
+        if (modList) {
+          modList.innerHTML = modules.map(m => {
+            const checked = checkedIds.includes(String(m.id)) ? " checked" : "";
+            return `<label class="multi-select-option">
+              <input type="checkbox"
+                    class="module-checkbox"
+                    name="modules_covered"
+                    value="${m.id}"${checked}>
+              <span>${m.order}. ${m.title}</span>
+            </label>`;
+          }).join('');
+        }
+        if (modRow) modRow.style.display = "";
+      })
+      .catch(() => {
+        if (modList) modList.innerHTML = '<span class="text-danger small">Could not load modules.</span>';
+        if (modRow)  modRow.style.display = "";
+      });
+  };
+
+  function updateModuleSummary() {
+    const summary = document.querySelector('#modulesCoveredRow summary');
+    const checked = document.querySelectorAll('#moduleCheckboxList input:checked');
+
+    if (!summary) return;
+
+    if (checked.length === 0) {
+      summary.textContent = "Select modules";
+    } else {
+      summary.textContent = `${checked.length} module(s) selected`;
+    }
+  }
+
+  document.addEventListener('change', function(e) {
+    if (e.target.matches('#moduleCheckboxList input')) {
+      updateModuleSummary();
+    }
+  });
+
+  // When course selection changes, reload modules
+  if (courseSelect) {
+    courseSelect.addEventListener('change', function() {
+      loadCourseModules(this.value, []);
+    });
+  }
+
+  typeSelect.addEventListener("change", toggleEventType);
+  setTimeout(toggleEventType, 0);
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,225 @@
+{% extends base_template %}
+{% load static access_tags %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="container-xl py-4">
+
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <a href="{% url 'lms:course_detail' course.slug %}" class="text-muted small">← Back to Course</a>
+      <h2 class="fw-bold mt-1 mb-0">{{ page_title }}</h2>
+      <p class="text-muted small mb-0">{{ course.title }}</p>
+    </div>
+    <a href="{% url 'services:manage_events' %}" class="btn btn-outline-success btn-sm">+ Schedule Training Event</a>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible mb-3">
+      {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="alert alert-info d-flex align-items-start gap-2 mb-4" style="border-radius:14px;font-size:.85rem;">
+    <span style="font-size:1.1rem;">ℹ️</span>
+    <div>
+      Sessions are automatically created when you schedule a <strong>Training</strong> event linked to this course.
+      Go to <a href="{% url 'services:manage_events' %}" class="alert-link">Events</a> to add new training dates and link them to this course.
+      You can edit the session title and notes below.
+    </div>
+  </div>
+
+  {% if available_events %}
+  <div class="card bg-dark border-warning mb-4" style="border-radius:16px;">
+    <div class="card-header border-warning d-flex align-items-center gap-2">
+      <span class="text-warning">⚠</span>
+      <h6 class="fw-bold mb-0 text-warning">Training Events Without Sessions</h6>
+    </div>
+    <div class="card-body p-3">
+      <p class="text-muted small mb-2">These training events are linked to this course but don't have a session record yet.</p>
+      <div class="list-group list-group-flush">
+        {% for ev in available_events %}
+        <div class="list-group-item bg-dark border-secondary d-flex justify-content-between align-items-center py-2">
+          <div>
+            <div class="fw-semibold small">{{ ev.name }}</div>
+            <div class="text-muted" style="font-size:.75rem;">{{ ev.date|date:"D, d M Y" }}{% if ev.time %} · {{ ev.time|time:"H:i" }}{% endif %}</div>
+          </div>
+          <span class="badge bg-warning-lt text-warning">No session</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card bg-dark border-secondary" style="border-radius:20px;">
+    <div class="card-header border-secondary">
+      <h6 class="fw-bold mb-0">Sessions ({{ sessions|length }})</h6>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-dark table-hover mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Session</th>
+            <th>Linked Event</th>
+            <th>Date</th>
+            <th>Modules Covered</th>
+            <th>Attendance</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for session in sessions %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ session.title }}</div>
+              {% if session.notes %}
+              <div class="text-muted" style="font-size:.75rem;">{{ session.notes }}</div>
+              {% endif %}
+            </td>
+            <td>
+              {% if session.event %}
+                <span class="badge bg-blue-lt">{{ session.event.name }}</span>
+              {% else %}
+                <span class="badge bg-danger-lt text-danger">⚠ Event missing</span>
+              {% endif %}
+            </td>
+            <td class="small text-muted">
+              {% if session.event %}
+                {{ session.event.date|date:"D, d M Y" }}
+                {% if session.event.time %} · {{ session.event.time|time:"H:i" }}{% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% for mod in session.modules_covered.all %}
+                <span class="badge bg-secondary-lt me-1" style="font-size:.65rem;">{{ mod.order }}. {{ mod.title }}</span>
+              {% empty %}
+                <span class="text-muted small">All modules (blanket unlock)</span>
+              {% endfor %}
+            </td>
+            <td>
+              {% with sa=session_attendance|lookup:"session.id" %}
+                {% if sa %}
+                  <span class="badge bg-success-lt text-success">
+                    {{ sa|length }} attended
+                  </span>
+                {% else %}
+                  <span class="text-muted small">No records yet</span>
+                {% endif %}
+              {% endwith %}
+            </td>
+            <td class="text-end">
+              <button class="btn btn-xs btn-outline-secondary"
+                      data-bs-toggle="modal"
+                      data-bs-target="#editSessionModal{{ session.id }}">
+                Edit Info
+              </button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-5">
+              <div style="font-size:2rem;">📅</div>
+              <div class="mt-2">No sessions yet.</div>
+              <div class="small mt-1">
+                <a href="{% url 'services:manage_events' %}" class="text-info">Schedule a Training event</a>
+                and link it to this course — a session will be created automatically.
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if modules %}
+  <div class="card bg-dark border-secondary mt-4" style="border-radius:20px;">
+    <div class="card-header border-secondary">
+      <h6 class="fw-bold mb-0">Module Unlock Map</h6>
+      <div class="text-muted small mt-1">Which session unlocks each module for attending trainees.</div>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-dark table-sm mb-0">
+        <thead>
+          <tr>
+            <th class="text-muted" style="width:2.5rem;">#</th>
+            <th>Module</th>
+            <th>Unlocked by</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mod in modules %}
+          <tr>
+            <td class="text-muted small">{{ mod.order }}</td>
+            <td class="small fw-semibold">{{ mod.title }}</td>
+            <td>
+              {% with mod_sessions=module_session_map|lookup:"mod.id" %}
+                {% if mod_sessions %}
+                  {% for s in mod_sessions %}
+                    <span class="badge bg-blue-lt me-1" style="font-size:.65rem;">
+                      {{ s.title }}{% if s.event %} · {{ s.event.date|date:"d M Y" }}{% endif %}
+                    </span>
+                  {% endfor %}
+                {% else %}
+                  <span class="text-muted small">No sessions assigned</span>
+                {% endif %}
+              {% endwith %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+{% for session in sessions %}
+<div class="modal fade" id="editSessionModal{{ session.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content text-white">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Session Info</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'lms:session_list' course.slug %}">
+        {% csrf_token %}
+        <input type="hidden" name="update_session_notes" value="1">
+        <input type="hidden" name="session_id" value="{{ session.id }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small text-muted">Session Title</label>
+            <input type="text" name="session_title"
+                   class="form-control bg-dark text-white border-secondary"
+                   value="{{ session.title }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small text-muted">Additional Notes</label>
+            <textarea name="session_notes"
+                      class="form-control bg-dark text-white border-secondary"
+                      rows="4"
+                      placeholder="E.g. what to bring, preparatory reading, dress code, venue details…">{{ session.notes }}</textarea>
+            <div class="form-text text-muted small">
+              Shown to trainees on their dashboard alongside upcoming sessions.
+            </div>
+          </div>
+          <div class="small text-muted border-top border-secondary pt-3 mt-1">
+            <strong>Linked event:</strong> {{ session.event.name }} · {{ session.event.date|date:"d M Y" }}<br>
+            <strong>Modules covered:</strong>
+            {% for mod in session.modules_covered.all %}{{ mod.title }}{% if not forloop.last %}, {% endif %}{% empty %}All modules{% endfor %}
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% endblock %}

@@ -1,9 +1,21 @@
-{% extends 'base.html' %}
+{% extends base_template %}
 {% load access_tags %}
 {% load user_avatar_tags %}
 {% load static %}
 
-{% block title %}Team — {{ church.name }}{% endblock %}
+{% block title %}Workforce — {{ church.name }}{% endblock %}
+
+{% block widget_buttons %}
+{{ block.super }}
+<button type="button" class="dashboard-widget-jump" data-title="Invite Member"
+        data-bs-toggle="modal" data-bs-target="#inviteModal">
+  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#02bd12ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users-group">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1" />
+    <path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M17 10h2a2 2 0 0 1 2 2v1" />
+    <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M3 13v-1a2 2 0 0 1 2 -2h2" />
+  </svg>
+</button>
+{% endblock %}
 
 {% block content %}
 <div class="page-wrapper">
@@ -13,7 +25,7 @@
     <div class="container-xl">
       <div class="row g-2 align-items-center">
         <div class="col">
-          <kbd class="bg-green-lt"><h2 class="page-title mb-0">{{ page_title|default:"Team" }}</h2></kbd>
+          <kbd class="bg-green-lt"><h2 class="page-title mb-0">{{ page_title|default:"Workforce" }}</h2></kbd>
         </div>
         <div class="col-auto ms-auto">
           <div class="btn-list">
@@ -37,30 +49,7 @@
               </a>
             </div>
 
-            {% if request|is_admin %}
-              <a href="{% url 'accounts:create_user' %}" class="btn btn-gray d-none d-sm-inline-block">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#02bd12ff" stroke-width="2" class="icon">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                  <path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/>
-                  <path d="M3 21v-2a4 4 0 0 1 4 -4h4c.96 0 1.84 .338 2.53 .901"/>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                  <path d="M16 19h6"/><path d="M19 16v6"/>
-                </svg>
-                Add Member
-              </a>
-              <a href="{% url 'accounts:create_user' %}" class="btn btn-gray d-sm-none btn-icon" aria-label="Add member">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#02bd12ff" stroke-width="2" class="icon">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                  <path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/>
-                  <path d="M3 21v-2a4 4 0 0 1 4 -4h4c.96 0 1.84 .338 2.53 .901"/>
-                  <path d="M16 19h6"/><path d="M19 16v6"/>
-                </svg>
-              </a>
-              <button type="button" class="btn btn-outline-secondary d-none d-sm-inline-block"
-                      data-bs-toggle="modal" data-bs-target="#inviteModal">
-                Invite by email
-              </button>
-            {% endif %}
+            
           </div>
         </div>
       </div>
@@ -75,16 +64,34 @@
           </kbd>
         </div>
         <div class="col-auto ms-auto">
-          <form method="get" class="d-flex gap-2">
+          {# Stage filter pills #}
+          <div class="d-flex gap-1 flex-wrap mb-2">
+            <a href="?q={{ search_query }}&view={{ view_type }}"
+               class="btn btn-sm {% if not stage_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+               style="border-radius:99px;font-size:.72rem;">All</a>
+            <a href="?q={{ search_query }}&stage=trainee&view={{ view_type }}"
+               class="btn btn-sm {% if stage_filter == 'trainee' %}btn-warning{% else %}btn-outline-secondary{% endif %}"
+               style="border-radius:99px;font-size:.72rem;">🎓 Trainees</a>
+            <a href="?q={{ search_query }}&stage=probation&view={{ view_type }}"
+               class="btn btn-sm {% if stage_filter == 'probation' %}btn-orange{% else %}btn-outline-secondary{% endif %}"
+               style="border-radius:99px;font-size:.72rem;">Probation</a>
+            <a href="?q={{ search_query }}&stage=active&view={{ view_type }}"
+               class="btn btn-sm {% if stage_filter == 'active' %}btn-success{% else %}btn-outline-secondary{% endif %}"
+               style="border-radius:99px;font-size:.72rem;">Active</a>
+            <a href="?q={{ search_query }}&stage=leader&view={{ view_type }}"
+               class="btn btn-sm {% if stage_filter == 'leader' %}btn-purple{% else %}btn-outline-secondary{% endif %}"
+               style="border-radius:99px;font-size:.72rem;">Leaders</a>
+          </div>
+          <form method="get" class="input-group">
             {% if request.GET.view %}<input type="hidden" name="view" value="{{ request.GET.view }}">{% endif %}
-            <input type="search" name="q" class="form-control" style="width:170px;"
-                   placeholder="Search…" value="{{ request.GET.q|default_if_none:'' }}">
-            <button type="submit" class="btn btn-sm btn-outline">
+            <input type="search" name="q" class="form-control" style="width:150px;box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 0 0 24px;"
+                    placeholder="Search…" value="{{ request.GET.q|default_if_none:'' }}">
+            <button type="submit" class="btn btn-sm" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:0;">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
               </svg>
             </button>
-            <a href="{% url 'accounts:user_list' %}" class="btn btn-sm btn-outline">✕</a>
+            <a href="{% url 'accounts:user_list' %}" class="btn btn-sm" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:0 24px 24px 0;">✕</a>
           </form>
         </div>
       </div>
@@ -122,9 +129,19 @@
               </td>
               <td>
                 <div class="d-flex align-items-center gap-2">
-                  {% render_user_avatar item.user "avatar-sm" %}
+                  {% if item.user.picture %}
+                    <span class="avatar avatar-sm"
+                          style="background-image:url('{{ item.user.picture.url }}');display:inline-block;
+                                  width:70px;height:70px;border-radius:1rem;background-size:cover;
+                                  background-position:center;box-shadow:0 2px 5px #000000f3;"></span>
+                  {% else %}
+                    <span class="avatar avatar-sm bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                          style="width:70px;height:70px;font-weight:bold;font-size:24px;border-radius:1rem;box-shadow:0 2px 5px #000000f3;">
+                      {{ item.user.initials }}
+                    </span>
+                  {% endif %}
                   <div>
-                    <div class="fw-bold text-warning">{{ item.user.title|default:"" }} {{ item.user.full_name }}</div>
+                    <div class="fw-bold text-warning">{{ item.user.title|default:"" }} {{ item.user.full_name|default:item.user.username }}</div>
                     <div class="text-secondary small">{{ item.user.username }}</div>
                   </div>
                 </div>
@@ -137,6 +154,26 @@
                   {% else %}bg-blue-lt{% endif %}">
                   {{ item.role_label }}
                 </span>
+                {% if item.is_hq_assigned %}
+                  <span class="badge bg-blue-lt ms-1" style="font-size:.55rem;" title="Assigned from HQ">HQ</span>
+                {% endif %}
+                {% if item.workforce_stage %}
+                  <span class="badge ms-1
+                    {% if item.is_unit_probation_only %}bg-orange-lt
+                    {% elif item.is_global_probation and item.is_disciplinary_probation %}bg-danger-lt
+                    {% elif item.is_global_probation %}bg-orange-lt
+                    {% elif item.workforce_stage == 'Active' %}bg-success-lt
+                    {% elif item.workforce_stage == 'Leader' %}bg-purple-lt
+                    {% else %}bg-secondary-lt{% endif %}"
+                    {% if item.is_unit_probation_only %}title="Probation in {{ item.probation_unit_count }} unit{{ item.probation_unit_count|pluralize }}"
+                    {% elif item.is_global_probation and item.is_disciplinary_probation %}title="Global disciplinary probation"
+                    {% elif item.is_global_probation %}title="Global probation"{% endif %}>
+                    {% if item.is_unit_probation_only %}{{ item.workforce_stage }}{% else %}{{ item.workforce_stage }}{% endif %}
+                    {% if item.is_unit_probation_only %}
+                      <span style="font-size:.6rem;background:rgba(0,0,0,.25);border-radius:8px;padding:1px 5px;">{{ item.probation_unit_count }}</span>
+                    {% endif %}
+                  </span>
+                {% endif %}
               </td>
               <td>
                 {% for unit_name in item.units %}
@@ -144,7 +181,7 @@
                 {% endfor %}
               </td>
               <td>
-                {% if request|is_admin %}
+                {% if nav_is_admin %}
                 <div class="dropdown">
                   <a href="#" class="text-purple" data-bs-toggle="dropdown">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -152,7 +189,7 @@
                     </svg>
                   </a>
                   <div class="dropdown-menu dropdown-menu-end p-1">
-                    <a class="dropdown-item py-1" href="{% url 'accounts:edit_user' item.user.id %}">Edit</a>
+                    <a class="dropdown-item py-1" href="{% url 'accounts:edit_user' item.user.username %}">Edit</a>
                   </div>
                 </div>
                 {% endif %}
@@ -171,16 +208,49 @@
         {% for item in page_obj.enriched %}
         {# item.user, item.role_label, item.units, item.color_class #}
         <div class="col-6 col-md-4" data-user-id="{{ item.user.id }}">
-          <div class="card flex-fill h-100">
+          <div class="card flex-fill h-100 border-0 pb-2"
+               style="box-shadow:0 4px 8px #000000d2;border-radius:36px;">
 
             <!-- Card header: status + actions -->
-            <div class="card-header border-0 pb-0 position-relative d-flex align-items-center">
-              <div class="position-absolute top-0 start-0 m-2">
-                <span class="badge {% if item.user.is_active %}bg-success-lt{% else %}bg-danger-lt{% endif %}">
-                  {% if item.user.is_active %}Active{% else %}Inactive{% endif %}
-                </span>
+            <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
+              <div class="text-secondary fs-3 fw-bold" style="font-family:monospace;">
+                {% if item.is_trainee %}
+                  {# Trainees: no custom_id yet — show trainee stage badge only #}
+                  <span class="badge-lg new-badge-gradient px-2 bg-cyan-lt" style="border-radius:12px;">
+                    🎓 TRAINEE
+                  </span>
+                {% else %}
+                  {# custom_id: HQ-assigned members carry their HQ ChurchMember id #}
+                  {{ item.member.custom_id|default:"" }}
+                  {% if item.is_hq_assigned %}
+                    <span class="badge bg-blue-lt ms-1" style="font-size:.55rem;border-radius:8px;vertical-align:middle;"
+                          title="Assigned from HQ — ID and stage are HQ-managed">HQ</span>
+                  {% endif %}
+                  {% if item.workforce_stage %}
+                    <span class="badge-lg new-badge-gradient px-2 text-uppercase
+                      {% if item.is_unit_probation_only %}bg-orange-lt
+                      {% elif item.is_global_probation and item.is_disciplinary_probation %}bg-danger-lt
+                      {% elif item.is_global_probation %}bg-orange-lt
+                      {% elif item.workforce_stage == 'Active' %}bg-success-lt
+                      {% elif item.workforce_stage == 'Leader' %}bg-purple-lt
+                      {% else %}bg-secondary-lt{% endif %}"
+                      style="border-radius:12px;"
+                      {% if item.is_unit_probation_only %}title="Probation in {{ item.probation_unit_count }} unit{{ item.probation_unit_count|pluralize }}"
+                      {% elif item.is_global_probation and item.is_disciplinary_probation %}title="Global disciplinary probation"
+                      {% elif item.is_global_probation %}title="Global probation — all units"{% endif %}>
+                      {{ item.workforce_stage }}
+                      {% if item.is_unit_probation_only %}
+                        <span class="badge ms-1"
+                              style="font-size:.6rem;background:rgba(0,0,0,.25);border-radius:8px;padding:1px 5px;">
+                          {{ item.probation_unit_count }}
+                        </span>
+                      {% endif %}
+                    </span>
+                  {% endif %}
+                {% endif %}
               </div>
-              <div class="ms-auto dropdown">
+              
+              <div class="dropdown">
                 <a href="#" class="text-purple" data-bs-toggle="dropdown">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
@@ -188,105 +258,183 @@
                 </a>
                 {% if request|is_admin %}
                 <div class="dropdown-menu dropdown-menu-end p-1">
-                  <a class="dropdown-item py-1" href="{% url 'accounts:edit_user' item.user.id %}">Edit</a>
+                  <a class="dropdown-item py-1" href="{% url 'accounts:edit_user' item.user.username %}">Edit</a>
                 </div>
                 {% endif %}
               </div>
             </div>
 
             <!-- Card body -->
-            <div class="card-body text-center">
+            <div class="card-body position-relative" style="padding-bottom:50px;">
+              <div class="row align-items-start mb-2">
 
-              <!-- Avatar → opens photo preview modal -->
-              <a href="#" data-bs-toggle="modal" data-bs-target="#previewModal{{ item.user.id }}">
-                {% render_user_avatar item.user "avatar-xl" %}
-              </a>
+                <!-- Photo -->
+                <div class="col-6 pt-2 mb-2 text-center position-relative" style="width:140px;">
 
-              <!-- Name -->
-              <h3 class="m-0 mb-1 text-warning mt-2 fs-2">
-                <small>{{ item.user.title|default:"" }}</small> {{ item.user.full_name }}
-              </h3>
+                  <!-- Avatar → opens photo preview modal -->
+                  <a href="#" data-bs-toggle="modal" data-bs-target="#previewModal{{ item.user.id }}"
+                      class="position-relative d-inline-block">
+                    {% if item.user.image %}
+                      <span class="avatar avatar-xl"
+                            style="background-image:url('{{ item.user.image.url }}');display:inline-block;
+                                    width:130px;height:130px;border-radius:1rem;background-size:cover;
+                                    background-position:center;box-shadow:0 2px 5px #000000f3;"></span>
+                    {% else %}
+                      <span class="avatar avatar-xl bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                            style="width:130px;height:130px;font-weight:bold;font-size:24px;border-radius:1rem;box-shadow:0 2px 5px #000000f3;">
+                        {{ item.user.initials }}
+                      </span>
+                    {% endif %}
 
-              <!-- Role badge — resolved by view, no tag logic -->
-              <div class="mt-1">
-                <span class="badge
-                  {% if item.role_label == 'Superuser' %}bg-warning-lt text-warning
-                  {% elif item.role_label == 'Admin' %}bg-secondary-lt
-                  {% elif item.role_label == 'Pastor' %}bg-green-lt text-green
-                  {% else %}bg-blue-lt text-blue{% endif %}">
-                  {{ item.role_label }}
-                </span>
+                    
+                  </a>
+
+                  <!-- Photo preview modal (inline) -->
+                  <div class="modal modal-md modal-blur fade" id="previewModal{{ item.user.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content text-white pb-0">
+                        <div class="modal-header">
+                          <h5 class="modal-title text-center">{{ item.user.title|default:"" }} {{ item.user.full_name|default:item.user.username }}</h5>
+                          <button type="button" class="btn-close btn-close-white ms-auto"
+                                  data-bs-dismiss="modal">
+                          </button>
+                        </div>
+                        <div class="modal-body text-center p-4">
+                          {% if item.user.image %}
+                            <img src="{{ item.user.image.url }}" class="img-fluid" style="border-radius:20px;box-shadow:0 4px 8px #000000f3;" alt="{{ item.user.full_name|default:item.user.username }}">
+                          {% else %}
+                            <div class="bg-grey p-5 d-inline-block" style="border-radius:20px;">
+                              {{ item.user.initials }}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              
+                <!-- Name -->
+                <div class="col-6 px-3 mt-0 pt-0 d-flex flex-column justify-content-center" style="height:135px;">
+                  <div>
+                    <small class="fst-italic text-secondary">{{ item.user.title|default:"" }}</small>
+                    <h3 class="d-flex text-white fs-2">
+                      <a href="#" class="user-name-link"
+                          style="line-height:1.2;"
+                          data-bs-toggle="modal" data-bs-target="#userDetailModal-{{ item.user.id }}">
+                        {{ item.user.full_name|default:item.user.username }}
+                      </a>
+                    </h3>
+                  </div>
+                  <div class="gap-2">
+                    {% if item.user.phone_number %}
+                    <a href="tel:{{ item.user.phone_number }}" class="text-white" title="Call">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5-2.5l5 2v4a2 2 0 0 1-2 2a16 16 0 0 1-15-15a2 2 0 0 1 2-2"/>
+                        <path d="M15 7a2 2 0 0 1 2 2"/><path d="M15 3a6 6 0 0 1 6 6"/>
+                      </svg>
+                    </a>
+                    {% endif %}
+                    {% if item.user.email %}
+                    <a href="mailto:{{ item.user.email }}" class="text-white" title="Mail">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                            viewBox="0 0 24 24" fill="currentColor">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M22 7.535v9.465a3 3 0 0 1-2.824 2.995l-.176.005h-14a3 3 0 0 1-2.995-2.824l-.005-.176v-9.465l9.445 6.297.116.066a1 1 0 0 0 .878 0l.116-.066z"/>
+                        <path d="M19 4c1.08 0 2.027.57 2.555 1.427l-9.555 6.37-9.555-6.37a2.999 2.999 0 0 1 2.354-1.42l.201-.007z"/>
+                      </svg>
+                    </a>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              
+
+              
+              {# Unit name (left) and unit role (right) — loop and flip in sync #}
+              <div class="row my-0 align-items-stretch g-0 unit-role-container"
+                   data-flip-container data-user="{{ item.user.id }}"
+                   data-pairs="{{ item.unit_role_pairs|length }}"
+                   style="overflow:hidden;height:36px;">
+                <!-- Unit name cycling — left pill -->
+                <div class="col-6">
+                  <div class="bg-teal-lt h-100 d-flex align-items-center justify-content-center position-relative"
+                       style="border-radius:24px 0 0 24px;padding:6px 8px;font-size:.72rem;min-height:36px;overflow:hidden;scrollbar-width:none;">
+                    {% if item.unit_role_pairs %}
+                      {% for unit_name, unit_role, unit_is_prob in item.unit_role_pairs %}
+                      <span class="flip-unit unit-role-item {% if not forloop.first %}d-none{% endif %} fw-semibold"
+                            style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 10px;max-width:100%;width:100%;text-align:center;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;{% if unit_is_prob %}color:#f76707;{% endif %}"
+                            {% if unit_is_prob %}title="Serving probation in {{ unit_name }}"{% endif %}>
+                        {% if unit_is_prob %}⚠ {% endif %}{{ unit_name }}
+                      </span>
+                      {% endfor %}
+                    {% elif item.is_trainee %}
+                      <span class="text-warning fw-semibold" style="font-size:.7rem;">
+                        In Training
+                      </span>
+                    {% else %}
+                      <span class="text-muted" style="font-size:.7rem;">{{ church.name }}</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <!-- Unit role cycling — right pill -->
+                <div class="col-6">
+                  <div class="bg-warning-lt h-100 d-flex align-items-center justify-content-center position-relative"
+                       style="border-radius:0 24px 24px 0;padding:6px 8px;font-size:.72rem;min-height:36px;overflow:hidden;scrollbar-width:none;">
+                    {% if item.unit_role_pairs %}
+                      {% for unit_name, unit_role, unit_is_prob in item.unit_role_pairs %}
+                      <span class="flip-role unit-role-item {% if not forloop.first %}d-none{% endif %} fw-semibold"
+                            style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 10px;max-width:100%;width:100%;text-align:center;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;{% if unit_is_prob %}color:#f76707;{% endif %}">
+                        {% if unit_is_prob %}Probation{% else %}{{ unit_role }}{% endif %}
+                      </span>
+                      {% endfor %}
+                    {% elif item.wf_role_names %}
+                      <span class="fw-semibold" style="font-size:.7rem;color:{{ church.primary_color }};">{{ item.wf_role_names.0 }}</span>
+                    {% else %}
+                      <span class="text-muted fw-semibold" style="font-size:.7rem;">Member</span>
+                    {% endif %}
+                  </div>
+                </div>
               </div>
 
               <!-- Online indicator -->
-              {% if item.user.is_online %}
-                <div class="mt-1"><span class="badge bg-success-lt">● Online</span></div>
-              {% endif %}
-
-              <!-- Unit memberships — cycling display -->
-              {% if item.units %}
-              <div class="user-team-role text-center mt-2">
-                <div class="team-role-container position-relative overflow-hidden d-inline-block px-1 py-0 rounded-pill bg-dark-lt"
-                     data-user="{{ item.user.id }}">
-                  {% for unit_name in item.units %}
-                    <div class="team-role-item bg-dark text-white fw-semibold px-2 py-1 rounded-pill {% if not forloop.first %}d-none{% endif %}">
-                      {{ unit_name }}
-                    </div>
-                  {% endfor %}
-                </div>
+              <div class="row mt-2">
+                {% if item.user.is_online %}
+                  <div class="align-items-center" style="background:#111827;border-radius:24px;padding:8px;text-align:center;width:fit-content;margin:0 auto;">
+                    <span class="badge bg-success-lt fs-6">●</span>
+                    <span style="font-family:monospace;font-size:0.8rem;">Online</span>
+                  </div>
+                {% endif %}
               </div>
-              {% endif %}
 
               <!-- Guest count (shown when relevant) -->
-              {% if item.guest_count %}
-              <div class="text-muted fs-2 mt-1">
-                <span class="badge badge-outline text-default">
-                  Guests: <span style="font-family:monospace;">{{ item.guest_count }}</span>
-                </span>
+              <div class="mt-1 position-absolute pb-2" style="right:20px;bottom:1px;">
+                {% if item.guest_count %}
+                  <div class="d-flex align-items-center">
+                    <span class="badge badge-outline text-default ms-1 px-2 py-2" style="font-size:0.6rem;box-shadow:0 4px 8px #000000d2;font-style:italic;border-radius:0 24px 24px 0;">
+                      Guests: <span style="font-family:monospace;">{{ item.guest_count }}</span>
+                    </span>
+                  </div>
+                {% endif %}
               </div>
-              {% endif %}
 
-            </div>
-
-            <!-- Card footer: call / email -->
-            <div class="d-flex w-100 mt-auto">
-              {% if item.user.phone_number %}
-              <a href="tel:{{ item.user.phone_number }}" class="card-btn text-success flex-fill text-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" stroke="currentColor" fill="none" class="icon me-1">
-                  <path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5-2.5l5 2v4a2 2 0 0 1-2 2a16 16 0 0 1-15-15a2 2 0 0 1 2-2"/>
-                </svg>
-                Call
-              </a>
-              {% endif %}
-              {% if item.user.email %}
-              <a href="mailto:{{ item.user.email }}" class="card-btn text-primary flex-fill text-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" stroke="currentColor" fill="none" class="icon me-1">
-                  <path d="M4 4h16v16H4z"/><path d="M4 4l8 8l8-8"/>
-                </svg>
-                Email
-              </a>
-              {% endif %}
-            </div>
-
-          </div>
-
-          <!-- Photo preview modal -->
-          <div class="modal fade" id="previewModal{{ item.user.id }}" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-              <div class="modal-content bg-dark border-light text-white">
-                <div class="modal-body text-center">
-                  {% if item.user.image %}
-                    <img src="{{ item.user.image.url }}" class="img-fluid rounded shadow" alt="{{ item.user.full_name }}">
-                  {% else %}
-                    <div class="bg-grey rounded p-5 d-inline-block">
-                      <span class="fw-bold display-4">{{ item.user.initials }}</span>
-                    </div>
-                  {% endif %}
-                  <p class="mt-3 mb-0 fw-bold">{{ item.user.title|default:"" }} {{ item.user.full_name }}</p>
-                  <p class="text-secondary small mb-0">{{ item.user.username }}</p>
+              <!-- Workforce Stage -->
+              <div class="mt-1 position-absolute pb-2" style="bottom:32px;left:0;">
+                <div class="my-3">
+                  <div class="ribbon ribbon-start gap-1 text-uppercase fw-bold bg-warning-lt text-white d-flex"
+                        style="box-shadow:0 4px 8px #000000d2;font-size:0.7rem;border-radius:0 24px 24px 12px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#222222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-tie">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 22l4 -4l-2.5 -11l.993 -2.649a1 1 0 0 0 -.936 -1.351h-3.114a1 1 0 0 0 -.936 1.351l.993 2.649l-2.5 11l4 4" /><path d="M10.5 7h3l5 5.5" />
+                    </svg>
+                    {{ item|role_only }}
+                  </div>
                 </div>
               </div>
+
             </div>
+
           </div>
 
         </div>
@@ -337,11 +485,76 @@
   </div>
 </div>
 
+<!-- ── User Detail Modal ── -->
+{% for item in page_obj.enriched %}
+{% if item.user.id %}
+<div class="modal fade modal-blur" id="userDetailModal-{{ item.user.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header align-items-center justify-content-center">
+        <h2 class="modal-title">USER DETAILS</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-2 align-items-center">
+          <div class="col">
+            <div class="mb-4 text-center">
+              {% if item.user.image %}
+                <span class="avatar avatar-xl"
+                      style="background-image:url('{{ item.user.image.url }}');display:inline-block;
+                              width:130px;height:130px;border-radius:1rem;background-size:cover;
+                              background-position:center;box-shadow:0 2px 5px #000000f3;"></span>
+              {% else %}
+                <span class="avatar avatar-xl bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                      style="width:130px;height:130px;font-weight:bold;font-size:24px;border-radius:1rem;box-shadow:0 2px 5px #000000f3;">
+                  {{ item.user.initials }}
+                </span>
+              {% endif %}
+              <h3 class="m-0 mb-2 text-white mt-2 fs-2">
+                <small>{{ item.user.title|default:"" }}</small> {{ item.user.full_name|default:item.user.username }}
+              </h3>
+              <div class="text-muted fs-3 fw-bold" style="font-family:monospace;">
+                {{ item.member.custom_id|default:"—" }}
+                {% if item.is_hq_assigned %}
+                  <span class="badge bg-blue-lt ms-1" style="font-size:.55rem;vertical-align:middle;" title="ID and stage managed by HQ">HQ</span>
+                {% endif %}
+              </div>
+              <div class="my-2">
+                <a href="tel:{{ item.user.phone_number }}" class="text-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59f00" stroke-width="2">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5-2.5l5 2v4a2 2 0 0 1-2 2a16 16 0 0 1-15-15a2 2 0 0 1 2-2"/>
+                    <path d="M15 7a2 2 0 0 1 2 2"/><path d="M15 3a6 6 0 0 1 6 6"/>
+                  </svg>
+                </a>
+                <a href="mailto:{{ item.user.email }}" class="text-white" title="Mail">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                        viewBox="0 0 24 24" fill="currentColor">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M22 7.535v9.465a3 3 0 0 1-2.824 2.995l-.176.005h-14a3 3 0 0 1-2.995-2.824l-.005-.176v-9.465l9.445 6.297.116.066a1 1 0 0 0 .878 0l.116-.066z"/>
+                    <path d="M19 4c1.08 0 2.027.57 2.555 1.427l-9.555 6.37-9.555-6.37a2.999 2.999 0 0 1 2.354-1.42l.201-.007z"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            <!-- Field data timeline -->
+            
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
 <!-- Invite modal -->
-{% if request|is_admin %}
+{% if nav_is_admin %}
 <div class="modal fade" id="inviteModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content bg-dark border-secondary">
+    <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title fw-bold">Invite a member</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -384,23 +597,29 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  // Cycle unit badges every 3s
-  document.querySelectorAll(".team-role-container").forEach(container => {
-    const items = container.querySelectorAll(".team-role-item");
-    if (items.length <= 1) return;
+  document.querySelectorAll("[data-flip-container]").forEach(container => {
+    const units = container.querySelectorAll(".flip-unit");
+    const roles = container.querySelectorAll(".flip-role");
+    const count = Math.min(units.length, roles.length);
+    if (count <= 1) return;
     let current = 0;
     setInterval(() => {
-      items[current].classList.add("slide-out");
-      const next = (current + 1) % items.length;
-      items[next].classList.remove("d-none");
-      items[next].classList.add("slide-in");
-      setTimeout(() => {
-        items[current].classList.add("d-none");
-        items[current].classList.remove("slide-out");
-        items[next].classList.remove("slide-in");
-        current = next;
-      }, 500);
+      const next = (current + 1) % count;
+      units[current].classList.add("d-none");
+      roles[current].classList.add("d-none");
+      units[next].classList.remove("d-none");
+      roles[next].classList.remove("d-none");
+      current = next;
     }, 3000);
+  });
+
+  document.querySelectorAll(".dashboard-widget-jump").forEach((button) => {
+    button.addEventListener("click", function () {
+      const target = document.getElementById(this.dataset.target);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
   });
 });
 </script>

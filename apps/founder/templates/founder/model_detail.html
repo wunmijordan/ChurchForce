@@ -1,0 +1,262 @@
+{% extends "founder/base_founder.html" %}
+{% block title %}{{ cfg.label }} — {{ obj_str|truncatechars:40 }}{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+  <div>
+    <a href="{% url 'founder:model_list' model_key=model_key %}" class="text-muted text-decoration-none small">← {{ cfg.label }}</a>
+    <h2 class="fw-bold mb-0 mt-1">{{ obj_str|truncatechars:60 }}</h2>
+    <span class="text-muted small">{{ cfg.app }}.{{ cfg.model }} · {{ obj_str|truncatechars:50 }}</span>
+  </div>
+  <div class="ms-auto d-flex gap-2 flex-wrap">
+    <a href="{{ django_admin_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-shield-lock me-1"></i>Django Admin ↗
+    </a>
+    {% if has_superuser %}
+    <form method="post" class="d-inline">{% csrf_token %}
+      <input type="hidden" name="_action" value="toggle_superuser">
+      <button class="btn btn-sm btn-outline-warning"
+              onclick="return confirm('Toggle superuser for this user?')">Toggle Superuser</button>
+    </form>
+    {% endif %}
+    {% if has_active %}
+    <form method="post" class="d-inline">{% csrf_token %}
+      <input type="hidden" name="_action" value="toggle_active">
+      <button class="btn btn-sm btn-outline-info">Toggle is_active</button>
+    </form>
+    {% endif %}
+    {% if cfg.model == 'CustomUser' %}
+    <a href="{% url 'founder:impersonate' pk=obj.pk %}" class="btn btn-sm btn-outline-warning"
+       onclick="return confirm('Impersonate {{ obj_str|escapejs }}?')">
+      <i class="bi bi-person-badge me-1"></i>Impersonate
+    </a>
+    {% endif %}
+    <form method="post" class="d-inline"
+          onsubmit="return confirm('Permanently delete {{ obj_str|escapejs }}? This cannot be undone.')">
+      {% csrf_token %}<input type="hidden" name="_action" value="delete">
+      <button class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-trash me-1"></i>Delete
+      </button>
+    </form>
+  </div>
+</div>
+
+{% if msg_ok %}
+<div class="alert alert-success alert-dismissible fade show">{{ msg_ok }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+{% endif %}
+{% if msg_err %}
+<div class="alert alert-danger alert-dismissible fade show">{{ msg_err }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+{% endif %}
+
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    <div class="stat-card">
+      <h6 class="fw-semibold mb-3">All Fields</h6>
+      <table class="table table-dark table-sm mb-0" style="font-size:.8rem;">
+        <thead><tr><th style="width:180px;">Field</th><th>Value</th><th style="width:80px;"></th></tr></thead>
+        <tbody>
+          {% for row in field_rows %}
+          <tr id="row-{{ row.name }}">
+            <td class="text-muted font-monospace">{{ row.name }}</td>
+            <td>
+              <span id="val-{{ row.name }}"
+                    class="{% if row.value == 'True' %}text-success{% elif row.value == 'False' %}text-muted{% endif %}">
+                {% if row.value == 'True' %}✓ True
+                {% elif row.value == 'False' %}✗ False
+                {% else %}{{ row.value|truncatechars:200 }}{% endif %}
+              </span>
+            </td>
+            <td class="text-end">
+              {% if row.editable %}
+              <button class="btn btn-xs btn-ghost-secondary"
+                      style="font-size:.6rem;padding:1px 6px;border-radius:4px;"
+                      onclick="inlineEdit('{{ row.name }}', '{{ row.value|escapejs }}')">
+                Edit
+              </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+
+    {# ── Plan Pricing Panel (SubscriptionPlan only) ── #}
+    {% if is_plan %}
+    <div class="stat-card mb-3" style="border:1px solid #6366f155;">
+      <h6 class="fw-semibold mb-3" style="color:#818cf8;">💰 Plan Pricing</h6>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="_action" value="update_plan_pricing">
+        <div class="mb-2">
+          <label class="small text-muted">Monthly Price (₦)</label>
+          <input type="number" name="monthly_price_ngn" min="0" id="planMonthlyPrice"
+                 value="{{ obj.monthly_price_ngn }}"
+                 class="form-control form-control-sm mt-1"
+                 style="background:#0f172a;border-color:#334155;color:#e2e8f0;"
+                 placeholder="0 = free/lifetime">
+        </div>
+        <div class="mb-2">
+          <label class="small text-muted">Campus Limit <span class="text-muted">(−1=unlimited, 0=none)</span></label>
+          <input type="number" name="campus_limit" min="-1"
+                 value="{{ obj.campus_limit }}"
+                 class="form-control form-control-sm mt-1"
+                 style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+        </div>
+        <div class="mb-2">
+          <label class="small text-muted">Extra Campus Price (₦/mo)</label>
+          <input type="number" name="campus_price_ngn" min="0"
+                 value="{{ obj.campus_price_ngn }}"
+                 class="form-control form-control-sm mt-1"
+                 style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+        </div>
+        <div class="mb-2">
+          <label class="small text-muted">Annual Discount (%)</label>
+          <input type="number" name="annual_discount_pct" min="0" max="100" id="planAnnualDiscount"
+                 value="{{ obj.annual_discount_pct|default:10 }}"
+                 class="form-control form-control-sm mt-1"
+                 style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+        </div>
+        <div class="mb-2">
+          <label class="small text-muted">Bi-Annual Discount (%)</label>
+          <input type="number" name="biannual_discount_pct" min="0" max="100" id="planBiannualDiscount"
+                 value="{{ obj.biannual_discount_pct|default:20 }}"
+                 class="form-control form-control-sm mt-1"
+                 style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+        </div>
+        <div class="mb-2">
+          <label class="small text-muted">Description</label>
+          <textarea name="description" rows="2"
+                    class="form-control form-control-sm mt-1"
+                    style="background:#0f172a;border-color:#334155;color:#e2e8f0;resize:none;">{{ obj.description }}</textarea>
+        </div>
+        <div class="mb-3 d-flex gap-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="multi_campus" id="mcCheck"
+                   {% if obj.multi_campus %}checked{% endif %}>
+            <label class="form-check-label small" for="mcCheck">Multi-campus</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="white_label" id="wlCheck"
+                   {% if obj.white_label %}checked{% endif %}>
+            <label class="form-check-label small" for="wlCheck">White label</label>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-primary w-100">Update Plan Pricing</button>
+      </form>
+      <div class="mt-2 p-2 rounded" style="background:#0f172a;font-size:.68rem;color:#64748b;">
+        <strong>Pricing preview:</strong><br>
+        Monthly: <strong id="previewMonthly">₦0</strong><br>
+        Annual (<span id="previewAnnualPct">{{ obj.annual_discount_pct|default:10 }}</span>% off): <strong id="previewAnnual">₦0</strong>
+        <span class="text-muted"> · saves <span id="previewAnnualSave">₦0</span></span><br>
+        Bi-annual (<span id="previewBiannualPct">{{ obj.biannual_discount_pct|default:20 }}</span>% off): <strong id="previewBiannual">₦0</strong>
+        <span class="text-muted"> · saves <span id="previewBiannualSave">₦0</span></span>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="stat-card mb-3">
+      <h6 class="fw-semibold mb-2">Quick Edit (string fields)</h6>
+      <form method="post" id="quickEditForm">
+        {% csrf_token %}
+        <input type="hidden" name="_action" value="set_field">
+        <div class="mb-2">
+          <label class="small text-muted">Field name</label>
+          <input type="text" name="field_name" id="editFieldName"
+                 class="form-control form-control-sm mt-1"
+                 style="background:#0f172a;border-color:#334155;color:#e2e8f0;"
+                 placeholder="e.g. name, status, notes">
+        </div>
+        <div class="mb-2">
+          <label class="small text-muted">New value</label>
+          <input type="text" name="field_value" id="editFieldValue"
+                 class="form-control form-control-sm mt-1"
+                 style="background:#0f172a;border-color:#334155;color:#e2e8f0;">
+        </div>
+        <button class="btn btn-sm btn-outline-primary w-100">Save Field</button>
+        <div class="text-muted mt-2" style="font-size:.68rem;">
+          String: name, email, timezone, subdomain, slug, title, notes, status, priority, description.<br>
+          Numeric: monthly_price_ngn, annual_discount_pct, biannual_discount_pct, campus_price_ngn, campus_limit, font_size.<br>
+          Float: overlay_opacity, latitude, longitude.<br>
+          For all other fields: <a href="{{ django_admin_url }}" target="_blank" class="text-primary">Django Admin ↗</a>
+        </div>
+      </form>
+    </div>
+
+    <div class="stat-card border border-danger" style="border-color:#ef4444!important;">
+      <h6 class="fw-semibold mb-2 text-danger">Danger Zone</h6>
+      <form method="post"
+            onsubmit="return confirm('Permanently delete this record? This cannot be undone.')">
+        {% csrf_token %}<input type="hidden" name="_action" value="delete">
+        <button class="btn btn-sm btn-outline-danger w-100">
+          <i class="bi bi-trash me-1"></i>Delete {{ cfg.model }} — {{ obj_str|truncatechars:30 }}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function inlineEdit(fieldName, currentValue) {
+  document.getElementById('editFieldName').value = fieldName;
+  document.getElementById('editFieldValue').value = currentValue;
+  document.getElementById('editFieldValue').focus();
+  document.getElementById('quickEditForm').scrollIntoView({behavior:'smooth'});
+}
+
+function _formatNaira(amount) {
+  const n = Number.isFinite(amount) ? Math.max(0, Math.round(amount)) : 0;
+  return `₦${n.toLocaleString()}`;
+}
+
+function _readNum(id, fallback = 0) {
+  const el = document.getElementById(id);
+  if (!el) return fallback;
+  const v = parseFloat(el.value);
+  return Number.isFinite(v) ? v : fallback;
+}
+
+function updatePlanPricingPreview() {
+  const monthly = Math.max(0, _readNum("planMonthlyPrice", 0));
+  const annualPct = Math.min(100, Math.max(0, _readNum("planAnnualDiscount", 10)));
+  const biannualPct = Math.min(100, Math.max(0, _readNum("planBiannualDiscount", 20)));
+
+  const annualRaw = monthly * 12;
+  const biannualRaw = monthly * 24;
+
+  const annualTotal = annualRaw * (1 - annualPct / 100);
+  const biannualTotal = biannualRaw * (1 - biannualPct / 100);
+
+  const annualSave = annualRaw - annualTotal;
+  const biannualSave = biannualRaw - biannualTotal;
+
+  const monthlyEl = document.getElementById("previewMonthly");
+  const annualEl = document.getElementById("previewAnnual");
+  const biannualEl = document.getElementById("previewBiannual");
+  const annualSaveEl = document.getElementById("previewAnnualSave");
+  const biannualSaveEl = document.getElementById("previewBiannualSave");
+  const annualPctEl = document.getElementById("previewAnnualPct");
+  const biannualPctEl = document.getElementById("previewBiannualPct");
+
+  if (monthlyEl) monthlyEl.textContent = _formatNaira(monthly);
+  if (annualEl) annualEl.textContent = _formatNaira(annualTotal);
+  if (biannualEl) biannualEl.textContent = _formatNaira(biannualTotal);
+  if (annualSaveEl) annualSaveEl.textContent = _formatNaira(annualSave);
+  if (biannualSaveEl) biannualSaveEl.textContent = _formatNaira(biannualSave);
+  if (annualPctEl) annualPctEl.textContent = String(Math.round(annualPct));
+  if (biannualPctEl) biannualPctEl.textContent = String(Math.round(biannualPct));
+}
+
+["planMonthlyPrice", "planAnnualDiscount", "planBiannualDiscount"].forEach((id) => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener("input", updatePlanPricingPreview);
+    el.addEventListener("change", updatePlanPricingPreview);
+  }
+});
+updatePlanPricingPreview();
+</script>
+{% endblock %}

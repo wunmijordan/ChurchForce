@@ -1,0 +1,366 @@
+{% extends base_template %}
+{% load static access_tags %}
+{% block title %}{{ setlist.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.sd-tab-bar { display:flex; gap:4px; border-bottom:1px solid #21262d; margin-bottom:20px; }
+.sd-tab { padding:8px 18px; font-size:.82rem; font-weight:600; color:#5a6580; cursor:pointer;
+           border:none; background:none; border-bottom:2px solid transparent; transition:all .15s; }
+.sd-tab.active { color:#e6edf3; border-bottom-color:#3b82f6; }
+.sd-tab:hover:not(.active) { color:#8b949e; }
+.sd-pane { display:none; }
+.sd-pane.active { display:block; }
+.song-item { background:#0d1117; border:1px solid #21262d; border-radius:12px;
+              margin-bottom:8px; padding:12px 16px; display:flex; align-items:center; gap:12px; }
+.song-item:hover { border-color:#30363d; }
+.song-num { font-family:monospace; font-size:.9rem; color:#5a6580; min-width:24px; text-align:center; }
+.song-main { flex:1; min-width:0; }
+.song-title { font-weight:700; color:#e6edf3; font-size:.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.song-artist { font-size:.72rem; color:#5a6580; }
+.key-pill { background:rgba(59,130,246,.15); border:1px solid rgba(59,130,246,.3);
+             color:#58a6ff; border-radius:8px; padding:2px 10px; font-size:.75rem; font-weight:700; font-family:monospace; }
+.remove-song-btn { background:none; border:none; color:#ef4444; cursor:pointer; padding:4px 8px;
+                    font-size:1rem; border-radius:6px; opacity:.6; }
+.remove-song-btn:hover { opacity:1; }
+.assign-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #1e2433; }
+.assign-row:last-child { border-bottom:none; }
+.assign-name { font-size:.78rem; font-weight:600; color:#c9d1d9; flex:1; }
+.assign-instr { font-size:.7rem; color:#8b949e; }
+.confirmed-badge { font-size:.68rem; padding:1px 7px; border-radius:10px; background:rgba(34,197,94,.12); color:#22c55e; border:1px solid rgba(34,197,94,.25); }
+.unconfirmed-badge { font-size:.68rem; padding:1px 7px; border-radius:10px; background:rgba(245,159,0,.1); color:#f59f00; border:1px solid rgba(245,159,0,.2); }
+.remove-assign { background:none; border:none; color:#ef4444; cursor:pointer; font-size:.75rem; padding:0 4px; opacity:.5; }
+.remove-assign:hover { opacity:1; }
+.add-assign-toggle { font-size:.72rem; color:#3b82f6; cursor:pointer; background:none; border:none; padding:4px 0; }
+.assign-form { background:#141720; border-radius:8px; padding:10px; margin-top:6px; display:none; }
+.assign-form.open { display:block; }
+.info-card { background:#0d1117; border:1px solid #21262d; border-radius:12px; padding:16px; margin-bottom:12px; }
+.info-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:#5a6580; font-weight:600; }
+.info-val { font-size:.88rem; color:#c9d1d9; margin-top:2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-xl py-4">
+
+  <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+    <a href="{% url 'music:setlist_list' %}" class="text-muted text-decoration-none small">← Setlists</a>
+    <h2 class="fw-bold mb-0">{{ setlist.title }}</h2>
+    {% if setlist.finalized %}<span class="badge bg-green">Finalized</span>{% else %}<span class="badge bg-yellow-lt">Draft</span>{% endif %}
+    <div class="ms-auto d-flex gap-2 flex-wrap">
+      {% if my_member %}
+      <a href="{% url 'music:my_setlist' uid=setlist.uid %}" class="btn btn-outline-primary btn-sm">🎵 My Songs</a>
+      {% endif %}
+      {% if can_edit %}
+      <a href="{% url 'music:setlist_edit' uid=setlist.uid %}" class="btn btn-outline-secondary btn-sm">Edit</a>
+      {% if not setlist.finalized %}
+      <button class="btn btn-primary btn-sm" id="finalizeBtn">Finalize &amp; Sync Media</button>
+      {% else %}
+      <button class="btn btn-outline-danger btn-sm" id="unfinalizeBtn">Unfinalize</button>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="sd-tab-bar">
+    <button class="sd-tab active" data-pane="songs">Songs ({{ songs|length }})</button>
+    <button class="sd-tab" data-pane="assignments">Who's Playing What</button>
+    <button class="sd-tab" data-pane="info">Details</button>
+  </div>
+
+  {# ── Songs tab ── #}
+  <div class="sd-pane active" id="pane-songs">
+    <div class="row g-4">
+      <div class="col-12 col-lg-8">
+        {% if can_edit %}
+        <div class="d-flex justify-content-end mb-2">
+          <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addSongModal">+ Add Song</button>
+        </div>
+        {% endif %}
+        <div id="songList">
+          {% for ss in songs %}
+          <div class="song-item" data-id="{{ ss.pk }}">
+            {% if can_edit %}<span style="cursor:grab;color:#5a6580;font-size:1.1rem;user-select:none;">⠿</span>{% endif %}
+            <div class="song-num">{{ forloop.counter }}</div>
+            <div class="song-main">
+              <div class="song-title">
+                <a href="{% url 'music:track_detail' uid=ss.track.uid %}" class="text-white text-decoration-none">{{ ss.track.title }}</a>
+              </div>
+              <div class="song-artist">{{ ss.track.artist|default:"" }}</div>
+            </div>
+            <span class="key-pill">{{ ss.performance_key|default:ss.track.original_key|default:"?" }}</span>
+            {% if can_edit %}<button class="remove-song-btn" data-id="{{ ss.pk }}" title="Remove">✕</button>{% endif %}
+          </div>
+          {% empty %}
+          <div class="text-muted text-center py-5" id="emptySongMsg">No songs yet.{% if can_edit %} Click "+ Add Song" to build this setlist.{% endif %}</div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="col-12 col-lg-4">
+        {% if setlist.finalized and setlist.presentation %}
+        <div class="info-card" style="border-color:rgba(34,197,94,.25);">
+          <div class="fw-semibold text-success mb-1">✓ Synced to Media</div>
+          <p class="text-muted small mb-2">Lyric slides are live in the Media module.</p>
+          <a href="{% url 'media:presentation_detail' uid=setlist.presentation.uid %}" class="btn btn-sm btn-outline-success w-100">View Presentation</a>
+        </div>
+        {% endif %}
+        <div class="info-card">
+          <div class="info-label mb-2">Quick Roster</div>
+          {% for ss in songs %}
+          <div class="mb-2 pb-2" style="border-bottom:1px solid #21262d;">
+            <div class="small fw-semibold text-muted mb-1">{{ forloop.counter }}. {{ ss.track.title }}</div>
+            {% for a in ss.assignments.all %}
+            <span class="text-muted" style="font-size:.7rem;">{{ a.member.user.full_name|truncatechars:15 }} ({{ a.get_instrument_display }})</span>{% if not forloop.last %}, {% endif %}
+            {% empty %}
+            <span class="text-muted fst-italic" style="font-size:.68rem;">Unassigned</span>
+            {% endfor %}
+          </div>
+          {% empty %}
+          <div class="text-muted small">No songs yet.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Who's Playing What tab ── #}
+  <div class="sd-pane" id="pane-assignments">
+    <p class="text-muted small mb-3">
+      Assign musicians per song. Each person sees their own view via
+      <a href="{% url 'music:my_setlist' uid=setlist.uid %}" class="text-info">My Songs</a>.
+    </p>
+    {% for ss in songs %}
+    <div class="info-card mb-3">
+      <div class="d-flex align-items-center gap-3 mb-2">
+        <div class="song-num text-muted">{{ forloop.counter }}</div>
+        <div class="flex-grow-1">
+          <div class="fw-semibold">{{ ss.track.title }}</div>
+          <div class="text-muted small">Key: {{ ss.performance_key|default:ss.track.original_key|default:"?" }}</div>
+        </div>
+        <span class="key-pill">{{ ss.performance_key|default:ss.track.original_key|default:"?" }}</span>
+      </div>
+      <div id="assigns-{{ ss.pk }}" class="mb-2">
+        {% for a in ss.assignments.all %}
+        <div class="assign-row" id="assign-row-{{ a.pk }}">
+          <span class="assign-name">{{ a.member.user.full_name }}</span>
+          <span class="assign-instr">{{ a.get_instrument_display }}</span>
+          <span class="{% if a.confirmed %}confirmed-badge{% else %}unconfirmed-badge{% endif %}">{% if a.confirmed %}✓ Confirmed{% else %}Pending{% endif %}</span>
+          {% if can_edit %}<button class="remove-assign" onclick="removeAssign('{{ setlist.uid }}',{{ ss.pk }},{{ a.pk }})">✕</button>{% endif %}
+        </div>
+        {% empty %}
+        <div class="text-muted small fst-italic" id="no-assigns-{{ ss.pk }}">No musicians assigned yet.</div>
+        {% endfor %}
+      </div>
+      {% if can_edit %}
+      <button class="add-assign-toggle" onclick="toggleAssignForm({{ ss.pk }})">+ Assign musician</button>
+      <div class="assign-form" id="assign-form-{{ ss.pk }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-sm-5">
+            <label class="form-label small text-muted mb-1">Member</label>
+            <select class="form-select form-select-sm bg-dark border-secondary text-white" id="amember-{{ ss.pk }}">
+              <option value="">— Select member —</option>
+              {% for m in assignable_members %}<option value="{{ m.pk }}">{{ m.user.full_name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-sm-4">
+            <label class="form-label small text-muted mb-1">Instrument</label>
+            <select class="form-select form-select-sm bg-dark border-secondary text-white" id="ainstr-{{ ss.pk }}">
+              {% for val, label in instrument_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-sm-3">
+            <button class="btn btn-sm btn-primary w-100" onclick="addAssign('{{ setlist.uid }}',{{ ss.pk }})">Assign</button>
+          </div>
+          <div class="col-12">
+            <input type="text" class="form-control form-control-sm bg-dark border-secondary text-white"
+                   id="anotes-{{ ss.pk }}" placeholder="Notes for this musician (optional)">
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="text-muted text-center py-5">Add songs to the setlist first.</div>
+    {% endfor %}
+  </div>
+
+  {# ── Details tab ── #}
+  <div class="sd-pane" id="pane-info">
+    <div class="row g-4">
+      <div class="col-12 col-md-6">
+        <div class="info-card"><div class="info-label">Event</div><div class="info-val">{{ setlist.event|default:"Not linked" }}</div></div>
+        <div class="info-card"><div class="info-label">Unit</div><div class="info-val">{{ setlist.unit|default:"All units" }}</div></div>
+        <div class="info-card"><div class="info-label">Created by</div><div class="info-val">{{ setlist.created_by|default:"—" }}</div></div>
+        {% if setlist.notes %}<div class="info-card"><div class="info-label">Notes</div><div class="info-val">{{ setlist.notes }}</div></div>{% endif %}
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="info-card">
+          <div class="info-label mb-2">Song Summary</div>
+          {% for ss in songs %}
+          <div class="d-flex align-items-center gap-2 py-1 border-bottom border-secondary" style="font-size:.82rem;">
+            <span class="text-muted" style="min-width:20px;font-family:monospace;">{{ forloop.counter }}</span>
+            <span class="flex-grow-1 text-white fw-semibold">{{ ss.track.title }}</span>
+            <span class="key-pill" style="font-size:.68rem;">{{ ss.performance_key|default:ss.track.original_key|default:"?" }}</span>
+          </div>
+          {% empty %}<div class="text-muted small">No songs.</div>{% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# ── Add Song Modal ── #}
+{% if can_edit %}
+<div class="modal fade" id="addSongModal" tabindex="-1">
+  <div class="modal-dialog modal-lg"><div class="modal-content" style="border-radius:16px;">
+    <div class="modal-header border-secondary">
+      <h5 class="modal-title fw-bold">Add Song to Setlist</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <input id="trackSearch" class="form-control bg-dark border-secondary text-white mb-3" placeholder="Search title or artist…">
+      <div id="trackList" style="max-height:360px;overflow-y:auto;">
+        {% for track in tracks %}
+        <div class="d-flex justify-content-between align-items-center p-2 border-bottom border-secondary track-row">
+          <div>
+            <div class="fw-semibold small">{{ track.title }}</div>
+            <div class="text-muted" style="font-size:.72rem;">{{ track.artist|default:"" }} · {{ track.original_key|default:"?" }}</div>
+          </div>
+          <button class="btn btn-sm btn-outline-primary add-track-btn" data-id="{{ track.pk }}">Add</button>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div></div>
+</div>
+{% endif %}
+
+<script>
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+const ADD_URL        = "{% url 'music:setlist_add_song' uid=setlist.uid %}";
+const REMOVE_URL     = id => `/music/setlist/{{ setlist.uid }}/remove/${id}/`;
+const REORDER_URL    = "{% url 'music:setlist_reorder' uid=setlist.uid %}";
+const FINALIZE_URL   = "{% url 'music:setlist_finalize' uid=setlist.uid %}";
+const UNFINALIZE_URL = "{% url 'music:setlist_unfinalize' uid=setlist.uid %}";
+const ASSIGN_URL     = songId => `/music/setlist/{{ setlist.uid }}/song/${songId}/assign/`;
+const UNASSIGN_URL   = (songId, aId) => `/music/setlist/{{ setlist.uid }}/song/${songId}/unassign/${aId}/`;
+
+function post(url, data = {}) {
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(data),
+  }).then(r => r.json());
+}
+
+// Tab switching
+document.querySelectorAll('.sd-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.sd-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.sd-pane').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('pane-' + tab.dataset.pane).classList.add('active');
+  });
+});
+
+// Track search
+document.getElementById('trackSearch')?.addEventListener('input', function () {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.track-row').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+
+// Add song
+document.querySelectorAll('.add-track-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.disabled = true;
+    post(ADD_URL, { track_id: btn.dataset.id }).then(d => {
+      if (d.ok) location.reload();
+      else { alert(d.error); btn.disabled = false; }
+    });
+  });
+});
+
+// Remove song
+document.querySelectorAll('.remove-song-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (!confirm('Remove this song?')) return;
+    post(REMOVE_URL(btn.dataset.id)).then(d => { if (d.ok) location.reload(); });
+  });
+});
+
+// Drag reorder
+const list = document.getElementById('songList');
+let dragging = null;
+list?.querySelectorAll('.song-item[data-id]').forEach(item => {
+  item.setAttribute('draggable', 'true');
+  item.addEventListener('dragstart', () => { dragging = item; item.style.opacity = '.4'; });
+  item.addEventListener('dragend',   () => { dragging = null; item.style.opacity = '1'; saveOrder(); });
+  item.addEventListener('dragover',  e => {
+    e.preventDefault();
+    const after = getDragAfter(list, e.clientY);
+    if (after) list.insertBefore(dragging, after); else list.appendChild(dragging);
+  });
+});
+function getDragAfter(c, y) {
+  return [...c.querySelectorAll('.song-item')].reduce((cl, ch) => {
+    const b = ch.getBoundingClientRect(), off = y - b.top - b.height / 2;
+    return off < 0 && off > cl.offset ? { offset: off, element: ch } : cl;
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+function saveOrder() {
+  const ids = [...list.querySelectorAll('.song-item[data-id]')].map(el => el.dataset.id);
+  const p = new URLSearchParams(); ids.forEach(id => p.append('ids[]', id));
+  fetch(REORDER_URL, { method: 'POST', headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded' }, body: p });
+}
+
+// Finalize / Unfinalize
+document.getElementById('finalizeBtn')?.addEventListener('click', () => {
+  if (!confirm('Finalize this setlist? This will generate lyric slides in the Media module.')) return;
+  post(FINALIZE_URL).then(d => { if (d.ok) { alert(d.message); location.reload(); } else alert(d.error); });
+});
+document.getElementById('unfinalizeBtn')?.addEventListener('click', () => {
+  if (!confirm('Unfinalize? Songs can be edited again.')) return;
+  post(UNFINALIZE_URL).then(d => { if (d.ok) location.reload(); });
+});
+
+// ── Assignment helpers ──
+function toggleAssignForm(songId) {
+  document.getElementById('assign-form-' + songId).classList.toggle('open');
+}
+
+function addAssign(uid, songId) {
+  const memberId   = document.getElementById('amember-' + songId).value;
+  const instrument = document.getElementById('ainstr-' + songId).value;
+  const notes      = document.getElementById('anotes-' + songId)?.value || '';
+  if (!memberId) { alert('Please select a member.'); return; }
+  post(ASSIGN_URL(songId), { member_id: memberId, instrument, notes }).then(d => {
+    if (!d.ok) { alert(d.error || 'Failed to assign.'); return; }
+    const noel = document.getElementById('no-assigns-' + songId);
+    if (noel) noel.remove();
+    const container = document.getElementById('assigns-' + songId);
+    const row = document.createElement('div');
+    row.className = 'assign-row';
+    row.id = 'assign-row-' + d.id;
+    row.innerHTML = `
+      <span class="assign-name">${d.member_name}</span>
+      <span class="assign-instr">${d.instrument}</span>
+      <span class="unconfirmed-badge">Pending</span>
+      <button class="remove-assign" onclick="removeAssign('${uid}',${songId},${d.id})">✕</button>`;
+    container.appendChild(row);
+    document.getElementById('amember-' + songId).value = '';
+    if (document.getElementById('anotes-' + songId)) document.getElementById('anotes-' + songId).value = '';
+    document.getElementById('assign-form-' + songId).classList.remove('open');
+  });
+}
+
+function removeAssign(uid, songId, assignId) {
+  if (!confirm('Remove this assignment?')) return;
+  post(UNASSIGN_URL(songId, assignId)).then(d => {
+    if (d.ok) { const r = document.getElementById('assign-row-' + assignId); if (r) r.remove(); }
+  });
+}
+</script>
+{% endblock %}

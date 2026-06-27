@@ -1,0 +1,122 @@
+{% extends base_template %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-xl py-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="mb-0 fw-bold">{{ page_title }}</h2>
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'units:list' %}">Back to Units</a>
+  </div>
+
+  <div class="card bg-dark border-secondary">
+    <div class="card-body p-4">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Name</label>
+            <input class="form-control" type="text" name="name" value="{{ unit.name|default:'' }}" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Type</label>
+            {% if action == "create" %}
+              <select class="form-select" name="unit_type">
+                <option value="unit">Unit / Department</option>
+                <option value="group">Group / Team</option>
+              </select>
+            {% else %}
+              <select class="form-select" disabled>
+                <option selected>{{ unit.get_unit_type_display }}</option>
+              </select>
+            {% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Reports to</label>
+            <select class="form-select" name="report_to">
+              <option value="">None</option>
+              {% for parent in all_units %}
+                <option value="{{ parent.id }}" {% if unit and unit.report_to and unit.report_to.id == parent.id %}selected{% endif %}>{{ parent.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Color</label>
+            <input class="form-control" type="text" name="color" value="{{ unit.color|default:'blue' }}">
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="2">{{ unit.description|default:'' }}</textarea>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-semibold d-block mb-2">Module access for this unit</label>
+            <div class="row g-2">
+              {% if not church_settings or church_settings.enable_guest_module %}
+              <div class="col-md-4 col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="guest_management" {% if unit and unit.guest_management %}checked{% endif %}>
+                  <label class="form-check-label">Guest management</label>
+                </div>
+              </div>
+              {% endif %}
+              {% if not church_settings or church_settings.enable_music_module %}
+              <div class="col-md-4 col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="music_module" {% if unit and unit.music_module %}checked{% endif %}>
+                  <label class="form-check-label">Music module</label>
+                </div>
+              </div>
+              {% endif %}
+              {% if not church_settings or church_settings.enable_media_module %}
+              <div class="col-md-4 col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="media_module" {% if unit and unit.media_module %}checked{% endif %}>
+                  <label class="form-check-label">Media module</label>
+                </div>
+              </div>
+              {% endif %}
+              {% if not church_settings or church_settings.enable_children_module %}
+              <div class="col-md-4 col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="children_module" {% if unit and unit.children_module %}checked{% endif %}>
+                  <label class="form-check-label">Children module</label>
+                </div>
+              </div>
+              {% endif %}
+              {% if not church_settings or church_settings.enable_youth_module %}
+              <div class="col-md-4 col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="youth_module" {% if unit and unit.youth_module %}checked{% endif %}>
+                  <label class="form-check-label">Youth module</label>
+                </div>
+              </div>
+              {% endif %}
+              {% if not church_settings or church_settings.enable_teenagers_module %}
+              <div class="col-md-4 col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="teenagers_module" {% if unit and unit.teenagers_module %}checked{% endif %}>
+                  <label class="form-check-label">Teenagers module</label>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="is_default" {% if unit and unit.is_default %}checked{% endif %}>
+              <label class="form-check-label">Default unit for new members</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <button type="submit" class="btn btn-primary">Save</button>
+          <a class="btn btn-outline-secondary" href="{% url 'units:list' %}">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

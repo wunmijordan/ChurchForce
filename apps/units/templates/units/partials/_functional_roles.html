@@ -1,0 +1,313 @@
+<!--{#
+  _functional_roles.html
+  ──────────────────────
+  Functional roles panel — included in unit_detail for any unit/group.
+
+  For music-enabled units: shows the full music role set (Director, Guitarist,
+  Bassist, Drummer, Vocalist, Backup Vocalist, Secretary) plus any custom roles.
+
+  For all other units: shows Secretary plus any custom roles.
+
+  Both sets are fully configurable at unit level — roles can be renamed,
+  toggled off, and custom ones added by the unit head or admin.
+
+  Context expected:
+    unit                  — ChurchUnit instance
+    unit_functional_roles — queryset of active UnitFunctionalRole for this unit
+    can_manage_roles      — bool (unit head / admin can assign/remove)
+    can_manage            — bool (unit head / admin can create/toggle roles)
+    memberships           — active UnitMembership queryset for this unit
+#}-->
+<div class="card bg-gray-900 mt-3" id="cfRolesCard"
+     style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-2">
+      <h3 class="mb-0 fw-semibold">
+        {% if unit.music_module %}Music {% endif %}Roles
+      </h3>
+      <span class="badge bg-secondary-lt" style="border-radius:20px;">
+        {{ unit_functional_roles|length }}
+      </span>
+    </div>
+    {% if can_manage %}
+    <button class="btn btn-sm btn-outline-secondary" style="border-radius:20px;"
+            data-bs-toggle="collapse" data-bs-target="#cfAddRoleWrap">
+      + Add Role
+    </button>
+    {% endif %}
+  </div>
+
+  {# ── Add custom role form ──────────────────────────────────────── #}
+  {% if can_manage %}
+  <div class="collapse" id="cfAddRoleWrap">
+    <div class="px-3 pt-3 pb-0">
+      <form id="cfCreateRoleForm" class="d-flex gap-2"
+            data-url="{% url 'units:role_create' unit.slug %}">
+        {% csrf_token %}
+        <input type="text" name="name" id="cfNewRoleName"
+               class="form-control form-control-sm bg-dark text-white border-secondary"
+               style="border-radius:20px;"
+               placeholder="Role name…" required maxlength="100">
+        <button type="submit" class="btn btn-sm btn-primary flex-shrink-0"
+                style="border-radius:20px;">Create</button>
+      </form>
+      <div id="cfCreateRoleErr" class="text-danger small mt-1 d-none"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Roles list ───────────────────────────────────────────────── #}
+  <div class="card-body p-0">
+    <div class="list-group list-group-flush rounded-bottom" id="cfRolesList">
+
+      {% for role in unit_functional_roles %}
+      <div class="list-group-item bg-gray-900 border-secondary px-3 py-3 cf-role-row"
+           id="cf-role-{{ role.id }}">
+
+        <div class="d-flex align-items-start gap-2">
+          <div class="flex-grow-1 min-w-0">
+
+            {# Role header #}
+            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+              <span class="fw-semibold small">{{ role.name }}</span>
+              {% if role.preset != "custom" %}
+              <span class="badge bg-blue-lt" style="font-size:.6rem;">
+                {{ role.get_preset_display }}
+              </span>
+              {% endif %}
+            </div>
+
+            {# Current assignees #}
+            <div class="d-flex flex-wrap gap-1 mb-2 cf-assignees-{{ role.id }}">
+              {% for asgn in role.assignments.all %}{% if asgn.is_active %}
+              <span class="badge bg-dark border border-secondary d-inline-flex align-items-center gap-1"
+                    style="border-radius:20px;font-size:.7rem;" id="cf-asgn-{{ asgn.id }}">
+                {% if asgn.membership.workforce_member %}
+                  {{ asgn.membership.workforce_member.member.user.title|default:"" }} {{ asgn.membership.workforce_member.member.user.full_name }}
+                {% endif %}
+                <span class="badge ms-1
+                  {% if asgn.assignment_type == 'permanent' %}bg-secondary
+                  {% elif asgn.assignment_type == 'period' %}bg-warning-lt
+                  {% else %}bg-blue-lt{% endif %}"
+                  style="font-size:.55rem;">
+                  {% if asgn.assignment_type == 'permanent' %}Perm
+                  {% elif asgn.assignment_type == 'period' %}Period
+                  {% else %}Event{% endif %}
+                </span>
+                {% if can_manage_roles %}
+                <button type="button" class="btn-close btn-close-white"
+                        style="font-size:.45rem;"
+                        onclick="cfUnassignRole({{ role.id }}, {{ asgn.id }}, '{% url 'units:role_unassign' unit.slug asgn.id %}')">
+                </button>
+                {% endif %}
+              </span>
+              {% endif %}{% empty %}
+              <span class="text-muted fst-italic" style="font-size:.78rem;">Unassigned</span>
+              {% endfor %}
+            </div>
+
+            {# Assign form — unit head / admin only #}
+            {% if can_manage_roles %}
+            <button class="btn btn-xs btn-outline-secondary mb-2"
+                    style="border-radius:20px;font-size:.7rem;"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#cfAssignPanel{{ role.id }}">
+              Assign Member
+            </button>
+            <div class="collapse" id="cfAssignPanel{{ role.id }}">
+              <form class="cf-assign-form p-2 mt-1"
+                    style="border-radius:14px;background:rgba(255,255,255,.04);"
+                    data-url="{% url 'units:role_assign' unit.slug %}"
+                    data-role="{{ role.id }}">
+                {% csrf_token %}
+                <input type="hidden" name="role_id" value="{{ role.id }}">
+                <div class="row g-2 align-items-end">
+                  <div class="col-12 col-sm-5">
+                    <label class="form-label form-label-sm mb-1 text-muted" style="font-size:.72rem;">Member</label>
+                    <select name="membership_id" required
+                            class="form-select form-select-sm bg-dark text-white border-secondary"
+                            style="border-radius:12px;">
+                      <option value="">Choose…</option>
+                      {% for m in memberships %}{% if m.workforce_member %}
+                      <option value="{{ m.id }}">{{ m.workforce_member.member.user.title|default:"" }} {{ m.workforce_member.member.user.full_name }}</option>
+                      {% endif %}{% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-12 col-sm-4">
+                    <label class="form-label form-label-sm mb-1 text-muted" style="font-size:.72rem;">Type</label>
+                    <select name="assignment_type"
+                            class="form-select form-select-sm bg-dark text-white border-secondary"
+                            style="border-radius:12px;"
+                            onchange="cfTogglePeriodFields(this, {{ role.id }})">
+                      <option value="permanent">Permanent</option>
+                      <option value="period">Period</option>
+                      <option value="event">Event</option>
+                    </select>
+                  </div>
+                  <div class="col-12 col-sm-3">
+                    <button type="submit" class="btn btn-sm btn-primary w-100"
+                            style="border-radius:12px;">Assign</button>
+                  </div>
+                  <div class="col-12 cf-period-fields-{{ role.id }} d-none">
+                    <div class="row g-2">
+                      <div class="col-6">
+                        <label class="form-label form-label-sm mb-1 text-muted" style="font-size:.72rem;">From</label>
+                        <input type="date" name="start_date"
+                               class="form-control form-control-sm bg-dark text-white border-secondary"
+                               style="border-radius:12px;">
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label form-label-sm mb-1 text-muted" style="font-size:.72rem;">Until</label>
+                        <input type="date" name="end_date"
+                               class="form-control form-control-sm bg-dark text-white border-secondary"
+                               style="border-radius:12px;">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="cf-assign-err-{{ role.id }} text-danger small mt-1 d-none"></div>
+              </form>
+            </div>
+            {% endif %}
+
+          </div>
+
+          {# Disable role button — admin / unit head only #}
+          {% if can_manage %}
+          <button type="button"
+                  class="btn btn-xs btn-outline-secondary flex-shrink-0"
+                  style="border-radius:20px;font-size:.68rem;"
+                  title="Disable this role"
+                  onclick="cfToggleRole('{% url 'units:role_toggle' unit.slug role.id %}', {{ role.id }})">
+            ✕
+          </button>
+          {% endif %}
+
+        </div>
+      </div>
+      {% empty %}
+      <div class="p-4 text-center text-muted small">
+        No functional roles yet.
+        {% if can_manage %}Use <strong>+ Add Role</strong> above to create one.{% endif %}
+      </div>
+      {% endfor %}
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  function csrf() {
+    var el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+  }
+
+  // Toggle period date fields visibility
+  window.cfTogglePeriodFields = function (sel, roleId) {
+    var pf = document.querySelector('.cf-period-fields-' + roleId);
+    if (pf) pf.classList.toggle('d-none', sel.value !== 'period');
+  };
+
+  // Assign form submit
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!form.classList.contains('cf-assign-form')) return;
+    e.preventDefault();
+    var roleId = form.dataset.role;
+    var errEl  = document.querySelector('.cf-assign-err-' + roleId);
+    var body   = new FormData(form);
+    body.set('csrfmiddlewaretoken', csrf());
+    fetch(form.dataset.url, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: body,
+      credentials: 'same-origin',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        // Reload to show updated assignee badges
+        window.location.reload();
+      } else {
+        if (errEl) { errEl.textContent = d.error || 'Error'; errEl.classList.remove('d-none'); }
+      }
+    })
+    .catch(function () {
+      if (errEl) { errEl.textContent = 'Request failed'; errEl.classList.remove('d-none'); }
+    });
+  });
+
+  // Create custom role form
+  var createForm = document.getElementById('cfCreateRoleForm');
+  if (createForm) {
+    createForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var errEl = document.getElementById('cfCreateRoleErr');
+      var body  = new FormData(createForm);
+      body.set('csrfmiddlewaretoken', csrf());
+      fetch(createForm.dataset.url, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: body,
+        credentials: 'same-origin',
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.ok) {
+          window.location.reload();
+        } else {
+          if (errEl) { errEl.textContent = d.error || 'Error'; errEl.classList.remove('d-none'); }
+        }
+      });
+    });
+  }
+
+  // Remove assignment badge
+  window.cfUnassignRole = function (roleId, assignmentId, url) {
+    var body = new FormData();
+    body.set('csrfmiddlewaretoken', csrf());
+    fetch(url, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: body,
+      credentials: 'same-origin',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        var badge = document.getElementById('cf-asgn-' + assignmentId);
+        if (badge) badge.remove();
+        // If no assignees left, show placeholder
+        var container = document.querySelector('.cf-assignees-' + roleId);
+        if (container && !container.querySelector('.badge:not(.d-none)')) {
+          container.innerHTML = '<span class="text-muted fst-italic" style="font-size:.78rem;">Unassigned</span>';
+        }
+      }
+    });
+  };
+
+  // Toggle role active/disabled
+  window.cfToggleRole = function (url, roleId) {
+    if (!confirm('Disable this role? Existing assignments will remain but be hidden.')) return;
+    var body = new FormData();
+    body.set('csrfmiddlewaretoken', csrf());
+    fetch(url, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: body,
+      credentials: 'same-origin',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        var row = document.getElementById('cf-role-' + roleId);
+        if (row) { row.style.opacity = '.35'; row.style.pointerEvents = 'none'; }
+      }
+    });
+  };
+})();
+</script>

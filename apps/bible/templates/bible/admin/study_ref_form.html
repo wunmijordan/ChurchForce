@@ -1,0 +1,92 @@
+{% extends base_template %}
+{% load static %}
+{% block title %}{{ page_title }} — {{ church.name }}{% endblock %}
+{% block content %}
+<div class="page-wrapper">
+  <div class="page-header d-print-none">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'bible:admin_study_ref_list' %}">Study References</a></li>
+            <li class="breadcrumb-item active">{{ page_title }}</li>
+          </ol>
+          <h2 class="page-title">{{ page_title }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="container-xl">
+      <div class="row">
+        <div class="col-lg-8">
+          <form method="post">
+            {% csrf_token %}
+            <div class="card" style="border-radius:20px;">
+              <div class="card-body">
+                {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+                <div class="mb-3">
+                  <label class="form-label required">Title</label>
+                  <input type="text" name="title" class="form-control" value="{{ study.title|default:'' }}" required
+                    placeholder="e.g. The Faith Chapter — Hebrews 11">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Short Description</label>
+                  <input type="text" name="description" class="form-control" value="{{ study.description|default:'' }}"
+                    placeholder="Brief summary shown to members…">
+                </div>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label required">Passage Reference</label>
+                    <input type="text" name="reference" class="form-control" value="{{ study.reference|default:'' }}" required
+                      placeholder="e.g. Hebrews 11:1-40">
+                  </div>
+                  <div class="col-md-3 mb-3">
+                    <label class="form-label">Translation</label>
+                    <input type="text" name="translation" class="form-control" value="{{ study.translation|default:'BSB' }}">
+                  </div>
+                  <div class="col-md-3 mb-3">
+                    <label class="form-label">Active Date</label>
+                    <input type="date" name="active_date" class="form-control" value="{{ study.active_date|default:'' }}">
+                    <div class="form-hint">Leave blank to show always.</div>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Study Notes</label>
+                  <textarea name="study_notes" class="form-control" rows="8"
+                    placeholder="Discussion questions, background, cross-references, reflection prompts…">{{ study.study_notes|default:'' }}</textarea>
+                  <div class="form-hint">Markdown-style text. Members see this alongside the passage.</div>
+                </div>
+                <div class="form-check form-switch mb-2">
+                  <input type="checkbox" name="is_published" class="form-check-input" id="publishCheck"
+                    {% if study.is_published or not study %}checked{% endif %}>
+                  <label class="form-check-label" for="publishCheck">Publish to members</label>
+                </div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between mt-3">
+              <a href="{% url 'bible:admin_study_ref_list' %}" class="btn btn-outline-secondary">Cancel</a>
+              <button type="submit" class="btn btn-warning">{% if study %}Save Changes{% else %}Create Study Reference{% endif %}</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="card" style="border-radius:20px;background:#1e293b;">
+            <div class="card-body">
+                {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+              <h4 class="text-white mb-2">💡 Tips</h4>
+              <ul class="text-muted small ps-3">
+                <li class="mb-2">Study references are like YouVersion plans — a passage + your church's guided notes.</li>
+                <li class="mb-2">Members can mark a study complete and earn the <strong>🎓 Bible Study Complete</strong> badge.</li>
+                <li class="mb-2">Include discussion questions or reflection prompts in the notes field.</li>
+                <li>Set an <strong>Active Date</strong> to schedule studies in advance — great for sermon series follow-up.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

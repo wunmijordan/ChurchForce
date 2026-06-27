@@ -1,0 +1,44 @@
+{# DNS setup guidance for custom-domain routing. #}
+<div class="card bg-gray-900 border-info mb-0" style="box-shadow:0 4px 8px #000000d2;border-radius:24px;">
+  <div class="card-header border-0 pb-0">
+    <h5 class="mb-0 fw-bold text-info">DNS setup for your custom domain</h5>
+  </div>
+  <div class="card-body pt-3">
+    <p class="text-muted small mb-3">
+      Point <strong class="text-white">{% if church.custom_domain %}{{ church.custom_domain }}{% else %}your custom hostname{% endif %}</strong>
+      at ChurchForce before visitors can use it. DNS changes can take up to 48 hours to propagate.
+    </p>
+
+    <div class="p-3 mb-3" style="background:#0f172a;border-radius:16px;font-size:.85rem;">
+      <div class="text-muted small text-uppercase mb-2" style="letter-spacing:.06em;">Recommended record</div>
+      <table class="table table-sm table-borderless mb-0 text-white small">
+        <tbody>
+          <tr>
+            <td class="text-muted" style="width:7rem;">Type</td>
+            <td class="fw-semibold">CNAME</td>
+          </tr>
+          <tr>
+            <td class="text-muted">Host</td>
+            <td class="fw-semibold font-monospace">{% if church.custom_domain %}{{ church.custom_domain }}{% else %}app.yourchurch.org{% endif %}</td>
+          </tr>
+          <tr>
+            <td class="text-muted">Target</td>
+            <td class="fw-semibold text-success font-monospace">{{ routing_dns_cname_target }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="p-3 mb-3" style="background:#0f172a;border-radius:16px;font-size:.8rem;">
+      <div class="text-muted small mb-1">Example</div>
+      <code class="text-white">app.yourchurch.org &nbsp;→&nbsp; CNAME &nbsp;→&nbsp; {{ routing_dns_cname_target }}</code>
+    </div>
+
+    <ul class="text-muted small mb-0 ps-3">
+      <li class="mb-1">The <strong class="text-white">Host</strong> must match the domain you entered in ChurchForce exactly.</li>
+      <li class="mb-1">Some registrars want the target as <code>{{ routing_dns_cname_target }}.</code> (with a trailing dot).</li>
+      <li class="mb-1">After saving, test in a private browser window — not logged in on the app host.</li>
+      <li>Stuck? Email <a href="mailto:hello@churchforce.io" class="text-info">hello@churchforce.io</a> with your domain and DNS provider.</li>
+    </ul>
+  </div>
+</div>

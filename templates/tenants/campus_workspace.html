@@ -1,0 +1,160 @@
+{% extends base_template %}
+{% load static widget_tweaks campus_tags %}
+
+{% block title %}{{ campus.name }} Settings — {{ church.name }}{% endblock %}
+
+{% block content %}
+<div class="page-wrapper py-4">
+  <div class="container-xl">
+
+    {# ── Header ──────────────────────────────────────────────────────────── #}
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-4">
+      <div>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item">
+              <a href="{% url 'tenants:account_page' %}?section=settings&tab=campus" class="text-muted small">Church Settings</a>
+            </li>
+            <li class="breadcrumb-item active text-muted small" aria-current="page">{{ campus.name }}</li>
+          </ol>
+        </nav>
+        <h2 class="fw-bold mb-1">{{ campus.name }}</h2>
+        <div class="text-muted small d-flex flex-wrap align-items-center gap-2 mt-1">
+          <span class="badge bg-purple-lt">Campus</span>
+          {% if campus.growth_stage %}<span class="badge bg-secondary-lt">{{ campus.growth_stage }}</span>{% endif %}
+          {% if campus.campus_leader %}<span class="text-muted">Leader: <strong>{{ campus.campus_leader }}</strong></span>{% endif %}
+        </div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        <span class="badge bg-green-lt py-2 px-3">HQ: {{ inherited_settings.name }}</span>
+        {% if campus.campus_church %}
+        <a href="{{ campus.campus_church|campus_church_url }}" target="_blank"
+           class="btn btn-sm btn-outline-purple">
+           Open Campus Church ↗
+        </a>
+        {% endif %}
+        <a href="{% url 'tenants:account_page' %}?section=settings&tab=campus"
+           class="btn btn-outline-secondary btn-sm" id="campusBackLink">← Church Settings</a>
+      </div>
+    </div>
+
+    <div id="settingsWorkspace">
+      {# ── Tab nav ─────────────────────────────────────────────────────────── #}
+      <div class="card bg-dark border-secondary mb-0"
+           style="border-bottom-left-radius:0;border-bottom-right-radius:0;">
+        <div class="card-body p-0">
+          {% with t=active_tab %}
+          <ul class="nav nav-tabs bg-grey mb-4 flex-wrap" id="settingsTabs">
+            <li class="nav-item me-auto" style="box-shadow:0 4px 8px #000000d2;border-radius:24px 24px 0 0;"><a class="nav-link {% if not t or t == 'general' %}active{% endif %}" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 24px 0 0;" href="?section=settings&tab=general">Profile</a></li>
+            <li class="nav-item" style="box-shadow:0 4px 8px #000000d2;border-radius:24px 24px 0 0;"><a class="nav-link {% if t == 'pipeline' %}active{% endif %}" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 24px 0 0;" href="?section=settings&tab=pipeline">Guest Pipeline</a></li>
+            <li class="nav-item" style="box-shadow:0 4px 8px #000000d2;border-radius:24px 24px 0 0;"><a class="nav-link {% if t == 'trainings' %}active{% endif %}" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 24px 0 0;" href="?section=settings&tab=trainings">Trainings</a></li>
+            <li class="nav-item" style="box-shadow:0 4px 8px #000000d2;border-radius:24px 24px 0 0;"><a class="nav-link {% if t == 'workforce' %}active{% endif %}" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 24px 0 0;" href="?section=settings&tab=workforce">Workforce</a></li>
+            <li class="nav-item" style="box-shadow:0 4px 8px #000000d2;border-radius:24px 24px 0 0;"><a class="nav-link {% if t == 'display' %}active{% endif %}" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 24px 0 0;" href="?section=settings&tab=display">Display</a></li>
+            <li class="nav-item" style="box-shadow:0 4px 8px #000000d2;border-radius:24px 24px 0 0;"><a class="nav-link {% if t == 'campus' %}active{% endif %}" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 24px 0 0;" href="?section=settings&tab=campus">Campus</a></li>
+            <li class="nav-item" style="box-shadow:0 4px 8px #000000d2;border-radius:24px 24px 0 0;"><a class="nav-link {% if t == 'lookups' %}active{% endif %}" style="box-shadow:inset 0 4px 8px #000000d2;border-radius:24px 24px 0 0;" href="?section=settings&tab=lookups">Lookup Tables</a></li>
+          </ul>
+          {% endwith %}
+        </div>
+      </div>
+
+    {# ── HQ inheritance banner ────────────────────────────────────────────── #}
+    <div class="alert alert-dark border-secondary rounded-0 mb-0 py-2 px-3 d-flex align-items-center gap-3"
+         style="border-top:0;font-size:.85rem;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+           stroke="#8b5cf6" stroke-width="2" class="flex-shrink-0">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+        <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/>
+        <path d="M12 8l0 4"/><path d="M12 16l.01 0"/>
+      </svg>
+      <span>
+        Campus workspace for <strong>{{ campus.name }}</strong> — under
+        <strong>{{ inherited_settings.name }}</strong> HQ.
+        {% if workspace_cfg.inherit_hq|default:True %}
+          <span class="badge bg-green-lt ms-1">Inheriting HQ defaults</span>
+        {% else %}
+          <span class="badge bg-orange-lt ms-1">Local overrides active</span>
+        {% endif %}
+      </span>
+    </div>
+
+      {# ── Settings mirror ──────────────────────────────────────────────────── #}
+      <div class="card bg-dark border-secondary"
+           style="border-top-left-radius:0;border-top-right-radius:0;border-top:0;">
+        <div class="card-body p-4">
+          {% include "tenants/_settings_content.html" %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(() => {
+  const TENANT_SLUG = '{{ church.slug|default_if_none:""|escapejs }}';
+  const scopedPath = (url) => {
+    if (!url || !url.startsWith('/')) return url;
+    const slug = TENANT_SLUG || window.location.pathname.split('/').filter(Boolean)[0] || '';
+    if (!slug) return url;
+    if (url === `/${slug}` || url.startsWith(`/${slug}/`)) return url;
+    return `/${slug}${url}`;
+  };
+  const backLink = document.getElementById('campusBackLink');
+  if (backLink) backLink.href = scopedPath(backLink.getAttribute('href') || backLink.href);
+})();
+
+(function () {
+  const workspaceId = "settingsWorkspace";
+  const workspace = document.getElementById(workspaceId);
+
+  function runScripts(container) {
+    container.querySelectorAll("script").forEach((oldScript) => {
+      const script = document.createElement("script");
+      for (const attr of oldScript.attributes) {
+        script.setAttribute(attr.name, attr.value);
+      }
+      script.text = oldScript.textContent;
+      document.body.appendChild(script);
+      script.remove();
+    });
+  }
+
+  function bindSettingsTabs(root) {
+    const tabs = root?.querySelector("#settingsTabs");
+    if (!tabs || tabs.dataset.ajaxBound === "true") {
+      return;
+    }
+
+    tabs.dataset.ajaxBound = "true";
+    tabs.addEventListener("click", async (event) => {
+      const link = event.target.closest('a[href*="section=settings&tab="]');
+      if (!link) {
+        return;
+      }
+
+      event.preventDefault();
+      const response = await fetch(link.href, {
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      const html = await response.text();
+      const nextDoc = new DOMParser().parseFromString(html, "text/html");
+      const nextWorkspace = nextDoc.getElementById(workspaceId);
+      const currentWorkspace = document.getElementById(workspaceId);
+
+      if (!nextWorkspace || !currentWorkspace) {
+        window.location.href = link.href;
+        return;
+      }
+
+      currentWorkspace.replaceWith(nextWorkspace);
+      history.pushState({}, "", link.href);
+      bindSettingsTabs(nextWorkspace);
+      runScripts(nextWorkspace);
+    });
+  }
+
+  bindSettingsTabs(workspace);
+  window.addEventListener("popstate", () => window.location.reload());
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}ChurchForce{% endblock %} — Workforce Management for Churches</title>
+  <meta name="description" content="{% block meta_desc %}ChurchForce helps churches manage their workforce, track attendance, run induction programmes and grow campuses.{% endblock %}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root{--cf-orange:#ff5e01;--cf-green:#2fb344;--cf-dark:#0f172a;--cf-card:#1e293b;}
+    body{background:var(--cf-dark);color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;}
+    .cf-nav{background:#0f172acc;backdrop-filter:blur(12px);border-bottom:1px solid #1e293b;position:sticky;top:0;z-index:100;}
+    .cf-btn{background:var(--cf-orange);color:#fff;border:none;border-radius:99px;padding:10px 28px;font-weight:600;transition:opacity .15s;text-decoration:none;display:inline-block;}
+    .cf-btn:hover{opacity:.88;color:#fff;}
+    .cf-btn-outline{background:transparent;color:#e2e8f0;border:1px solid #334155;border-radius:99px;padding:9px 24px;font-weight:500;text-decoration:none;display:inline-block;transition:border-color .15s;}
+    .cf-btn-outline:hover{border-color:var(--cf-orange);color:var(--cf-orange);}
+    .card-plan{background:var(--cf-card);border:1px solid #334155;border-radius:20px;transition:border-color .2s,transform .2s;}
+    .card-plan:hover{border-color:var(--cf-orange);transform:translateY(-3px);}
+    .card-plan.popular{border-color:var(--cf-orange);box-shadow:0 0 0 1px var(--cf-orange);}
+    footer{border-top:1px solid #1e293b;color:#64748b;font-size:.82rem;}
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<nav class="cf-nav px-4 py-3 d-flex align-items-center justify-content-between">
+  <a href="/" class="fw-bold text-white text-decoration-none" style="font-size:1.1rem;letter-spacing:-.02em;">
+    Church<span style="color:var(--cf-orange);">Force</span>
+  </a>
+  <div class="d-flex align-items-center gap-3">
+    <a href="/pricing/" class="text-muted text-decoration-none small">Pricing</a>
+    <a href="{{ signup_url }}" class="cf-btn" style="font-size:.875rem;padding:8px 20px;">Get Started Free</a>
+  </div>
+</nav>
+
+{% block content %}{% endblock %}
+
+<footer class="text-center py-4 mt-5">
+  <p class="mb-1">© 2025 ChurchForce · <a href="mailto:hello@churchforce.io" class="text-muted">hello@churchforce.io</a></p>
+  <p class="mb-0">Workforce management for modern churches.</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
